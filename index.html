@@ -1578,14 +1578,7 @@ window.go = window.go || function(id) {
             <div style="flex:1">
               <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Categoria *</label>
               <select id="cad-categoria" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
-                <option value="">Selecione</option>
-                <option value="Proteínas">Proteínas</option>
-                <option value="Laticínios">Laticínios</option>
-                <option value="Foodservice">Foodservice</option>
-                <option value="Commodities">Commodities</option>
-                <option value="Bebidas">Bebidas</option>
-                <option value="Higiene/Limpeza">Higiene/Limpeza</option>
-                <option value="Outros">Outros</option>
+                <option value="">Carregando categorias...</option>
               </select>
             </div>
             <div style="flex:1">
@@ -3634,6 +3627,7 @@ function go(id){
   if(id==='sNeg')buildNeg();
   if(id==='sScanLaunch')startLaunchCounter();
   if(id==='sDemandas')loadDemandas();
+  if(id==='sCadFornecedor')loadCategoriasCad();
   if(id==='sNegocios')negRender();
   if(id==='sKYC')setTimeout(initKYC,50);
   if(id==='sPerfil')setTimeout(populatePerfil,50);
@@ -4130,6 +4124,43 @@ async function loadDemandas(){
 }
 
 /* ── CADASTRO FORNECEDOR ── */
+async function loadCategoriasCad(){
+  var sel=document.getElementById('cad-categoria');
+  if(!sel)return;
+  sel.innerHTML='<option value="">Carregando...</option>';
+  var { data, error } = await _sb.from('categorias').select('id, slug, nome, grupo').eq('ativa',true).order('nome');
+  if(error||!data){sel.innerHTML='<option value="">Erro ao carregar</option>';return;}
+  var grupos={},semGrupo=[];
+  data.forEach(function(c){
+    if(c.grupo){
+      if(!grupos[c.grupo])grupos[c.grupo]=[];
+      grupos[c.grupo].push(c);
+    } else {
+      semGrupo.push(c);
+    }
+  });
+  var html='<option value="">Selecione a categoria</option>';
+  var ordemGrupos=['Itens Nervosos - In Natura','Itens Nervosos - Processados','GTM'];
+  ordemGrupos.forEach(function(g){
+    if(grupos[g]&&grupos[g].length){
+      html+='<optgroup label="'+g+'">';
+      grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+c.emoji+' '+c.nome+'</option>';});
+      html+='</optgroup>';
+      delete grupos[g];
+    }
+  });
+  Object.keys(grupos).forEach(function(g){
+    html+='<optgroup label="'+g+'">';
+    grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+c.emoji+' '+c.nome+'</option>';});
+    html+='</optgroup>';
+  });
+  if(semGrupo.length){
+    if(Object.keys(grupos).length||ordemGrupos.length) html+='<optgroup label="Outros">';
+    semGrupo.forEach(function(c){html+='<option value="'+c.slug+'">'+(c.emoji?c.emoji+' ':'')+c.nome+'</option>';});
+    if(Object.keys(grupos).length||ordemGrupos.length) html+='</optgroup>';
+  }
+  sel.innerHTML=html;
+}
 async function salvarFornecedor(){
   var msgEl=document.getElementById('cad-forn-msg');
   var nome=document.getElementById('cad-nome').value.trim();
