@@ -4130,8 +4130,10 @@ async function loadCategoriasCad(){
   var sel=document.getElementById('cad-categoria');
   if(!sel)return;
   sel.innerHTML='<option value="">Carregando...</option>';
-  var { data, error } = await _sb.from('categorias').select('id, slug, nome, grupo').eq('ativa',true).order('nome');
+  var { data, error } = await _sb.from('categorias').select('id, slug, nome, emoji, grupo').eq('ativa',true).order('nome');
   if(error||!data){sel.innerHTML='<option value="">Erro ao carregar</option>';return;}
+  console.log('[FoodHub] categorias carregadas:', data.slice(0,5));
+  function _catLabel(c){var e=c.emoji;return(e&&typeof e==='string'&&e.trim()!==''&&e!=='undefined')?e+' '+c.nome:c.nome;}
   var grupos={},semGrupo=[];
   data.forEach(function(c){
     if(c.grupo){
@@ -4146,19 +4148,19 @@ async function loadCategoriasCad(){
   ordemGrupos.forEach(function(g){
     if(grupos[g]&&grupos[g].length){
       html+='<optgroup label="'+g+'">';
-      grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+(c.emoji&&c.emoji!=='undefined'?c.emoji+' ':'')+c.nome+'</option>';});
+      grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+_catLabel(c)+'</option>';});
       html+='</optgroup>';
       delete grupos[g];
     }
   });
   Object.keys(grupos).forEach(function(g){
     html+='<optgroup label="'+g+'">';
-    grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+(c.emoji&&c.emoji!=='undefined'?c.emoji+' ':'')+c.nome+'</option>';});
+    grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+_catLabel(c)+'</option>';});
     html+='</optgroup>';
   });
   if(semGrupo.length){
     if(Object.keys(grupos).length||ordemGrupos.length) html+='<optgroup label="Outros">';
-    semGrupo.forEach(function(c){html+='<option value="'+c.slug+'">'+(c.emoji&&c.emoji!=='undefined'?c.emoji+' ':'')+c.nome+'</option>';});
+    semGrupo.forEach(function(c){html+='<option value="'+c.slug+'">'+_catLabel(c)+'</option>';});
     if(Object.keys(grupos).length||ordemGrupos.length) html+='</optgroup>';
   }
   sel.innerHTML=html;
