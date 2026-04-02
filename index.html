@@ -4022,12 +4022,12 @@ async function buildSupList(){
   var listEl=document.getElementById('sup-list');
   if(!listEl)return;
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando fornecedores...</div>';
-  var { data, error } = await _sb.from('fornecedores').select('id, nome, cidade, estado, categoria, score, sif_numero');
+  var { data, error } = await _sb.from('fornecedores').select('id, nome, cidade, estado, categoria, score_foodhub, sif');
   if(error||!data){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar fornecedores</div>';return;}
   if(data.length===0){listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhum fornecedor cadastrado ainda. Clique em <span style="color:var(--ac);cursor:pointer" onclick="go(\'sCadFornecedor\')">+ Cadastrar</span> para adicionar.</div>';return;}
   var catIcons={'Proteínas':'🍗','Laticínios':'🧀','Foodservice':'🍟','Commodities':'🌾'};
   SUPS=data.map(function(f){
-    return {i:catIcons[f.categoria]||'📦',n:f.nome,sif:f.sif_numero||'',loc:f.cidade+' – '+f.estado,cat:f.categoria||'Outros',reg:f.estado,sc:f.score||0};
+    return {i:catIcons[f.categoria]||'📦',n:f.nome,sif:f.sif||'',loc:f.cidade+' – '+f.estado,cat:f.categoria||'Outros',reg:f.estado,sc:f.score_foodhub||0};
   });
   var cats=[],seen={};
   SUPS.forEach(function(s){if(!seen[s.cat]){seen[s.cat]=1;cats.push(s.cat);}});
@@ -4079,11 +4079,11 @@ async function salvarDemanda(){
   if(!quantidade||quantidade<=0){alert('Informe a quantidade.');return;}
   var { error } = await _sb.from('demandas').insert({
     user_id: _currentUser.id,
-    produto: produto,
-    quantidade: quantidade,
-    unidade: unidade,
-    prazo_entrega: prazo||null,
-    observacoes: obs||null,
+    produto_nome: produto,
+    volume: quantidade,
+    unidade_volume: unidade,
+    prazo_especifico: prazo||null,
+    especificacao: obs||null,
     status: 'ativa'
   });
   if(error){alert('Erro ao salvar: '+error.message);return;}
@@ -4116,12 +4116,12 @@ async function loadDemandas(){
     var dotColor=isAtiva?'var(--gn)':'var(--t3)';
     var badgeClass=isAtiva?'ba':'bg';
     var statusLabel=d.status.charAt(0).toUpperCase()+d.status.slice(1);
-    var prazo=d.prazo_entrega?new Date(d.prazo_entrega).toLocaleDateString('pt-BR'):'';
+    var prazo=d.prazo_especifico?new Date(d.prazo_especifico).toLocaleDateString('pt-BR'):'';
     html+='<div class="card" style="'+(isAtiva?'':'opacity:.65;')+'display:flex;align-items:center;gap:9px;padding:10px 12px">'+
       '<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';'+(isAtiva?'box-shadow:0 0 5px var(--gn);':'')+'flex-shrink:0"></div>'+
       '<div style="flex:1">'+
-        '<div style="font-weight:600;font-size:13px;margin-bottom:1px">'+d.produto+'</div>'+
-        '<div style="font-size:11px;color:var(--t2)">'+d.quantidade+' '+d.unidade+(prazo?' · Entrega: '+prazo:'')+(d.observacoes?' · '+d.observacoes:'')+'</div>'+
+        '<div style="font-weight:600;font-size:13px;margin-bottom:1px">'+(d.produto_nome||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--t2)">'+(d.volume||'')+' '+(d.unidade_volume||'')+(prazo?' · Entrega: '+prazo:'')+(d.especificacao?' · '+d.especificacao:'')+'</div>'+
       '</div>'+
       '<span class="badge '+badgeClass+'">'+statusLabel+'</span>'+
     '</div>';
@@ -4147,11 +4147,11 @@ async function salvarFornecedor(){
   var { error } = await _sb.from('fornecedores').insert({
     nome: nome,
     cnpj: cnpj||null,
-    sif_numero: sif||null,
+    sif: sif||null,
     cidade: cidade,
     estado: estado,
     categoria: categoria,
-    score: score
+    score_foodhub: score
   });
   if(error){showCadMsg('Erro ao salvar: '+error.message,'err');return;}
   showCadMsg('Fornecedor cadastrado com sucesso!','ok');
