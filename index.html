@@ -1512,7 +1512,8 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
     </div>
     <div class="main">
-      <div class="sh" style="display:flex;align-items:center;justify-content:space-between"><h3>Fornecedores homologados</h3><button class="btn sm" onclick="go('sCadFornecedor')" style="font-size:12px">+ Cadastrar</button></div><span style="font-size:11px;color:var(--t2)">500+ cadastrados · 47 ativos agora</span></div>
+      <div class="sh" style="display:flex;align-items:center;justify-content:space-between"><h3>Fornecedores homologados</h3><button class="btn sm" onclick="go('sCadFornecedor')" style="font-size:12px">+ Cadastrar</button></div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:8px">500+ cadastrados · 47 ativos agora</div>
       <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--t1)">Todos os fornecedores são qualificados e aptos ao fornecimento — homologados antes de ingressar na plataforma</div>
       <div id="sup-list"></div>
     </div>
@@ -4023,6 +4024,7 @@ async function buildSupList(){
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando fornecedores...</div>';
   var { data, error } = await _sb.from('fornecedores').select('id, nome, cidade, estado, categoria, score, sif_numero');
   if(error||!data){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar fornecedores</div>';return;}
+  if(data.length===0){listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhum fornecedor cadastrado ainda. Clique em <span style="color:var(--ac);cursor:pointer" onclick="go(\'sCadFornecedor\')">+ Cadastrar</span> para adicionar.</div>';return;}
   var catIcons={'Proteínas':'🍗','Laticínios':'🧀','Foodservice':'🍟','Commodities':'🌾'};
   SUPS=data.map(function(f){
     return {i:catIcons[f.categoria]||'📦',n:f.nome,sif:f.sif_numero||'',loc:f.cidade+' – '+f.estado,cat:f.categoria||'Outros',reg:f.estado,sc:f.score||0};
