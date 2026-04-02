@@ -1386,16 +1386,52 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
     </div>
     <div class="main">
-      <div class="sh"><h3>Demandas ativas</h3><span class="badge bb">7 abertas</span></div>
-      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px">
-        <div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px" onclick="go('sScanPanel')"><div style="width:7px;height:7px;border-radius:50%;background:var(--gn);box-shadow:0 0 5px var(--gn);flex-shrink:0"></div><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:1px">Frango Sassami · cx 10kg</div><div style="font-size:11px;color:var(--t2)">10.000 kg · SP · Alvo R$8,20/kg · 8 propostas</div></div><div style="text-align:right"><span class="badge bg">8 propostas</span><div style="font-size:10px;color:var(--t3);margin-top:2px">expira 18h</div></div></div>
-        <div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px"><div style="width:7px;height:7px;border-radius:50%;background:var(--gn);flex-shrink:0"></div><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:1px">Muçarela Fatiada</div><div style="font-size:11px;color:var(--t2)">5.000 kg · RJ · Alvo R$23,50 · 3 propostas</div></div><div style="text-align:right"><span class="badge bb">3 propostas</span><div style="font-size:10px;color:var(--t3);margin-top:2px">expira 2d</div></div></div>
-        <div class="card" style="display:flex;align-items:center;gap:9px;padding:10px 12px"><div style="width:7px;height:7px;border-radius:50%;background:var(--am);flex-shrink:0"></div><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:1px">Óleo de Soja 900ml</div><div style="font-size:11px;color:var(--t2)">500 cx · Campinas · aguardando propostas</div></div><span class="badge ba">aguardando</span></div>
+      <div class="sh" style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px"><h3>Minhas Demandas</h3><span id="demandas-count" class="badge bb"></span></div>
+        <button class="btn sm" onclick="toggleNovaDemandaForm()" style="font-size:12px">+ Nova Demanda</button>
       </div>
-      <div class="sh"><h3>Histórico</h3></div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <div class="card" style="opacity:.65;display:flex;align-items:center;gap:9px;padding:10px 12px"><div style="width:7px;height:7px;border-radius:50%;background:var(--t3);flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;font-weight:500">Batata Congelada Palito</div><div style="font-size:11px;color:var(--t2)">10.000 kg · SP · 12/03/26</div></div><span class="badge bg">Fechado</span></div>
-        <div class="card" style="opacity:.65;display:flex;align-items:center;gap:9px;padding:10px 12px"><div style="width:7px;height:7px;border-radius:50%;background:var(--t3);flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;font-weight:500">Carne Moída 70/30</div><div style="font-size:11px;color:var(--t2)">8.000 kg · RJ · 05/03/26</div></div><span class="badge br">Expirado</span></div>
+      <!-- Form Nova Demanda -->
+      <div id="nova-demanda-form" style="display:none;margin-bottom:14px">
+        <div class="card" style="padding:16px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px;color:var(--t1)">Nova Demanda</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Produto</label>
+              <input id="dem-produto" type="text" placeholder="Ex: Frango Sassami" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+            </div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1">
+                <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Quantidade</label>
+                <input id="dem-quantidade" type="number" placeholder="0" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+              </div>
+              <div style="flex:1">
+                <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Unidade</label>
+                <select id="dem-unidade" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+                  <option value="kg">kg</option>
+                  <option value="ton">ton</option>
+                  <option value="cx">cx</option>
+                  <option value="un">un</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Prazo de entrega</label>
+              <input id="dem-prazo" type="date" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Observações</label>
+              <textarea id="dem-obs" rows="3" placeholder="Detalhes adicionais..." style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn-ghost sm" onclick="toggleNovaDemandaForm()" style="font-size:12px">Cancelar</button>
+              <button class="btn sm btn-g" onclick="salvarDemanda()" style="font-size:12px">Salvar demanda</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Lista de demandas carregada do Supabase -->
+      <div id="demandas-list" style="display:flex;flex-direction:column;gap:5px">
+        <div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando demandas...</div>
       </div>
     </div>
   </div>
@@ -3512,6 +3548,7 @@ function go(id){
   if(id==='sFornecedores')buildSupList();
   if(id==='sNeg')buildNeg();
   if(id==='sScanLaunch')startLaunchCounter();
+  if(id==='sDemandas')loadDemandas();
   if(id==='sNegocios')negRender();
   if(id==='sKYC')setTimeout(initKYC,50);
   if(id==='sPerfil')setTimeout(populatePerfil,50);
@@ -3892,30 +3929,29 @@ function sendMsg(){
 }
 
 /* ── SUPPLIERS ── */
-var SUPS=[
-  {i:'🍗',n:'Avícola Três Coroas',sif:'SIF 4412',loc:'Três Coroas – RS',cat:'Proteínas',reg:'Sul–SP (600km)',sc:91},
-  {i:'🍗',n:'Frigorífico Mineiro Ltda.',sif:'SIF 7821',loc:'Uberlândia – MG',cat:'Proteínas',reg:'MG–SP (500km)',sc:85},
-  {i:'🍗',n:'Avícola Sulbrasil',sif:'SIF 5503',loc:'Concórdia – SC',cat:'Proteínas',reg:'Sul–SP (700km)',sc:80},
-  {i:'🍗',n:'Frango Santo André',sif:'SIF 9910',loc:'Descalvado – SP',cat:'Proteínas',reg:'SP interior (250km)',sc:76},
-  {i:'🧀',n:'Laticínios Bela Vista',sif:'SIF 2207',loc:'Patos de Minas – MG',cat:'Laticínios',reg:'MG–SP–RJ (550km)',sc:89},
-  {i:'🧀',n:'Cooperativa Mineira Lácteos',sif:'SIF 3312',loc:'Ubá – MG',cat:'Laticínios',reg:'MG–SP (500km)',sc:83},
-  {i:'🍟',n:'Frigimax Alimentos',sif:'SIF 5509',loc:'Pelotas – RS',cat:'Foodservice',reg:'Sul–SP (800km)',sc:88},
-  {i:'🍟',n:'Batatas Sulina',sif:'SIF 4432',loc:'Ponta Grossa – PR',cat:'Foodservice',reg:'Sul–SP (500km)',sc:85},
-  {i:'🫙',n:'Óleos Triângulo',sif:'SIF 1102',loc:'Uberlândia – MG',cat:'Commodities',reg:'MG–SP (500km)',sc:90},
-  {i:'🌾',n:'Cooperativa Grãos do Sul',sif:'SIF 5512',loc:'Cruz Alta – RS',cat:'Commodities',reg:'RS–SP (850km)',sc:74},
-];
+var SUPS=[];
 function gradeFromScore(sc){
   return sc>=92?{g:'A+',em:'🏆',cl:'#00E09A'}:sc>=85?{g:'A',em:'⭐',cl:'#00D4FF'}:sc>=75?{g:'B+',em:'✦',cl:'#F59E0B'}:{g:'B',em:'·',cl:'#6A7FA8'};
 }
-function buildSupList(){
-  var cats=['Proteínas','Laticínios','Foodservice','Commodities'],html='';
+async function buildSupList(){
+  var listEl=document.getElementById('sup-list');
+  if(!listEl)return;
+  listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando fornecedores...</div>';
+  var { data, error } = await _sb.from('fornecedores').select('id, nome, cidade, estado, categoria, score, sif_numero');
+  if(error||!data){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar fornecedores</div>';return;}
+  var catIcons={'Proteínas':'🍗','Laticínios':'🧀','Foodservice':'🍟','Commodities':'🌾'};
+  SUPS=data.map(function(f){
+    return {i:catIcons[f.categoria]||'📦',n:f.nome,sif:f.sif_numero||'',loc:f.cidade+' – '+f.estado,cat:f.categoria||'Outros',reg:f.estado,sc:f.score||0};
+  });
+  var cats=[],seen={};
+  SUPS.forEach(function(s){if(!seen[s.cat]){seen[s.cat]=1;cats.push(s.cat);}});
+  var html='';
   cats.forEach(function(cat){
     html+='<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 7px;display:flex;align-items:center;gap:6px">'+
       '<div style="flex:0 0 18px;height:1px;background:rgba(255,255,255,.08)"></div>'+cat+'</div>';
     SUPS.filter(function(s){return s.cat===cat;}).forEach(function(s){
       var r=gradeFromScore(s.sc);
       var ops=Math.round(s.sc*0.7-20);
-      var clSafe=r.cl.replace('#','');
       html+='<div class="card card-sup" style="display:flex;align-items:center;gap:10px;padding:11px 13px;margin-bottom:5px;cursor:pointer;transition:all .14s">'+
         '<div style="position:relative;flex-shrink:0">'+
           '<div style="width:38px;height:38px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px">'+s.i+'</div>'+
@@ -3938,7 +3974,73 @@ function buildSupList(){
       '</div>';
     });
   });
-  document.getElementById('sup-list').innerHTML=html;
+  listEl.innerHTML=html;
+}
+
+/* ── DEMANDAS ── */
+function toggleNovaDemandaForm(){
+  var f=document.getElementById('nova-demanda-form');
+  if(f)f.style.display=f.style.display==='none'?'block':'none';
+}
+async function salvarDemanda(){
+  if(!_currentUser){alert('Faça login para criar demandas.');return;}
+  var produto=document.getElementById('dem-produto').value.trim();
+  var quantidade=parseFloat(document.getElementById('dem-quantidade').value);
+  var unidade=document.getElementById('dem-unidade').value;
+  var prazo=document.getElementById('dem-prazo').value;
+  var obs=document.getElementById('dem-obs').value.trim();
+  if(!produto){alert('Informe o produto.');return;}
+  if(!quantidade||quantidade<=0){alert('Informe a quantidade.');return;}
+  var { error } = await _sb.from('demandas').insert({
+    user_id: _currentUser.id,
+    produto: produto,
+    quantidade: quantidade,
+    unidade: unidade,
+    prazo_entrega: prazo||null,
+    observacoes: obs||null,
+    status: 'ativa'
+  });
+  if(error){alert('Erro ao salvar: '+error.message);return;}
+  document.getElementById('dem-produto').value='';
+  document.getElementById('dem-quantidade').value='';
+  document.getElementById('dem-unidade').value='kg';
+  document.getElementById('dem-prazo').value='';
+  document.getElementById('dem-obs').value='';
+  toggleNovaDemandaForm();
+  loadDemandas();
+}
+async function loadDemandas(){
+  var listEl=document.getElementById('demandas-list');
+  var countEl=document.getElementById('demandas-count');
+  if(!listEl)return;
+  if(!_currentUser){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Faça login para ver suas demandas.</div>';return;}
+  listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando demandas...</div>';
+  var { data, error } = await _sb.from('demandas').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
+  if(error){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
+  if(!data||data.length===0){
+    listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma demanda encontrada. Clique em "+ Nova Demanda" para criar.</div>';
+    if(countEl)countEl.textContent='0';
+    return;
+  }
+  var ativas=data.filter(function(d){return d.status==='ativa';});
+  if(countEl)countEl.textContent=ativas.length+' ativa'+(ativas.length!==1?'s':'');
+  var html='';
+  data.forEach(function(d){
+    var isAtiva=d.status==='ativa';
+    var dotColor=isAtiva?'var(--gn)':'var(--t3)';
+    var badgeClass=isAtiva?'ba':'bg';
+    var statusLabel=d.status.charAt(0).toUpperCase()+d.status.slice(1);
+    var prazo=d.prazo_entrega?new Date(d.prazo_entrega).toLocaleDateString('pt-BR'):'';
+    html+='<div class="card" style="'+(isAtiva?'':'opacity:.65;')+'display:flex;align-items:center;gap:9px;padding:10px 12px">'+
+      '<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';'+(isAtiva?'box-shadow:0 0 5px var(--gn);':'')+'flex-shrink:0"></div>'+
+      '<div style="flex:1">'+
+        '<div style="font-weight:600;font-size:13px;margin-bottom:1px">'+d.produto+'</div>'+
+        '<div style="font-size:11px;color:var(--t2)">'+d.quantidade+' '+d.unidade+(prazo?' · Entrega: '+prazo:'')+(d.observacoes?' · '+d.observacoes:'')+'</div>'+
+      '</div>'+
+      '<span class="badge '+badgeClass+'">'+statusLabel+'</span>'+
+    '</div>';
+  });
+  listEl.innerHTML=html;
 }
 
 /* ── MISC ── */
