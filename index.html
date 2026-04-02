@@ -4021,10 +4021,12 @@ async function buildSupList(){
   if(data.length===0){listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhum fornecedor cadastrado ainda. Clique em <span style="color:var(--ac);cursor:pointer" onclick="go(\'sCadFornecedor\')">+ Cadastrar</span> para adicionar.</div>';return;}
   var catIcons={'Proteínas':'🍗','Laticínios':'🧀','Foodservice':'🍟','Commodities':'🌾'};
   SUPS=data.map(function(f){
-    return {i:catIcons[f.categoria]||'📦',n:f.nome,sif:f.sif||'',loc:f.cidade+' – '+f.estado,cat:f.categoria||'Outros',reg:f.estado,sc:f.score_foodhub||0};
+    return {i:catIcons[f.categoria]||'📦',n:f.nome||'',sif:f.sif||'',loc:(f.cidade||'')+(f.cidade&&f.estado?' – ':'')+(f.estado||''),cat:f.categoria||'Outros',reg:f.estado||'',sc:f.score_foodhub||0};
   });
   var cats=[],seen={};
   SUPS.forEach(function(s){if(!seen[s.cat]){seen[s.cat]=1;cats.push(s.cat);}});
+  var outrosIdx=cats.indexOf('Outros');
+  if(outrosIdx>-1){cats.splice(outrosIdx,1);cats.push('Outros');}
   var html='';
   cats.forEach(function(cat){
     html+='<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 7px;display:flex;align-items:center;gap:6px">'+
@@ -4041,7 +4043,7 @@ async function buildSupList(){
           '<div style="font-weight:700;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:6px">'+s.n+
             '<span style="font-size:9px;padding:1px 6px;border-radius:3px;background:'+r.cl+'18;color:'+r.cl+';font-weight:700;border:1px solid '+r.cl+'44">'+r.em+' '+r.g+'</span>'+
           '</div>'+
-          '<div style="font-size:11px;color:var(--t2);margin-top:1px">'+s.loc+' · '+s.sif+'</div>'+
+          '<div style="font-size:11px;color:var(--t2);margin-top:1px">'+s.loc+(s.sif?' · '+s.sif:'')+'</div>'+
           '<div style="display:flex;align-items:center;gap:8px;margin-top:3px">'+
             '<span style="font-size:10px;color:var(--t3)">📍 '+s.reg+'</span>'+
             '<span style="font-size:9px;color:'+r.cl+';font-family:var(--mono)">'+ops+' ops confirmadas</span>'+
@@ -4144,14 +4146,14 @@ async function loadCategoriasCad(){
   ordemGrupos.forEach(function(g){
     if(grupos[g]&&grupos[g].length){
       html+='<optgroup label="'+g+'">';
-      grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+c.emoji+' '+c.nome+'</option>';});
+      grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+(c.emoji?c.emoji+' ':'')+c.nome+'</option>';});
       html+='</optgroup>';
       delete grupos[g];
     }
   });
   Object.keys(grupos).forEach(function(g){
     html+='<optgroup label="'+g+'">';
-    grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+c.emoji+' '+c.nome+'</option>';});
+    grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+(c.emoji?c.emoji+' ':'')+c.nome+'</option>';});
     html+='</optgroup>';
   });
   if(semGrupo.length){
