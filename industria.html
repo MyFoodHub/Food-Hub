@@ -2292,7 +2292,7 @@ async function loadDemandasMercado(){
       '<td style="font-family:var(--mono);color:var(--go)">'+alvo+'</td>'+
       '<td>'+regiao+'</td>'+
       '<td style="font-family:var(--mono)">'+prazo+'</td>'+
-      '<td><button class="btn btn-am sm" onclick="openResponder(\''+produto.replace(/'/g,"\\'")+'\')">Responder →</button></td>'+
+      '<td><button class="btn btn-am sm" onclick="openResponder(\''+d.id+'\',\''+produto.replace(/'/g,"\\'")+'\',\''+vol+'\',\''+alvo+'\')">Responder →</button></td>'+
     '</tr>';
   });
   html+='</tbody></table>';
@@ -2416,47 +2416,58 @@ function updatePricingSim(){
 }
 
 /* ── RESPONDER MODAL ── */
-function openResponder(produto, volume, regiao, alvo, prazo, potencial){
-  document.getElementById('resp-produto').textContent = produto||'Sassami IQF · cx 10kg';
-  document.getElementById('resp-volume').textContent = volume||'12.000 kg';
-  document.getElementById('resp-regiao').textContent = regiao||'São Paulo SP';
-  document.getElementById('resp-alvo').textContent = alvo||'R$8,45/kg';
-  document.getElementById('resp-prazo').textContent = prazo||'3h';
-  document.getElementById('resp-potencial').textContent = potencial||'R$98.400';
-  document.getElementById('resp-meu').value = '8.00';
-  updateRespCalc();
+var _respDemandaId = null;
+function openResponder(demandaId, produto, volume, alvo){
+  _respDemandaId = demandaId;
+  document.getElementById('resp-produto').textContent = produto||'—';
+  document.getElementById('resp-volume').textContent = volume||'—';
+  document.getElementById('resp-alvo').textContent = alvo||'—';
+  document.getElementById('resp-preco').value = '';
+  document.getElementById('resp-unidade').value = '/kg';
+  document.getElementById('resp-vol-ofertado').value = '';
+  document.getElementById('resp-prazo-dias').value = '';
+  document.getElementById('resp-pagamento').value = '';
+  document.getElementById('resp-nota').value = '';
+  var msgEl = document.getElementById('resp-msg');
+  if(msgEl) msgEl.style.display='none';
+  document.getElementById('resp-success').style.display='none';
   document.getElementById('modal-responder').style.display='flex';
 }
 function closeResponder(){ document.getElementById('modal-responder').style.display='none'; }
-function updateRespCalc(){
-  var meu = parseFloat(document.getElementById('resp-meu').value)||0;
-  var alvoStr = document.getElementById('resp-alvo').textContent;
-  var alvo = parseFloat(alvoStr.replace('R$','').replace('/kg',''))||8.45;
-  var vol = parseFloat((document.getElementById('resp-volume').textContent||'12000').replace('.','').replace(' kg',''))||12000;
-  var total = (meu * vol / 1000).toFixed(0);
-  document.getElementById('resp-total').textContent = 'R$'+total+'k';
-  var vs = ((meu-alvo)/alvo*100).toFixed(1);
-  var vsEl = document.getElementById('resp-vs');
-  vsEl.textContent = (vs<0?'':'+')+vs+'% vs. alvo comprador';
-  vsEl.style.color = meu <= alvo ? 'var(--gn)' : meu <= alvo*1.03 ? 'var(--am)' : 'var(--rd)';
-  // chance estimation
-  var chance = meu <= alvo ? 'Alta (90%)' : meu <= alvo*1.03 ? 'Média (60%)' : 'Baixa (20%)';
-  var chanceEl = document.getElementById('resp-chance');
-  chanceEl.textContent = chance;
-  chanceEl.style.color = meu <= alvo ? 'var(--gn)' : meu <= alvo*1.03 ? 'var(--am)' : 'var(--rd)';
-  // commissions
-  var taxa = meu * vol * 0.02 * 0.82 * 0.20;
-  document.getElementById('resp-comm').textContent = 'Comissão Finders: R$'+taxa.toFixed(0);
-}
-function selectPrazo(el, val){
-  document.querySelectorAll('[onclick*="selectPrazo"]').forEach(function(b){
-    b.style.background='var(--s3)';b.style.borderColor='var(--b1)';b.style.color='var(--w2)';
+async function submitResposta(){
+  var msgEl = document.getElementById('resp-msg');
+  var preco = parseFloat(document.getElementById('resp-preco').value);
+  var unidade = document.getElementById('resp-unidade').value.trim()||'/kg';
+  var volume = parseFloat(document.getElementById('resp-vol-ofertado').value)||null;
+  var prazo = parseInt(document.getElementById('resp-prazo-dias').value)||null;
+  var pagamento = document.getElementById('resp-pagamento').value.trim()||null;
+  var nota = document.getElementById('resp-nota').value.trim()||null;
+  if(!_respDemandaId){showRespMsg('Erro: demanda não identificada.','err');return;}
+  if(!_fornecedorId){showRespMsg('Erro: nenhum fornecedor vinculado ao seu login.','err');return;}
+  if(!preco||preco<=0){showRespMsg('Informe o preço ofertado.','err');return;}
+  var { error } = await _sb.from('propostas').insert({
+    demanda_id: _respDemandaId,
+    fornecedor_id: _fornecedorId,
+    preco_ofertado: preco,
+    unidade_preco: unidade,
+    volume_ofertado: volume,
+    prazo_entrega_dias: prazo,
+    condicao_pagamento: pagamento,
+    nota_fornecedor: nota,
+    status: 'recebida'
   });
-  el.style.background='rgba(0,224,154,.12)';el.style.borderColor='rgba(0,224,154,.3)';el.style.color='var(--gn)';
-}
-function submitResposta(){
+  if(error){console.log('Erro proposta:', JSON.stringify(error));showRespMsg('Erro ao enviar: '+error.message,'err');return;}
   document.getElementById('resp-success').style.display='flex';
-  setTimeout(function(){ closeResponder(); document.getElementById('resp-success').style.display='none'; },2000);
+  setTimeout(function(){ closeResponder(); },2500);
+}
+function showRespMsg(txt,type){
+  var el = document.getElementById('resp-msg');
+  if(!el) return;
+  el.style.display='block';
+  el.textContent=txt;
+  el.style.background=type==='ok'?'rgba(0,229,160,.12)':'rgba(255,77,106,.12)';
+  el.style.color=type==='ok'?'#00E5A0':'#FF4D6A';
+  el.style.border='1px solid '+(type==='ok'?'rgba(0,229,160,.3)':'rgba(255,77,106,.3)');
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────
@@ -2526,58 +2537,51 @@ function fireToast(msg){
 
 <!-- ════════ MODAL: RESPONDER DEMANDA ════════ -->
 <div id="modal-responder" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeResponder()">
-  <div style="background:#0A1020;border:1px solid rgba(0,224,154,.22);border-radius:16px;width:100%;max-width:560px;padding:24px;position:relative">
+  <div style="background:#0A1020;border:1px solid rgba(0,224,154,.22);border-radius:16px;width:100%;max-width:520px;padding:24px;position:relative;max-height:90vh;overflow-y:auto">
     <button onclick="closeResponder()" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--w3);font-size:18px;cursor:pointer;line-height:1">✕</button>
     <div style="font-family:var(--disp);font-size:22px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:4px">Responder Demanda</div>
+    <div style="font-size:12px;color:var(--w2);margin-bottom:16px">Envie sua proposta real para esta demanda</div>
     <!-- DEMANDA INFO -->
-    <div style="background:rgba(0,0,0,.3);border-radius:9px;padding:12px 14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><div style="font-size:10px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PRODUTO</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-produto">Sassami IQF · cx 10kg</div></div>
-      <div><div style="font-size:10px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">VOLUME</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-volume">12.000 kg</div></div>
-      <div><div style="font-size:10px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">REGIÃO</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-regiao">São Paulo SP</div></div>
-      <div><div style="font-size:10px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PRAZO</div><div style="font-size:13px;font-weight:600;color:var(--rd)" id="resp-prazo">3h</div></div>
-      <div><div style="font-size:10px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PREÇO ALVO DO COMPRADOR</div><div style="font-size:13px;font-weight:700;color:var(--gold)" id="resp-alvo">R$8,45/kg</div></div>
-      <div><div style="font-size:10px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">POTENCIAL TOTAL</div><div style="font-size:13px;font-weight:700;color:var(--gn)" id="resp-potencial">R$98.400</div></div>
+    <div style="background:rgba(0,0,0,.3);border-radius:9px;padding:12px 14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div><div style="font-size:9px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PRODUTO</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-produto">—</div></div>
+      <div><div style="font-size:9px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">VOLUME</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-volume">—</div></div>
+      <div><div style="font-size:9px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PREÇO ALVO</div><div style="font-size:13px;font-weight:700;color:var(--gold)" id="resp-alvo">—</div></div>
     </div>
-    <!-- SEU PREÇO -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:12px;color:var(--w2);margin-bottom:6px;font-weight:600">Seu preço de oferta (R$/kg)</div>
-      <div style="display:flex;gap:9px;align-items:center">
-        <div style="position:relative;flex:1">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--w3);font-size:14px">R$</span>
-          <input id="resp-meu" type="number" step="0.05" min="6" max="12" value="8.00" oninput="updateRespCalc()" style="width:100%;background:var(--s3);border:1px solid rgba(0,224,154,.25);border-radius:9px;padding:12px 12px 12px 36px;color:#fff;font-family:var(--mono);font-size:20px;font-weight:700;outline:none">
+    <div id="resp-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px"></div>
+    <!-- FORM -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Preço ofertado (R$) *</div>
+          <input id="resp-preco" type="number" step="0.01" placeholder="0.00" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:var(--mono);outline:none;box-sizing:border-box">
         </div>
-        <span style="font-family:var(--mono);font-size:12px;color:var(--w3)">/kg</span>
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Unidade preço</div>
+          <input id="resp-unidade" type="text" value="/kg" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;box-sizing:border-box">
+        </div>
       </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Volume disponível</div>
+          <input id="resp-vol-ofertado" type="number" placeholder="kg" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:var(--mono);outline:none;box-sizing:border-box">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo entrega (dias)</div>
+          <input id="resp-prazo-dias" type="number" placeholder="0" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:var(--mono);outline:none;box-sizing:border-box">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Condição de pagamento</div>
+        <input id="resp-pagamento" type="text" placeholder="Ex: 28 dias boleto" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;box-sizing:border-box">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Observações</div>
+        <textarea id="resp-nota" rows="3" placeholder="Detalhes sobre produto, certificações, condições especiais..." style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+      </div>
+      <button style="width:100%;border:none;border-radius:9px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--go);color:#000;margin-top:4px" onclick="submitResposta()">Enviar proposta</button>
     </div>
-    <!-- LIVE CALC -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
-      <div style="background:var(--s3);border-radius:9px;padding:11px;text-align:center">
-        <div style="font-size:10px;color:var(--w3);margin-bottom:4px;font-family:var(--mono)">VALOR TOTAL</div>
-        <div id="resp-total" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--gold)">R$96k</div>
-      </div>
-      <div style="background:var(--s3);border-radius:9px;padding:11px;text-align:center">
-        <div style="font-size:10px;color:var(--w3);margin-bottom:4px;font-family:var(--mono)">VS. ALVO</div>
-        <div id="resp-vs" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--am)">−5,3% abaixo</div>
-      </div>
-      <div style="background:var(--s3);border-radius:9px;padding:11px;text-align:center">
-        <div style="font-size:10px;color:var(--w3);margin-bottom:4px;font-family:var(--mono)">CHANCE ACEITE</div>
-        <div id="resp-chance" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--gn)">Alta (90%)</div>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--w3);margin-bottom:12px;text-align:center" id="resp-comm">Comissão Finders: R$394</div>
-    <!-- PRAZO ENTREGA -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:12px;color:var(--w2);margin-bottom:6px;font-weight:600">Prazo de entrega</div>
-      <div style="display:flex;gap:7px">
-        <button onclick="selectPrazo(this,'24h')" style="flex:1;background:rgba(0,224,154,.12);border:1px solid rgba(0,224,154,.3);border-radius:7px;padding:9px;color:var(--gn);font-size:12px;font-weight:700;cursor:pointer;transition:all .13s">24h</button>
-        <button onclick="selectPrazo(this,'3 dias')" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:7px;padding:9px;color:var(--w2);font-size:12px;cursor:pointer;transition:all .13s">3 dias</button>
-        <button onclick="selectPrazo(this,'5 dias')" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:7px;padding:9px;color:var(--w2);font-size:12px;cursor:pointer;transition:all .13s">5 dias</button>
-        <button onclick="selectPrazo(this,'7 dias')" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:7px;padding:9px;color:var(--w2);font-size:12px;cursor:pointer;transition:all .13s">7 dias</button>
-      </div>
-    </div>
-    <button class="btn btn-gn" style="width:100%;padding:13px;font-size:14px" onclick="submitResposta()">✅ Enviar proposta agora</button>
     <!-- SUCCESS -->
-    <div id="resp-success" style="display:none;position:absolute;inset:0;background:rgba(10,16,32,.95);border-radius:16px;align-items:center;justify-content:center;flex-direction:column;gap:10px">
+    <div id="resp-success" style="display:none;position:absolute;inset:0;background:rgba(10,16,32,.97);border-radius:16px;align-items:center;justify-content:center;flex-direction:column;gap:10px">
       <div style="font-size:48px">✅</div>
       <div style="font-family:var(--disp);font-size:22px;font-weight:900;color:var(--gn)">PROPOSTA ENVIADA</div>
       <div style="font-size:13px;color:var(--w2)">O comprador receberá sua oferta em instantes.</div>
