@@ -1437,6 +1437,31 @@ window.go = window.go || function(id) {
   </div>
 </div>
 
+<!-- ══ DETALHES DEMANDA ══ -->
+<div id="sDetalhesDemanda" class="screen">
+  <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><button class="btn-ghost sm" onclick="go('sDemandas')">← Demandas</button></div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-sec">Mesa</div>
+      <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
+      <div class="nav-sec">Gestão</div>
+      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+    </div>
+    <div class="main">
+      <div id="detalhe-dem-header"></div>
+      <div class="sh" style="margin-top:14px"><h3>Propostas recebidas</h3><span id="detalhe-dem-count" class="badge bb"></span></div>
+      <div id="detalhe-dem-propostas">
+        <div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando propostas...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ NEGÓCIOS ══ -->
 <div id="sNegocios" class="screen">
   <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><button class="btn-ghost sm" onclick="go('s1')">← Dashboard</button></div>
@@ -3699,6 +3724,7 @@ function go(id){
   if(id==='sScanLaunch')startLaunchCounter();
   if(id==='sDemandas')loadDemandas();
   if(id==='sCadFornecedor')loadCategoriasCad();
+  if(id==='sDetalhesDemanda')loadDetalhesDemanda();
   if(id==='sCadProposta')loadCadPropostaSelects();
   if(id==='sNegocios')negRender();
   if(id==='sKYC')setTimeout(initKYC,50);
@@ -4208,7 +4234,7 @@ async function loadDemandas(){
     var badgeClass=isAtiva?'ba':'bg';
     var statusLabel=d.status.charAt(0).toUpperCase()+d.status.slice(1);
     var prazo=d.prazo_especifico?new Date(d.prazo_especifico).toLocaleDateString('pt-BR'):'';
-    html+='<div class="card" style="'+(isAtiva?'':'opacity:.65;')+'display:flex;align-items:center;gap:9px;padding:10px 12px">'+
+    html+='<div class="card" style="'+(isAtiva?'':'opacity:.65;')+'display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer" onclick="abrirDemanda(\''+d.id+'\')">'+
       '<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';'+(isAtiva?'box-shadow:0 0 5px var(--gn);':'')+'flex-shrink:0"></div>'+
       '<div style="flex:1">'+
         '<div style="font-weight:600;font-size:13px;margin-bottom:1px">'+(d.produto_nome||'')+'</div>'+
@@ -4217,6 +4243,83 @@ async function loadDemandas(){
       '<span class="badge '+badgeClass+'">'+statusLabel+'</span>'+
     '</div>';
   });
+  listEl.innerHTML=html;
+}
+
+/* ── DETALHES DEMANDA ── */
+var _demandaAtual = null;
+async function abrirDemanda(demandaId){
+  _demandaAtual = demandaId;
+  go('sDetalhesDemanda');
+}
+async function loadDetalhesDemanda(){
+  if(!_demandaAtual) return;
+  var hdrEl=document.getElementById('detalhe-dem-header');
+  var listEl=document.getElementById('detalhe-dem-propostas');
+  var countEl=document.getElementById('detalhe-dem-count');
+  // Load demanda info
+  var { data: dem } = await _sb.from('demandas').select('*').eq('id',_demandaAtual).single();
+  if(dem && hdrEl){
+    var prazo=dem.prazo_especifico?new Date(dem.prazo_especifico).toLocaleDateString('pt-BR'):'';
+    var statusColor=dem.status==='ativa'?'var(--gn)':'var(--t3)';
+    hdrEl.innerHTML='<div style="background:linear-gradient(135deg,rgba(0,200,255,.05),rgba(0,224,154,.02));border:1px solid rgba(0,200,255,.12);border-radius:12px;padding:14px 18px">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+statusColor+';box-shadow:0 0 5px '+statusColor+'"></div>'+
+        '<h2 style="font-size:16px;font-weight:700">'+(dem.produto_nome||'Demanda')+'</h2>'+
+        '<span class="badge '+(dem.status==='ativa'?'bg':'ba')+'">'+dem.status+'</span>'+
+      '</div>'+
+      '<div style="display:flex;gap:12px;flex-wrap:wrap">'+
+        (dem.volume?'<div style="font-size:12px;color:var(--t2)"><strong>Volume:</strong> '+dem.volume+' '+(dem.unidade_volume||'')+'</div>':'')+
+        (prazo?'<div style="font-size:12px;color:var(--t2)"><strong>Prazo:</strong> '+prazo+'</div>':'')+
+        (dem.especificacao?'<div style="font-size:12px;color:var(--t2)"><strong>Obs:</strong> '+dem.especificacao+'</div>':'')+
+        (dem.preco_alvo?'<div style="font-size:12px;color:var(--ac)"><strong>Alvo:</strong> R$'+Number(dem.preco_alvo).toFixed(2)+'</div>':'')+
+        (dem.local_entrega?'<div style="font-size:12px;color:var(--t2)"><strong>Local:</strong> '+dem.local_entrega+'</div>':'')+
+      '</div>'+
+    '</div>';
+  }
+  // Load propostas
+  if(!listEl) return;
+  listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando propostas...</div>';
+  var { data: props, error } = await _sb.from('propostas').select('*, fornecedores(nome, cidade, estado, score_foodhub, sif)').eq('demanda_id',_demandaAtual).order('preco_ofertado',{ascending:true});
+  if(error){console.log('Erro propostas detalhe:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar propostas.</div>';return;}
+  if(countEl) countEl.textContent=(props?props.length:0)+' proposta'+(props&&props.length!==1?'s':'');
+  if(!props||props.length===0){
+    listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">⏳ Aguardando propostas dos fornecedores...</div>';
+    return;
+  }
+  var html='<div style="display:flex;flex-direction:column;gap:6px">';
+  props.forEach(function(p,i){
+    var f=p.fornecedores||{};
+    var sc=p.score_total||f.score_foodhub||0;
+    var scColor=sc>=85?'var(--gn)':sc>=75?'var(--ac)':'var(--am)';
+    var loc=(f.cidade||'')+(f.cidade&&f.estado?' – ':'')+(f.estado||'');
+    html+='<div class="card" style="padding:13px 15px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+        '<div style="width:36px;height:36px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">'+(f.nome||'Fornecedor')+
+            (i===0?' <span class="badge bg" style="font-size:9px">Melhor preço</span>':'')+
+          '</div>'+
+          '<div style="font-size:11px;color:var(--t2)">'+loc+(f.sif?' · '+f.sif:'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gn)">R$'+Number(p.preco_ofertado).toFixed(2)+'<span style="font-size:11px;font-weight:500;color:var(--t2)">'+(p.unidade_preco||'/kg')+'</span></div>'+
+          (sc?'<div style="font-size:10px;color:'+scColor+';font-family:var(--mono)">Score '+sc+'</div>':'')+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--t2);margin-bottom:8px">'+
+        (p.volume_ofertado?'<span>📦 '+Number(p.volume_ofertado).toLocaleString('pt-BR')+' '+(dem&&dem.unidade_volume||'kg')+'</span>':'')+
+        (p.prazo_entrega_dias?'<span>🚚 '+p.prazo_entrega_dias+' dias</span>':'')+
+        (p.condicao_pagamento?'<span>💳 '+p.condicao_pagamento+'</span>':'')+
+      '</div>'+
+      (p.nota_fornecedor?'<div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-style:italic">"'+p.nota_fornecedor+'"</div>':'')+
+      '<div style="display:flex;gap:6px;justify-content:flex-end">'+
+        '<button class="btn-ghost sm" onclick="go(\'sNeg\')" style="font-size:11px">Negociar</button>'+
+        '<button class="btn sm btn-g" onclick="go(\'sContract\')" style="font-size:11px">Aceitar</button>'+
+      '</div>'+
+    '</div>';
+  });
+  html+='</div>';
   listEl.innerHTML=html;
 }
 
