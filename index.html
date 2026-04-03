@@ -4118,25 +4118,55 @@ function closeModal(e){if(!e||e.target===document.getElementById('modal'))docume
 var _negData = null;
 async function iniciarNegociacao(propostaId, demandaId, fornecedorId, nome, preco, unidade, vol, score){
   if(!_currentUser){alert('Faça login.');return;}
-  _negData = {propostaId:propostaId,demandaId:demandaId,fornecedorId:fornecedorId,nome:nome,preco:preco,unidade:unidade,vol:vol,score:score};
-  var { error } = await _sb.from('negociacoes').insert({
+  _negData = {propostaId:propostaId,demandaId:demandaId,fornecedorId:fornecedorId,nome:nome,preco:preco,unidade:unidade,vol:vol,score:score,negociacaoId:null};
+  var { data: neg, error } = await _sb.from('negociacoes').insert({
     proposta_id: propostaId,
     demanda_id: demandaId,
     fornecedor_id: fornecedorId,
     user_id: _currentUser.id,
     status: 'em_andamento',
     preco_atual: preco
-  });
+  }).select('id').single();
   if(error){console.log('Erro negociacao:', JSON.stringify(error));alert('Erro ao iniciar negociação: '+error.message);return;}
+  if(neg) _negData.negociacaoId = neg.id;
   go('sNeg');
 }
-function buildNeg(){
-  var p=_negData||{nome:'Fornecedor',preco:'0.00',unidade:'/kg',vol:'',score:0};
+async function buildNeg(){
+  var p=_negData||{nome:'Fornecedor',preco:'0.00',unidade:'/kg',vol:'',score:0,negociacaoId:null};
   var price='R$'+Number(p.preco).toFixed(2)+(p.unidade||'/kg');
   var volTxt=p.vol?Number(p.vol).toLocaleString('pt-BR')+' kg':'';
   document.getElementById('neg-hdr').innerHTML='<div style="width:38px;height:38px;border-radius:8px;background:var(--g2);border:1px solid rgba(0,224,154,.18);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+p.nome+'</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Score '+(p.score||0)+'/100</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--gn)">'+price+'</div><div style="font-size:10px;color:var(--t2)">'+volTxt+'</div></div>';
-  var ab=(p.nome||'FH').substring(0,2).toUpperCase();
-  document.getElementById('chat-box').innerHTML='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Olá! Confirmamos disponibilidade. Preço '+price+' CIF. Como prefere prosseguir?</div><div class="msg-t">agora</div></div></div>';
+  if(p.negociacaoId){
+    await loadMensagens(p.negociacaoId, p.nome);
+  } else {
+    var ab=(p.nome||'FH').substring(0,2).toUpperCase();
+    document.getElementById('chat-box').innerHTML='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Olá! Confirmamos disponibilidade. Preço '+price+' CIF. Como prefere prosseguir?</div><div class="msg-t">agora</div></div></div>';
+  }
+}
+async function loadMensagens(negociacaoId, nomeForn){
+  var box=document.getElementById('chat-box');
+  if(!box) return;
+  box.innerHTML='<div style="text-align:center;padding:10px;color:var(--t3);font-size:11px">Carregando mensagens...</div>';
+  var { data, error } = await _sb.from('mensagens').select('*').eq('negociacao_id',negociacaoId).order('criado_em',{ascending:true});
+  if(error){console.log('Erro mensagens:', JSON.stringify(error));box.innerHTML='<div style="text-align:center;padding:10px;color:var(--rd);font-size:11px">Erro ao carregar mensagens.</div>';return;}
+  var ab=(nomeForn||'FH').substring(0,2).toUpperCase();
+  var userInit=(_currentUser&&_currentUser.email?_currentUser.email.substring(0,2).toUpperCase():'EU');
+  if(!data||data.length===0){
+    box.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Nenhuma mensagem ainda. Envie a primeira!</div>';
+    return;
+  }
+  var html='';
+  data.forEach(function(m){
+    var isMe=m.sender==='comprador';
+    var hora=m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    if(isMe){
+      html+='<div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">'+userInit+'</div><div><div class="bubble">'+m.conteudo+'</div><div class="msg-t">'+hora+'</div></div></div>';
+    } else {
+      html+='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">'+m.conteudo+'</div><div class="msg-t">'+hora+'</div></div></div>';
+    }
+  });
+  box.innerHTML=html;
+  box.scrollTop=box.scrollHeight;
 }
 async function aceitarProposta(propostaId){
   if(!confirm('Confirma aceitar esta proposta?')) return;
@@ -4145,11 +4175,23 @@ async function aceitarProposta(propostaId){
   alert('Proposta aceita com sucesso!');
   loadDetalhesDemanda();
 }
-function sendMsg(){
+async function sendMsg(){
   var inp=document.getElementById('chat-inp'),txt=inp.value.trim();if(!txt)return;
   var box=document.getElementById('chat-box');
-  box.innerHTML+='<div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">SL</div><div><div class="bubble">'+txt+'</div><div class="msg-t">agora</div></div></div>';
-  inp.value='';box.scrollTop=9999;
+  var userInit=(_currentUser&&_currentUser.email?_currentUser.email.substring(0,2).toUpperCase():'EU');
+  // Show immediately in UI
+  box.innerHTML+='<div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">'+userInit+'</div><div><div class="bubble">'+txt+'</div><div class="msg-t">agora</div></div></div>';
+  inp.value='';box.scrollTop=box.scrollHeight;
+  // Save to Supabase
+  if(_negData&&_negData.negociacaoId){
+    var { error } = await _sb.from('mensagens').insert({
+      negociacao_id: _negData.negociacaoId,
+      sender: 'comprador',
+      conteudo: txt,
+      tipo: 'texto'
+    });
+    if(error) console.log('Erro enviar msg:', JSON.stringify(error));
+  }
 }
 
 /* ── SUPPLIERS ── */
