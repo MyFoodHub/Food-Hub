@@ -4193,7 +4193,7 @@ async function loadDemandas(){
   if(!_currentUser){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Faça login para ver suas demandas.</div>';return;}
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando demandas...</div>';
   var { data, error } = await _sb.from('demandas').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
-  if(error){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
+  if(error){console.log('Erro demandas:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
   if(!data||data.length===0){
     listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma demanda encontrada. Clique em "+ Nova Demanda" para criar.</div>';
     if(countEl)countEl.textContent='0';
@@ -4226,7 +4226,8 @@ async function loadCadPropostaSelects(){
   var selFor=document.getElementById('prop-fornecedor');
   if(selDem){
     selDem.innerHTML='<option value="">Carregando...</option>';
-    var { data: dems } = await _sb.from('demandas').select('id, produto_nome, volume, unidade_volume').eq('status','ativa');
+    var { data: dems, error: errDem } = await _sb.from('demandas').select('id, produto_nome, volume, unidade_volume').eq('status','ativa');
+    if(errDem)console.log('Erro demandas select:', JSON.stringify(errDem));
     if(dems&&dems.length){
       var h='<option value="">Selecione a demanda</option>';
       dems.forEach(function(d){h+='<option value="'+d.id+'">'+(d.produto_nome||'Demanda')+' · '+(d.volume||'')+' '+(d.unidade_volume||'')+'</option>';});
@@ -4237,7 +4238,8 @@ async function loadCadPropostaSelects(){
   }
   if(selFor){
     selFor.innerHTML='<option value="">Carregando...</option>';
-    var { data: forns } = await _sb.from('fornecedores').select('id, nome, cidade, estado');
+    var { data: forns, error: errFor } = await _sb.from('fornecedores').select('id, nome, cidade, estado');
+    if(errFor)console.log('Erro fornecedores select:', JSON.stringify(errFor));
     if(forns&&forns.length){
       var h2='<option value="">Selecione o fornecedor</option>';
       forns.forEach(function(f){h2+='<option value="'+f.id+'">'+(f.nome||'')+(f.cidade?' · '+f.cidade:'')+(f.estado?' – '+f.estado:'')+'</option>';});
