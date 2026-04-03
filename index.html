@@ -3719,10 +3719,10 @@ function atuPostRender(){}
   },16);
 })();
 
-/* ── SCAN STEPS — CATÁLOGO RICO ── */
+/* ── SCAN STEPS — CATÁLOGO RICO v2 ── */
 var _SKIP_CONSERV = ['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
-var _SKIP_EMBIND  = ['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
 var _SKIP_TO_VOL  = ['Outro item'];
+var _FRANGO_NO_OSSO = ['Sassami','Coração','Moela','Pescoço','Pé de Frango'];
 
 var SCAN_CAT = [
   {i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},
@@ -3730,12 +3730,11 @@ var SCAN_CAT = [
   {i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'},
   {i:'✏️',l:'Outro item'}
 ];
-
+var SCAN_FRANGO_CORTES = ['Sassami','Filé de Peito','Coxa','Sobrecoxa','Coxa+Sobrecoxa','Coxinha da Asa','Asa inteira','Frango Inteiro','Coração','Moela','Pescoço','Pé de Frango'];
 var SCAN_CORTES = {
-  'Frango':['Sassami IQF','Filé de Peito s/osso IQF','Filé de Peito c/osso','Peito inteiro c/osso','Coxa c/osso','Coxa s/osso','Sobrecoxa c/osso','Sobrecoxa s/osso','Coxa+Sobrecoxa c/osso','Coxa+Sobrecoxa s/osso','Coxinha da Asa','Asa inteira','Frango Inteiro','Frango Corte ao Meio','Sassami temperado','Filé temperado','Coração','Moela','Pescoço','Pé de Frango'],
   'Carne Bovina':['Moída 70/30','Moída 80/20','Moída 90/10 (magra)','Patinho peça','Patinho moído','Acém peça','Acém moído','Coxão Mole','Coxão Duro','Contrafilé peça','Contrafilé bife','Alcatra peça','Alcatra bife','Fraldinha','Maminha','Picanha','Paleta','Músculo','Costela ripa','Costela minga','Dianteiro bloco','Traseiro bloco','Cupim','Ossobuco','Miúdos bovinos'],
   'Suínos':['Lombo s/osso','Lombo c/osso','Pernil c/osso','Pernil s/osso','Pernil fatiado','Costela suína','Palette s/osso','Palette c/osso','Barriga suína','Barriga sem couro','Joelho','Bisteca','Copa lombo','Filé mignon suíno','Bochecha','Toucinho','Miúdos suínos'],
-  'Ovos':['Branco bandeja 30un','Branco caixa 360un','Vermelho bandeja 30un','Vermelho caixa 360un','Caipira bandeja 30un','Caipira caixa 360un','Ovos granel saco 30kg'],
+  'Ovos':['Branco bandeja 12un','Branco bandeja 30un','Branco caixa 360un','Vermelho bandeja 12un','Vermelho bandeja 30un','Vermelho caixa 360un','Caipira bandeja 30un','Caipira caixa 360un','Ovos granel saco 30kg'],
   'Peixes':['Filé de Tilápia s/pele IQF','Filé de Tilápia c/pele IQF','Filé de Merluza IQF','Filé de Pescada IQF','Filé de Pintado IQF','Camarão 7/1 IQF','Camarão 13/15 IQF','Camarão com casca','Atum em lata 170g','Atum em lata 300g','Sardinha em lata','Bacalhau dessalgado'],
   'Muçarela':['Barra bloco cx 10kg','Barra fatiada 150g bandeja','Ralada saco 5kg','Ralada saco 1kg','Muçarela de búfala','Provolone'],
   'Calabresa':['Linguiça calabresa cx 10kg','Calabresa fatiada cx 5kg','Calabresa defumada cx 8kg','Calabresa picante','Pepperoni'],
@@ -3746,26 +3745,9 @@ var SCAN_CORTES = {
   'Farinha de Trigo':['Tipo 1 saco 25kg','Tipo 2 saco 25kg','Especial saco 25kg','Integral saco 25kg','Sem glúten saco 5kg','Farinha de rosca','Amido de milho saco 25kg','Fubá saco 25kg'],
   'Óleo de Soja':['Garrafa 900ml cx 20un','Galão 5L cx 4un','Tambor 18L','Lata 900ml cx 20un','Azeite 500ml cx 12un','Óleo de girassol','Gordura vegetal balde 15kg']
 };
-
-var SCAN_CONSERV = [
-  {i:'❄️',l:'Congelado IQF',s:'Peças individuais soltas'},
-  {i:'❄️',l:'Congelado bloco',s:'Peças prensadas em bloco'},
-  {i:'🌡️',l:'Resfriado embalado',s:'Temperatura 0°C a 4°C'},
-  {i:'🌡️',l:'Resfriado a granel',s:'Sem embalagem individual'}
-];
-var SCAN_EMBMASTER = [
-  {i:'📦',l:'cx 10kg'},{i:'📦',l:'cx 12kg'},{i:'📦',l:'cx 15kg'},{i:'📦',l:'cx 20kg'},{i:'📦',l:'cx 25kg'},
-  {i:'🧺',l:'saco 25kg'},{i:'🧺',l:'saco 50kg'},{i:'📦',l:'fardo 30kg'},{i:'🏭',l:'granel (definir na proposta)'}
-];
-var SCAN_EMBIND = [
-  {i:'🔹',l:'IQF — congelado individualmente'},{i:'🔹',l:'Pacote 500g'},{i:'🔹',l:'Pacote 1kg'},
-  {i:'🔹',l:'Pacote 3kg'},{i:'🔹',l:'Pacote 5kg'},{i:'🔹',l:'Bandeja filme stretch'},{i:'🔹',l:'A granel sem embalagem individual'}
-];
-var SCAN_VOLUME = [
-  {i:'📦',l:'Até 500 kg',s:'Reposição pontual'},{i:'📦',l:'500 – 2.000 kg',s:'Pequeno porte'},
-  {i:'📦',l:'2.001 – 10.000 kg',s:'Médio volume'},{i:'📦',l:'10.001 – 30.000 kg',s:'Alto volume'},
-  {i:'📦',l:'Acima de 30.000 kg',s:'Grande conta FCL'}
-];
+var SCAN_CONSERV_SIMPLE = [{i:'❄️',l:'Congelado'},{i:'🌡️',l:'Resfriado'}];
+var SCAN_EMB_TIPO = [{i:'🔹',l:'IQF individual'},{i:'🔹',l:'Bandeja'},{i:'🔹',l:'Pacote'},{i:'🔹',l:'A vácuo'},{i:'🔹',l:'Granel'},{i:'🔹',l:'Caixa master'}];
+var SCAN_OVOS_EMB = [{i:'🥚',l:'Bandeja 12un'},{i:'🥚',l:'Bandeja 30un'},{i:'🥚',l:'Caixa 360un'},{i:'🥚',l:'Granel saco 30kg'}];
 var SCAN_LOCAL = [
   'São Paulo – SP','Rio de Janeiro – RJ','Minas Gerais – MG','Paraná – PR','Rio Grande do Sul – RS',
   'Santa Catarina – SC','Bahia – BA','Goiás – GO','Mato Grosso – MT','Mato Grosso do Sul – MS',
@@ -3783,18 +3765,22 @@ var SCAN_PAG = [
   {i:'💳',l:'À vista · PIX',s:'Prioridade máxima dos fornecedores'},
   {i:'📄',l:'14 dias · boleto',s:'Agilidade'},
   {i:'📄',l:'28 dias · boleto',s:'Padrão foodservice'},
-  {i:'📄',l:'30 a 45 dias',s:'Grandes volumes negociados'}
+  {i:'📄',l:'30 dias · boleto'},{i:'📄',l:'45 dias · boleto'},
+  {i:'✏️',l:'Outro',s:'Digitar condição'}
 ];
 
-// Step definitions: id, title, sub, getOpts function
 var SCAN_FLOW = [
   {id:'cat',q:'Qual item você precisa?',sub:'Catálogo completo — varredura nacional em segundos.',badge:'⚡ Mesa de Oportunidades'},
   {id:'corte',q:'Qual corte ou tipo?',sub:'Selecione a especificação desejada.'},
-  {id:'conserv',q:'Conservação?',sub:'Como o produto deve ser conservado.'},
-  {id:'embmaster',q:'Embalagem master?',sub:'Embalagem de transporte.'},
-  {id:'embind',q:'Embalagem individual?',sub:'Embalagem dentro da caixa master.'},
-  {id:'volume',q:'Qual o volume necessário?',sub:'Quantidade aproximada.'},
-  {id:'local',q:'Local de entrega?',sub:'Onde os fornecedores devem entregar.'},
+  {id:'osso',q:'Com osso ou sem osso?',sub:'Selecione a opção desejada.'},
+  {id:'miudos',q:'Com miúdos?',sub:'Frango inteiro: com ou sem miúdos.'},
+  {id:'cabeca',q:'Com cabeça?',sub:'Frango inteiro: com ou sem cabeça.'},
+  {id:'conserv',q:'Congelado ou Resfriado?',sub:'Como o produto deve ser conservado.'},
+  {id:'embtipo',q:'Tipo de embalagem?',sub:'Como o produto deve ser embalado.'},
+  {id:'ovoemb',q:'Embalagem dos ovos?',sub:'Selecione o tipo de embalagem.'},
+  {id:'volume',q:'Qual o volume necessário?',sub:'Informe a quantidade aproximada.',type:'volume'},
+  {id:'local',q:'Local de entrega — Estado?',sub:'Onde os fornecedores devem entregar.'},
+  {id:'cidade',q:'Qual cidade?',sub:'Informe a cidade de entrega.',type:'cidade'},
   {id:'prazo',q:'Qual o prazo?',sub:'Quando você precisa receber?'},
   {id:'pag',q:'Condição de pagamento?',sub:'Quanto melhor o prazo, mais propostas.'},
   {id:'resumo',q:'Revise sua demanda',sub:'Toque em qualquer item para editar.',type:'resumo'},
@@ -3808,15 +3794,23 @@ var scanStep=0,timerInt=null,timerSec=0;
 
 function _buildScanSeq(){
   var cat = _scanChoices.cat || '';
+  var corte = _scanChoices.corte || '';
   var seq = ['cat'];
   if(_SKIP_TO_VOL.indexOf(cat)>=0){
-    seq.push('volume','local','prazo','pag','resumo','preco');
+    seq.push('volume','local','cidade','prazo','pag','resumo','preco');
+  } else if(cat==='Frango'){
+    seq.push('corte');
+    if(_FRANGO_NO_OSSO.indexOf(corte)<0) seq.push('osso');
+    if(corte==='Frango Inteiro'){seq.push('miudos','cabeca');}
+    seq.push('conserv','embtipo','volume','local','cidade','prazo','pag','resumo','preco');
+  } else if(cat==='Ovos'){
+    seq.push('corte','ovoemb','volume','local','cidade','prazo','pag','resumo','preco');
+  } else if(cat==='Farinha de Trigo'||cat==='Óleo de Soja'){
+    seq.push('corte','volume','local','cidade','prazo','pag','resumo','preco');
   } else {
     seq.push('corte');
-    if(_SKIP_CONSERV.indexOf(cat)<0) seq.push('conserv');
-    seq.push('embmaster');
-    if(_SKIP_EMBIND.indexOf(cat)<0) seq.push('embind');
-    seq.push('volume','local','prazo','pag','resumo','preco');
+    if(_SKIP_CONSERV.indexOf(cat)<0) seq.push('conserv','embtipo');
+    seq.push('volume','local','cidade','prazo','pag','resumo','preco');
   }
   _scanStepSeq = seq;
 }
@@ -3836,15 +3830,39 @@ function _getScanOpts(sid){
   var catIcon = '';
   SCAN_CAT.forEach(function(c){if(c.l===cat) catIcon=c.i;});
   if(sid==='cat') return SCAN_CAT;
-  if(sid==='corte') return (SCAN_CORTES[cat]||[]).map(function(c){return {i:catIcon||'📦',l:c};});
-  if(sid==='conserv') return SCAN_CONSERV;
-  if(sid==='embmaster') return SCAN_EMBMASTER;
-  if(sid==='embind') return SCAN_EMBIND;
-  if(sid==='volume') return SCAN_VOLUME;
+  if(sid==='corte'){
+    if(cat==='Frango') return SCAN_FRANGO_CORTES.map(function(c){return {i:'🍗',l:c};});
+    return (SCAN_CORTES[cat]||[]).map(function(c){return {i:catIcon||'📦',l:c};});
+  }
+  if(sid==='osso') return [{i:'🦴',l:'Com osso'},{i:'✂️',l:'Sem osso (desossado)'}];
+  if(sid==='miudos') return [{i:'✅',l:'Com miúdos'},{i:'❌',l:'Sem miúdos'}];
+  if(sid==='cabeca') return [{i:'✅',l:'Com cabeça'},{i:'❌',l:'Sem cabeça'}];
+  if(sid==='conserv') return SCAN_CONSERV_SIMPLE;
+  if(sid==='embtipo') return SCAN_EMB_TIPO;
+  if(sid==='ovoemb') return SCAN_OVOS_EMB;
   if(sid==='local') return SCAN_LOCAL.map(function(l){return {i:'📍',l:l};});
   if(sid==='prazo') return SCAN_PRAZO;
   if(sid==='pag') return SCAN_PAG;
   return [];
+}
+
+function _miniResumoHTML(){
+  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento'};
+  var filled=[];
+  _scanStepSeq.forEach(function(sid,idx){
+    if(idx>=_scanStepIdx||sid==='resumo'||sid==='preco') return;
+    var val=_scanChoices[sid]; if(!val) return;
+    filled.push({sid:sid,idx:idx,lbl:labels[sid]||sid,val:val});
+  });
+  if(!filled.length) return '';
+  var h='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--b1)">';
+  filled.forEach(function(f){
+    h+='<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--b1);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer" onclick="_scanStepIdx='+f.idx+';renderScan()">'+
+      '<span style="color:var(--t3)">'+f.lbl+':</span><span style="color:var(--t1);font-weight:600">'+f.val+'</span>'+
+      '<span style="color:var(--ac);font-size:9px">✏️</span></div>';
+  });
+  h+='</div>';
+  return h;
 }
 
 function renderScan(){
@@ -3855,6 +3873,8 @@ function renderScan(){
   document.getElementById('scan-step-lbl').textContent='Passo '+(_scanStepIdx+1)+' de '+total;
   document.getElementById('scan-pct').textContent=pct+'%';
   var h='';
+  // Mini resumo no topo
+  h+=_miniResumoHTML();
   if(step.badge){
     h+='<div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,64,96,.1);border:1px solid rgba(255,64,96,.25);border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:var(--rd);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">'+step.badge+'</div>';
   } else {
@@ -3871,9 +3891,19 @@ function renderScan(){
     h+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><span style="font-size:17px;color:var(--t2);font-weight:600">R$</span><input class="step-input" type="number" placeholder="Ex: 8.20" id="scan-val" style="flex:1;font-size:18px;font-weight:700"></div>';
     h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--gn);color:#000;margin-bottom:8px" onclick="advanceScan()">🚀 Colocar na mesa nacional →</button>';
     h+='<div style="text-align:center;font-size:11px;color:var(--ac);cursor:pointer" onclick="advanceScan()">Sem preço definido — receber todas as propostas</div>';
+  } else if(step.type==='volume'){
+    h+='<div style="display:flex;gap:8px;margin-bottom:10px">';
+    h+='<input type="number" placeholder="Ex: 10000" id="scan-vol-num" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:16px;font-weight:700;color:var(--t1);font-family:var(--mono);outline:none">';
+    h+='<select id="scan-vol-un" style="width:90px;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:13px;color:var(--t1);outline:none"><option value="kg">kg</option><option value="cx">cx</option><option value="un">un</option><option value="fardo">fardo</option></select>';
+    h+='</div>';
+    h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000" onclick="scanConfirmVolume()">Confirmar volume →</button>';
+  } else if(step.type==='cidade'){
+    h+='<input type="text" placeholder="Digite o nome da cidade..." id="scan-cidade-inp" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--t1);outline:none;box-sizing:border-box;margin-bottom:10px">';
+    h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000;margin-bottom:8px" onclick="scanConfirmCidade()">Confirmar cidade →</button>';
+    h+='<div style="text-align:center;font-size:11px;color:var(--ac);cursor:pointer" onclick="_scanChoices.cidade=\'Qualquer cidade\';advanceScan()">Qualquer cidade do estado</div>';
   } else {
     var opts = _getScanOpts(step.id);
-    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:420px;overflow-y:auto">';
+    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:380px;overflow-y:auto">';
     opts.forEach(function(o,i){
       h+='<div class="opt" onclick="clickOpt(this,'+i+')"><span style="font-size:18px;flex-shrink:0">'+o.i+'</span><div style="flex:1"><div class="opt-lbl">'+o.l+'</div>'+(o.s?'<div class="opt-sub">'+o.s+'</div>':'')+'</div><span class="arr">›</span></div>';
     });
@@ -3883,8 +3913,8 @@ function renderScan(){
 }
 
 function _buildResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Embalagem master',embind:'Embalagem individual',volume:'Volume',local:'Local de entrega',prazo:'Prazo',pag:'Pagamento'};
-  var icons = {cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',local:'📍',prazo:'⏱️',pag:'💳'};
+  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento'};
+  var icons = {cat:'🍽️',corte:'🔪',osso:'🦴',miudos:'🫀',cabeca:'🐔',conserv:'❄️',embtipo:'📦',ovoemb:'🥚',volume:'📦',local:'📍',cidade:'🏙️',prazo:'⏱️',pag:'💳'};
   var h='<div style="display:flex;flex-direction:column;gap:6px">';
   _scanStepSeq.forEach(function(sid,idx){
     if(sid==='resumo'||sid==='preco') return;
@@ -3900,18 +3930,37 @@ function _buildResumoHTML(){
   return h;
 }
 
+function scanConfirmVolume(){
+  var num=document.getElementById('scan-vol-num').value;
+  var un=document.getElementById('scan-vol-un').value;
+  if(!num){return;}
+  _scanChoices.volume=Number(num).toLocaleString('pt-BR')+' '+un;
+  advanceScan();
+}
+function scanConfirmCidade(){
+  var c=document.getElementById('scan-cidade-inp').value.trim();
+  if(!c){return;}
+  _scanChoices.cidade=c;
+  advanceScan();
+}
+
 function clickOpt(el, optIdx){
   el.style.borderColor='var(--ac)';el.style.background='var(--a3)';
   var sid = _scanStepSeq[_scanStepIdx];
   var opts = _getScanOpts(sid);
   if(opts && opts[optIdx]) _scanChoices[sid] = opts[optIdx].l;
-  // After category, rebuild sequence
-  if(sid==='cat') _buildScanSeq();
+  // After category or corte (frango), rebuild sequence
+  if(sid==='cat'||sid==='corte') _buildScanSeq();
+  // Pagamento "Outro" → prompt
+  if(sid==='pag' && opts[optIdx] && opts[optIdx].l==='Outro'){
+    var custom=prompt('Digite a condição de pagamento:');
+    if(custom) _scanChoices.pag=custom;
+    else return;
+  }
   setTimeout(function(){advanceScan();},240);
 }
 function advanceScan(){
   var sid = _scanStepSeq[_scanStepIdx];
-  // Capture price input if on preco step
   if(sid==='preco'){
     var valEl = document.getElementById('scan-val');
     _scanChoices.preco = valEl ? valEl.value : '';
@@ -3925,9 +3974,9 @@ async function launchScan(){
   var dl=new Date();dl.setHours(dl.getHours()+24);
   document.getElementById('launch-dl').textContent=dl.toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
   var c=_scanChoices;
-  var item1=c.cat||'';var item2=c.corte||'';var vol=c.volume||'';var local=c.local||'';
-  var conserv=c.conserv||'';var embM=c.embmaster||'';var embI=c.embind||'';
-  var especParts=[item2,conserv,embM,embI].filter(function(x){return x;});
+  var item1=c.cat||'';var item2=c.corte||'';var vol=c.volume||'';
+  var local=(c.local||'')+(c.cidade&&c.cidade!=='Qualquer cidade'?' · '+c.cidade:'');
+  var especParts=[item2,c.osso||'',c.miudos||'',c.cabeca||'',c.conserv||'',c.embtipo||'',c.ovoemb||''].filter(function(x){return x;});
   var espec=especParts.join(' · ');
   document.getElementById('launch-summary').innerHTML='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Resumo da Busca</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Item</div><div style="font-size:12px;font-weight:600;color:var(--rd)">⚡ '+item1+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Especificação</div><div style="font-size:12px;font-weight:600">'+espec+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Volume</div><div style="font-size:12px;font-weight:600">'+vol+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Entrega</div><div style="font-size:12px;font-weight:600">'+local+'</div></div></div>';
   if(_currentUser){
