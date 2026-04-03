@@ -4115,11 +4115,35 @@ function openModal(i){
 function closeModal(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
 
 /* ── NEG CHAT ── */
+var _negData = null;
+async function iniciarNegociacao(propostaId, demandaId, fornecedorId, nome, preco, unidade, vol, score){
+  if(!_currentUser){alert('Faça login.');return;}
+  _negData = {propostaId:propostaId,demandaId:demandaId,fornecedorId:fornecedorId,nome:nome,preco:preco,unidade:unidade,vol:vol,score:score};
+  var { error } = await _sb.from('negociacoes').insert({
+    proposta_id: propostaId,
+    demanda_id: demandaId,
+    fornecedor_id: fornecedorId,
+    user_id: _currentUser.id,
+    status: 'em_andamento',
+    preco_atual: preco
+  });
+  if(error){console.log('Erro negociacao:', JSON.stringify(error));alert('Erro ao iniciar negociação: '+error.message);return;}
+  go('sNeg');
+}
 function buildNeg(){
-  var p=PROPS[0];
-  document.getElementById('neg-hdr').innerHTML='<div style="width:38px;height:38px;border-radius:8px;background:var(--g2);border:1px solid rgba(0,224,154,.18);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+p.sup+'</div><div style="font-size:11px;color:var(--t2);margin-top:2px">'+p.sif+' · Score '+p.score+'/100</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--gn)">'+p.price+'</div><div style="font-size:10px;color:var(--t2)">'+p.vol+'</div></div>';
-  var ab=p.sup.substring(0,2).toUpperCase();
-  document.getElementById('chat-box').innerHTML='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Olá! Confirmamos '+p.vol+' de Sassami IQF. Preço '+p.price+' CIF. Como prefere prosseguir?</div><div class="msg-t">14:22</div></div></div><div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">SL</div><div><div class="bubble">Preciso do laudo de qualidade e ficha técnica antes de fechar.</div><div class="msg-t">14:35</div></div></div><div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Enviados! Laudo válido até dez/2026. Conseguimos 28 dias + boleto.</div><div class="msg-t">14:38</div></div></div>';
+  var p=_negData||{nome:'Fornecedor',preco:'0.00',unidade:'/kg',vol:'',score:0};
+  var price='R$'+Number(p.preco).toFixed(2)+(p.unidade||'/kg');
+  var volTxt=p.vol?Number(p.vol).toLocaleString('pt-BR')+' kg':'';
+  document.getElementById('neg-hdr').innerHTML='<div style="width:38px;height:38px;border-radius:8px;background:var(--g2);border:1px solid rgba(0,224,154,.18);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+p.nome+'</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Score '+(p.score||0)+'/100</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--gn)">'+price+'</div><div style="font-size:10px;color:var(--t2)">'+volTxt+'</div></div>';
+  var ab=(p.nome||'FH').substring(0,2).toUpperCase();
+  document.getElementById('chat-box').innerHTML='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Olá! Confirmamos disponibilidade. Preço '+price+' CIF. Como prefere prosseguir?</div><div class="msg-t">agora</div></div></div>';
+}
+async function aceitarProposta(propostaId){
+  if(!confirm('Confirma aceitar esta proposta?')) return;
+  var { error } = await _sb.from('propostas').update({status:'aceita'}).eq('id',propostaId);
+  if(error){console.log('Erro aceitar:', JSON.stringify(error));alert('Erro ao aceitar: '+error.message);return;}
+  alert('Proposta aceita com sucesso!');
+  loadDetalhesDemanda();
 }
 function sendMsg(){
   var inp=document.getElementById('chat-inp'),txt=inp.value.trim();if(!txt)return;
@@ -4314,8 +4338,8 @@ async function loadDetalhesDemanda(){
       '</div>'+
       (p.nota_fornecedor?'<div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-style:italic">"'+p.nota_fornecedor+'"</div>':'')+
       '<div style="display:flex;gap:6px;justify-content:flex-end">'+
-        '<button class="btn-ghost sm" onclick="go(\'sNeg\')" style="font-size:11px">Negociar</button>'+
-        '<button class="btn sm btn-g" onclick="go(\'sContract\')" style="font-size:11px">Aceitar</button>'+
+        '<button class="btn-ghost sm" onclick="event.stopPropagation();iniciarNegociacao(\''+p.id+'\',\''+p.demanda_id+'\',\''+(p.fornecedor_id||'')+'\',\''+(f.nome||'').replace(/'/g,"\\'")+'\','+Number(p.preco_ofertado).toFixed(2)+',\''+(p.unidade_preco||'/kg')+'\',\''+(p.volume_ofertado||'')+'\',\''+(f.score_foodhub||0)+'\')" style="font-size:11px">Negociar</button>'+
+        '<button class="btn sm btn-g" onclick="event.stopPropagation();aceitarProposta(\''+p.id+'\')" style="font-size:11px">Aceitar</button>'+
       '</div>'+
     '</div>';
   });
