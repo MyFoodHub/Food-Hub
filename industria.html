@@ -601,7 +601,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <button onclick="go('s-main')" style="background:transparent;border:none;color:var(--w3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px">← Dashboard</button>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--am);margin-left:12px">MINHAS OFERTAS</div>
     <div style="margin-left:auto;display:flex;gap:8px">
-      <button onclick="openModal('modal-nova-oferta')" style="border:none;border-radius:9px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000">+ Criar oferta proativa</button>
+      <button onclick="openOfertaFlow()" style="border:none;border-radius:9px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000">+ Criar oferta proativa</button>
       <button onclick="go('s-demandas')" style="background:transparent;color:var(--w2);border:1px solid var(--am3);border-radius:9px;padding:9px 16px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Demandas fora do portfólio →</button>
     </div>
   </div>
@@ -626,7 +626,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   <div style="font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:11px;display:flex;align-items:center;gap:8px">
     <div style="width:5px;height:5px;border-radius:50%;background:var(--am);animation:blink 1.4s infinite"></div>
     Suas propostas enviadas
-    <span style="margin-left:auto;font-size:10px;cursor:pointer;color:var(--am)" onclick="openModal('modal-nova-oferta')">+ Nova oferta</span>
+    <span style="margin-left:auto;font-size:10px;cursor:pointer;color:var(--am)" onclick="openOfertaFlow()">+ Nova oferta</span>
   </div>
   <div id="minhas-ofertas-list">
     <div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando suas propostas...</div>
@@ -1888,32 +1888,21 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 </div>
 
 <!-- MODAL: NOVA OFERTA -->
-<div id="modal-nova-oferta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeModal(this)">
-  <div class="modal-am">
-    <button onclick="closeModal(document.getElementById('modal-nova-oferta'))" style="position:absolute;top:12px;right:12px;background:transparent;border:none;color:var(--w3);font-size:16px;cursor:pointer">✕</button>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--am);margin-bottom:4px">CRIAR OFERTA PROATIVA</div>
-    <div style="font-size:11px;color:var(--w2);margin-bottom:14px">Sua oferta aparece na vitrine de compradores + é notificada para Finders da região</div>
-    <!-- step flow -->
-    <div class="step-flow" style="margin-bottom:14px">
-      <div class="step-item"><div class="step-circ sc-act">1</div><div class="step-lbl">Produto</div></div>
-      <div class="step-item"><div class="step-circ sc-pend">2</div><div class="step-lbl">Preço &<br>condições</div></div>
-      <div class="step-item"><div class="step-circ sc-pend">3</div><div class="step-lbl">Destino &<br>público</div></div>
-      <div class="step-item"><div class="step-circ sc-pend">4</div><div class="step-lbl">Publicar</div></div>
+<!-- MODAL: PUBLICAR OFERTA (fluxo gamificado) -->
+<div id="modal-nova-oferta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)" onclick="if(event.target===this)closeOfertaFlow()">
+  <div style="background:#0A0810;border:1px solid rgba(245,184,0,.2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(245,184,0,.1);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--am);box-shadow:0 0 6px var(--am)"></div>
+        <span style="font-family:var(--disp);font-size:14px;font-weight:800;color:var(--am);text-transform:uppercase">Publicar Oferta</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="of-step-lbl" style="font-size:10px;color:var(--w3);font-family:var(--mono)">1/10</span>
+        <button onclick="closeOfertaFlow()" style="background:transparent;border:none;color:var(--w3);font-size:16px;cursor:pointer;line-height:1">✕</button>
+      </div>
     </div>
-    <div class="mf-g2">
-      <div class="mf-field"><label>Produto</label><select><option>Frango IQF inteiro</option><option>Sassami IQF Halal</option><option>Peito Frango IQF</option><option>Coxa+Sobrecoxa IQF</option><option>Bovina Congelada CX 20kg</option></select></div>
-      <div class="mf-field"><label>Volume disponível (ton)</label><input type="number" placeholder="Ex: 200" value="200"></div>
-    </div>
-    <div class="mf-g2">
-      <div class="mf-field"><label>Preço (R$/kg)</label><input type="number" placeholder="Ex: 14.80" step="0.10" value="14.80"></div>
-      <div class="mf-field"><label>Validade da oferta</label><select><option>7 dias</option><option>15 dias</option><option>30 dias</option><option>Até esgotar</option></select></div>
-    </div>
-    <div class="mf-field"><label>Destino preferencial</label><select><option>Mercado interno · nacional</option><option>Exportação · Oriente Médio</option><option>Exportação · China</option><option>Exportação · América Latina</option><option>Exportação · África</option><option>Todos</option></select></div>
-    <div class="mf-field"><label>Imagem do produto (URL ou emoji)</label><input placeholder="Ex: URL da foto do produto" value="🐓"></div>
-    <div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.13);border-radius:7px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:var(--w2)">
-      💡 Ofertas com foto têm <strong style="color:var(--am)">3,4x mais</strong> visualizações. Adicione imagem para maximizar o reach.
-    </div>
-    <button onclick="fireToast('Oferta publicada! Chegando a 2.400 compradores agora. 🚀');closeModal(document.getElementById('modal-nova-oferta'))" style="width:100%;border:none;border-radius:10px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;cursor:pointer;background:var(--am);color:#000;text-transform:uppercase;letter-spacing:.02em">🚀 Publicar oferta agora</button>
+    <div style="height:3px;background:rgba(245,184,0,.1);flex-shrink:0"><div id="of-prog" style="height:100%;background:var(--am);border-radius:2px;width:10%;transition:width .3s"></div></div>
+    <div id="of-box" style="flex:1;overflow-y:auto;padding:18px 20px"></div>
   </div>
 </div>
 
@@ -2490,6 +2479,188 @@ function fireToast(msg){
   el.innerHTML = '🚀 ' + msg;
   c.appendChild(el);
   setTimeout(function(){el.style.transition='all .4s';el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},400);},5000);
+}
+
+/* ── OFERTA FLOW (fornecedor) ── */
+var _OFSKIP_CONSERV=['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
+var _OFSKIP_EMBIND=['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
+var _OFSKIP_TO_VOL=['Outro item'];
+
+var OF_CAT=[
+  {i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},
+  {i:'🧀',l:'Muçarela'},{i:'🌶️',l:'Calabresa'},{i:'🌭',l:'Salsicha'},{i:'🍟',l:'Batata Frita'},
+  {i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'},
+  {i:'✏️',l:'Outro item'}
+];
+var OF_CORTES={
+  'Frango':['Sassami IQF','Filé de Peito s/osso IQF','Filé de Peito c/osso','Peito inteiro c/osso','Coxa c/osso','Coxa s/osso','Sobrecoxa c/osso','Sobrecoxa s/osso','Coxa+Sobrecoxa c/osso','Coxa+Sobrecoxa s/osso','Coxinha da Asa','Asa inteira','Frango Inteiro','Frango Corte ao Meio','Sassami temperado','Filé temperado','Coração','Moela','Pescoço','Pé de Frango'],
+  'Carne Bovina':['Moída 70/30','Moída 80/20','Moída 90/10 (magra)','Patinho peça','Patinho moído','Acém peça','Acém moído','Coxão Mole','Coxão Duro','Contrafilé peça','Contrafilé bife','Alcatra peça','Alcatra bife','Fraldinha','Maminha','Picanha','Paleta','Músculo','Costela ripa','Costela minga','Dianteiro bloco','Traseiro bloco','Cupim','Ossobuco','Miúdos bovinos'],
+  'Suínos':['Lombo s/osso','Lombo c/osso','Pernil c/osso','Pernil s/osso','Pernil fatiado','Costela suína','Palette s/osso','Palette c/osso','Barriga suína','Barriga sem couro','Joelho','Bisteca','Copa lombo','Filé mignon suíno','Bochecha','Toucinho','Miúdos suínos'],
+  'Ovos':['Branco bandeja 30un','Branco caixa 360un','Vermelho bandeja 30un','Vermelho caixa 360un','Caipira bandeja 30un','Caipira caixa 360un','Ovos granel saco 30kg'],
+  'Peixes':['Filé de Tilápia s/pele IQF','Filé de Tilápia c/pele IQF','Filé de Merluza IQF','Filé de Pescada IQF','Filé de Pintado IQF','Camarão 7/1 IQF','Camarão 13/15 IQF','Camarão com casca','Atum em lata 170g','Atum em lata 300g','Sardinha em lata','Bacalhau dessalgado'],
+  'Muçarela':['Barra bloco cx 10kg','Barra fatiada 150g bandeja','Ralada saco 5kg','Ralada saco 1kg','Muçarela de búfala','Provolone'],
+  'Calabresa':['Linguiça calabresa cx 10kg','Calabresa fatiada cx 5kg','Calabresa defumada cx 8kg','Calabresa picante','Pepperoni'],
+  'Salsicha':['Viena cx 10kg','Viena pacote 1kg','Hot-dog cx 10kg','Hot-dog pacote 500g','Cocktail cx 5kg','Salsicha de frango','Frankfurt'],
+  'Batata Frita':['Palito tradicional cx 10kg','Palito fino cx 10kg','Rústica cx 10kg','Smile cx 10kg','Casquinha cx 10kg','Pré-frita ondulada cx 10kg','Batata pré-cozida','Batata bolinha'],
+  'Manteiga':['Tablete s/sal 200g cx 30un','Tablete c/sal 200g cx 30un','Tablete s/sal 500g cx','Creme de manteiga balde 15kg','Manteiga ghee'],
+  'Linguiças':['Toscana cx 10kg','Toscana pacote 1kg','Frango cx 10kg','Mista cx 10kg','Defumada cx 10kg','Blumenau cx 8kg','Calabresa cx 10kg','Linguiça aperitivo','Paio'],
+  'Farinha de Trigo':['Tipo 1 saco 25kg','Tipo 2 saco 25kg','Especial saco 25kg','Integral saco 25kg','Sem glúten saco 5kg','Farinha de rosca','Amido de milho saco 25kg','Fubá saco 25kg'],
+  'Óleo de Soja':['Garrafa 900ml cx 20un','Galão 5L cx 4un','Tambor 18L','Lata 900ml cx 20un','Azeite 500ml cx 12un','Óleo de girassol','Gordura vegetal balde 15kg']
+};
+var OF_CONSERV=[{i:'❄️',l:'Congelado IQF',s:'Peças individuais soltas'},{i:'❄️',l:'Congelado bloco',s:'Peças prensadas em bloco'},{i:'🌡️',l:'Resfriado embalado',s:'0°C a 4°C'},{i:'🌡️',l:'Resfriado a granel',s:'Sem embalagem individual'}];
+var OF_EMBM=[{i:'📦',l:'cx 10kg'},{i:'📦',l:'cx 12kg'},{i:'📦',l:'cx 15kg'},{i:'📦',l:'cx 20kg'},{i:'📦',l:'cx 25kg'},{i:'🧺',l:'saco 25kg'},{i:'🧺',l:'saco 50kg'},{i:'📦',l:'fardo 30kg'},{i:'🏭',l:'granel'}];
+var OF_EMBI=[{i:'🔹',l:'IQF — congelado individualmente'},{i:'🔹',l:'Pacote 500g'},{i:'🔹',l:'Pacote 1kg'},{i:'🔹',l:'Pacote 3kg'},{i:'🔹',l:'Pacote 5kg'},{i:'🔹',l:'Bandeja filme stretch'},{i:'🔹',l:'A granel'}];
+var OF_VOL=[{i:'📦',l:'Até 500 kg',s:'Lote pequeno'},{i:'📦',l:'500–2.000 kg',s:'Pequeno porte'},{i:'📦',l:'2.001–10.000 kg',s:'Médio volume'},{i:'📦',l:'10.001–30.000 kg',s:'Alto volume'},{i:'📦',l:'Acima de 30.000 kg',s:'Grande conta FCL'}];
+var OF_CANAL=[{i:'🍽️',l:'Food Service',s:'Restaurantes, redes, cozinhas'},{i:'🛒',l:'Revenda',s:'Varejo, atacado, distribuidores'},{i:'🏭',l:'Ambos os canais',s:'Food Service + Revenda'}];
+var OF_SEG_FS=[{i:'🍔',l:'Redes Fast Food'},{i:'🏭',l:'Cozinhas Industriais'},{i:'🍽️',l:'Food Service Geral'},{i:'🚚',l:'Distribuidores Food Service'}];
+var OF_SEG_REV=[{i:'🛒',l:'Varejo — supermercados'},{i:'📦',l:'Atacado — cash & carry'},{i:'🏪',l:'Distribuidores regionais'},{i:'🏬',l:'Centrais de compras'}];
+var OF_VALIDADE=[{i:'⚡',l:'7 dias',s:'Oferta relâmpago'},{i:'📅',l:'15 dias',s:'Padrão'},{i:'📅',l:'30 dias',s:'Estoque garantido'},{i:'♾️',l:'Até esgotar',s:'Enquanto houver estoque'}];
+
+var OF_STEPS=[
+  {id:'cat',q:'Qual produto você oferta?',sub:'Selecione a categoria do seu produto.'},
+  {id:'corte',q:'Qual corte ou tipo?',sub:'Especificação do produto.'},
+  {id:'conserv',q:'Conservação?',sub:'Como o produto é conservado.'},
+  {id:'embmaster',q:'Embalagem master?',sub:'Embalagem de transporte.'},
+  {id:'embind',q:'Embalagem individual?',sub:'Embalagem dentro da caixa master.'},
+  {id:'volume',q:'Volume disponível?',sub:'Quanto você tem para ofertar.'},
+  {id:'canal',q:'Canal alvo?',sub:'Para quem você quer vender.'},
+  {id:'segmento',q:'Segmento?',sub:'Refine o público-alvo.'},
+  {id:'validade',q:'Validade da oferta?',sub:'Por quanto tempo a oferta fica ativa.'},
+  {id:'resumo',q:'Revise sua oferta',sub:'Toque em qualquer item para editar.',type:'resumo'},
+  {id:'preco',q:'Seu preço de oferta?',sub:'Preço competitivo atrai mais negócios.',type:'input'}
+];
+
+var _ofChoices={};var _ofStepIdx=0;var _ofSeq=[];
+
+function _buildOfSeq(){
+  var cat=_ofChoices.cat||'';
+  var seq=['cat'];
+  if(_OFSKIP_TO_VOL.indexOf(cat)>=0){seq.push('volume','canal','segmento','validade','resumo','preco');}
+  else{
+    seq.push('corte');
+    if(_OFSKIP_CONSERV.indexOf(cat)<0)seq.push('conserv');
+    seq.push('embmaster');
+    if(_OFSKIP_EMBIND.indexOf(cat)<0)seq.push('embind');
+    seq.push('volume','canal','segmento','validade','resumo','preco');
+  }
+  _ofSeq=seq;
+}
+
+function openOfertaFlow(){
+  _ofChoices={};_ofStepIdx=0;_buildOfSeq();
+  document.getElementById('modal-nova-oferta').style.display='flex';
+  renderOfStep();
+}
+function closeOfertaFlow(){document.getElementById('modal-nova-oferta').style.display='none';}
+
+function _getOfStepDef(){
+  var sid=_ofSeq[_ofStepIdx];
+  for(var i=0;i<OF_STEPS.length;i++){if(OF_STEPS[i].id===sid)return OF_STEPS[i];}
+  return OF_STEPS[0];
+}
+
+function _getOfOpts(sid){
+  var cat=_ofChoices.cat||'';var catIcon='';
+  OF_CAT.forEach(function(c){if(c.l===cat)catIcon=c.i;});
+  if(sid==='cat')return OF_CAT;
+  if(sid==='corte')return(OF_CORTES[cat]||[]).map(function(c){return{i:catIcon||'📦',l:c};});
+  if(sid==='conserv')return OF_CONSERV;
+  if(sid==='embmaster')return OF_EMBM;
+  if(sid==='embind')return OF_EMBI;
+  if(sid==='volume')return OF_VOL;
+  if(sid==='canal')return OF_CANAL;
+  if(sid==='segmento'){
+    var ch=_ofChoices.canal||'';
+    if(ch==='Food Service')return OF_SEG_FS;
+    if(ch==='Revenda')return OF_SEG_REV;
+    return OF_SEG_FS.concat(OF_SEG_REV);
+  }
+  if(sid==='validade')return OF_VALIDADE;
+  return[];
+}
+
+function renderOfStep(){
+  var step=_getOfStepDef();var total=_ofSeq.length;var pct=Math.round((_ofStepIdx+1)/total*100);
+  document.getElementById('of-prog').style.width=pct+'%';
+  document.getElementById('of-step-lbl').textContent=(_ofStepIdx+1)+'/'+total;
+  var h='<div style="font-size:9px;color:var(--am);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;font-family:var(--mono)">📦 PUBLICAR OFERTA</div>';
+  h+='<div style="font-size:20px;font-weight:700;margin-bottom:6px;line-height:1.3;letter-spacing:-.02em;color:var(--w)">'+step.q+'</div>';
+  h+='<div style="font-size:12px;color:var(--w2);margin-bottom:14px;line-height:1.5">'+step.sub+'</div>';
+  if(step.type==='resumo'){
+    h+=_buildOfResumo();
+    h+='<button style="width:100%;border:none;border-radius:9px;padding:12px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--am);color:#000;margin-top:12px" onclick="ofAdvance()">Está certo! Definir preço →</button>';
+  } else if(step.type==='input'){
+    h+='<div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.13);border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--w2)">💡 Preço competitivo aparece em destaque na vitrine dos compradores.</div>';
+    h+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><span style="font-size:17px;color:var(--w2);font-weight:600">R$</span><input type="number" placeholder="Ex: 8.20" id="of-preco-val" style="flex:1;font-size:18px;font-weight:700;background:var(--s3);border:1px solid rgba(245,184,0,.25);border-radius:9px;padding:12px;color:#fff;font-family:var(--mono);outline:none"></div>';
+    h+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:14px"><span style="font-size:12px;color:var(--w3)">Unidade:</span><input type="text" value="/kg" id="of-preco-un" style="width:60px;background:var(--s3);border:1px solid var(--b1);border-radius:7px;padding:8px;color:#fff;font-size:13px;font-family:var(--mono);outline:none;text-align:center"></div>';
+    h+='<button style="width:100%;border:none;border-radius:9px;padding:13px;font-family:\'Barlow Condensed\',sans-serif;font-size:16px;font-weight:800;cursor:pointer;background:var(--am);color:#000;text-transform:uppercase" onclick="ofPublish()">🚀 Publicar oferta agora</button>';
+  } else {
+    var opts=_getOfOpts(step.id);
+    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:380px;overflow-y:auto">';
+    opts.forEach(function(o,i){
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--s2);border:1px solid var(--b1);border-radius:9px;cursor:pointer;transition:all .14s" onmouseover="this.style.borderColor=\'rgba(245,184,0,.4)\'" onmouseout="this.style.borderColor=\'var(--b1)\'" onclick="ofClickOpt(this,'+i+')"><span style="font-size:18px;flex-shrink:0">'+o.i+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px;color:var(--w)">'+o.l+'</div>'+(o.s?'<div style="font-size:10px;color:var(--w3);margin-top:1px">'+o.s+'</div>':'')+'</div><span style="color:var(--am);font-size:14px">›</span></div>';
+    });
+    h+='</div>';
+  }
+  document.getElementById('of-box').innerHTML=h;
+}
+
+function _buildOfResumo(){
+  var labels={cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. individual',volume:'Volume',canal:'Canal',segmento:'Segmento',validade:'Validade'};
+  var icons={cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',canal:'🎯',segmento:'👥',validade:'📅'};
+  var h='<div style="display:flex;flex-direction:column;gap:6px">';
+  _ofSeq.forEach(function(sid,idx){
+    if(sid==='resumo'||sid==='preco')return;
+    var val=_ofChoices[sid];if(!val)return;
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:9px;cursor:pointer" onclick="_ofStepIdx='+idx+';renderOfStep()">'+
+      '<span style="font-size:14px">'+(icons[sid]||'📋')+'</span>'+
+      '<div style="flex:1"><div style="font-size:10px;color:var(--w3)">'+(labels[sid]||sid)+'</div><div style="font-size:13px;font-weight:600;color:var(--w)">'+val+'</div></div>'+
+      '<span style="font-size:12px;color:var(--am)">✏️</span></div>';
+  });
+  h+='</div>';return h;
+}
+
+function ofClickOpt(el,optIdx){
+  el.style.borderColor='var(--am)';el.style.background='rgba(245,184,0,.08)';
+  var sid=_ofSeq[_ofStepIdx];var opts=_getOfOpts(sid);
+  if(opts&&opts[optIdx])_ofChoices[sid]=opts[optIdx].l;
+  if(sid==='cat')_buildOfSeq();
+  setTimeout(function(){ofAdvance();},220);
+}
+function ofAdvance(){
+  var sid=_ofSeq[_ofStepIdx];
+  if(sid==='preco'){
+    var v=document.getElementById('of-preco-val');_ofChoices.preco=v?v.value:'';
+    var u=document.getElementById('of-preco-un');_ofChoices.precoUn=u?u.value:'/kg';
+  }
+  if(_ofStepIdx<_ofSeq.length-1){_ofStepIdx++;renderOfStep();}
+  else{ofPublish();}
+}
+async function ofPublish(){
+  var c=_ofChoices;
+  var precoVal=document.getElementById('of-preco-val');
+  var precoUn=document.getElementById('of-preco-un');
+  var preco=precoVal?parseFloat(precoVal.value):null;
+  var unidade=precoUn?precoUn.value.trim():'/kg';
+  if(!preco||preco<=0){fireToast('Informe o preço da oferta.');return;}
+  if(!_fornecedorId){fireToast('Nenhum fornecedor vinculado ao login.');return;}
+  var especParts=[c.corte||'',c.conserv||'',c.embmaster||'',c.embind||''].filter(function(x){return x;});
+  var volNum=parseFloat((c.volume||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
+  var { error }=await _sb.from('ofertas').insert({
+    fornecedor_id:_fornecedorId,
+    nome:(c.cat||'')+' — '+(c.corte||c.cat||''),
+    descricao:especParts.join(' · ')||null,
+    preco:preco,
+    unidade_preco:unidade,
+    quantidade:volNum?Math.round(volNum):null,
+    unidade_quantidade:c.volume||null,
+    condicao_especial:(c.canal||'')+' · '+(c.segmento||''),
+    status:'ativa'
+  });
+  if(error){console.log('Erro oferta:',JSON.stringify(error));fireToast('Erro: '+error.message);return;}
+  closeOfertaFlow();
+  fireToast('Oferta publicada! Chegando a compradores agora. 🚀');
+  if(document.getElementById('s-minhas-ofertas').classList.contains('on'))loadMinhasOfertas();
 }
 </script>
 
