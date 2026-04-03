@@ -877,11 +877,11 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios · Saving</div>
-      <div class="nav-item" onclick="go('sOfertas')" style="border:1px solid rgba(155,122,255,.15);color:var(--pu)"><span class="ni">🎯</span>Canal de Ofertas <span style="font-size:8px;background:var(--pu);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">NEW</span></div>
-      <div class="nav-item" onclick="go('sWhats')" style="border:1px solid rgba(37,211,102,.15);color:#25D366"><span class="ni">💬</span>WhatsApp Pushs <span style="font-size:8px;background:#25D366;color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">4</span></div>
+      <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="ni">📊</span>Relatórios · Saving <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;border:1px solid rgba(155,122,255,.15);color:var(--pu)"><span class="ni">🎯</span>Canal de Ofertas <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;border:1px solid rgba(37,211,102,.15);color:#25D366"><span class="ni">💬</span>WhatsApp Pushs <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil · KYC</div>
-      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações <span class="badge br" style="margin-left:auto;font-size:9px;padding:1px 5px">3</span></div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="nav-sec" style="margin-top:auto"></div>
       <div class="nav-item" onclick="authLogout()" style="color:var(--rd);opacity:.7"><span class="ni">🚪</span>Sair</div>
     </div>
@@ -1325,8 +1325,8 @@ window.go = window.go || function(id) {
   <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><button class="btn-ghost sm" onclick="go('sNeg')">← Negociação</button></div>
   <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;align-items:center">
     <div style="width:100%;max-width:500px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:3px">Fechar negócio</h2>
-      <p style="color:var(--t2);font-size:12px;margin-bottom:14px">Revise e assine para confirmar</p>
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:3px">Formalização da Negociação</h2>
+      <p style="color:var(--t2);font-size:12px;margin-bottom:14px">Revise os termos e formalize o acordo</p>
       <div class="cb"><h4>Dados do pedido</h4>
         <div class="cf"><span class="cf-l">Produto</span><span class="cf-v">Frango Sassami IQF · cx 10kg</span></div>
         <div class="cf"><span class="cf-l">Fornecedor</span><span class="cf-v">Avícola Três Coroas · SIF 4412</span></div>
@@ -1347,7 +1347,7 @@ window.go = window.go || function(id) {
         <div style="font-size:13px;color:var(--t2)">Clique para assinar digitalmente</div>
         <div style="font-size:11px;color:var(--t3);margin-top:3px"><span class="user-nome-dynamic">Samanta Lima</span> · Comprador</div>
       </div>
-      <button class="btn btn-g" style="width:100%;padding:12px" onclick="go('sSuccess')">Confirmar pedido →</button>
+      <button class="btn btn-g" style="width:100%;padding:12px" onclick="go('sSuccess')">Formalizar negociação →</button>
     </div>
   </div>
 </div>
@@ -1414,9 +1414,19 @@ window.go = window.go || function(id) {
                 </select>
               </div>
             </div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1">
+                <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Prazo de entrega</label>
+                <input id="dem-prazo" type="date" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+              </div>
+              <div style="flex:1">
+                <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Preço-alvo (R$, opcional)</label>
+                <input id="dem-preco-alvo" type="number" step="0.01" placeholder="0.00" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+              </div>
+            </div>
             <div>
-              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Prazo de entrega</label>
-              <input id="dem-prazo" type="date" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
+              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Local de entrega (opcional)</label>
+              <input id="dem-local" type="text" placeholder="Ex: São Paulo – SP" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
             </div>
             <div>
               <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Observações</label>
@@ -4257,6 +4267,8 @@ async function salvarDemanda(){
   var quantidade=parseFloat(document.getElementById('dem-quantidade').value);
   var unidade=document.getElementById('dem-unidade').value;
   var prazo=document.getElementById('dem-prazo').value;
+  var precoAlvo=parseFloat(document.getElementById('dem-preco-alvo').value)||null;
+  var local=document.getElementById('dem-local').value.trim()||null;
   var obs=document.getElementById('dem-obs').value.trim();
   if(!produto){alert('Informe o produto.');return;}
   if(!quantidade||quantidade<=0){alert('Informe a quantidade.');return;}
@@ -4266,6 +4278,8 @@ async function salvarDemanda(){
     volume: quantidade,
     unidade_volume: unidade,
     prazo_especifico: prazo||null,
+    preco_alvo: precoAlvo,
+    local_entrega: local,
     especificacao: obs||null,
     status: 'ativa'
   });
@@ -4274,6 +4288,8 @@ async function salvarDemanda(){
   document.getElementById('dem-quantidade').value='';
   document.getElementById('dem-unidade').value='kg';
   document.getElementById('dem-prazo').value='';
+  document.getElementById('dem-preco-alvo').value='';
+  document.getElementById('dem-local').value='';
   document.getElementById('dem-obs').value='';
   toggleNovaDemandaForm();
   loadDemandas();
