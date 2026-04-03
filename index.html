@@ -4192,7 +4192,7 @@ async function loadDemandas(){
   if(!listEl)return;
   if(!_currentUser){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Faça login para ver suas demandas.</div>';return;}
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando demandas...</div>';
-  var { data, error } = await _sb.from('demandas').select('*').eq('user_id',_currentUser.id).order('created_at',{ascending:false});
+  var { data, error } = await _sb.from('demandas').select('*').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
   if(error){console.log('Erro demandas:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
   if(!data||data.length===0){
     listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma demanda encontrada. Clique em "+ Nova Demanda" para criar.</div>';
