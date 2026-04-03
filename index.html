@@ -3719,97 +3719,141 @@ function atuPostRender(){}
   },16);
 })();
 
-/* ── SCAN STEPS ── */
-var STEPS=[
-  // PASSO 1 — Item nervoso
-  {q:'Qual item você precisa?',
-   sub:'Itens de alta demanda — varredura nacional em segundos.',
-   badge:'⚡ Mesa de Oportunidades · Itens Nervosos',
-   opts:[
-    {i:'🥚',l:'Ovos',          s:'Bandeja, caixa, granel'},
-    {i:'🥩',l:'Carne bovina',  s:'Moída, peça, dianteiro, traseiro'},
-    {i:'🍗',l:'Frango',        s:'Sassami, peito, coxa, inteiro'},
-    {i:'🐷',l:'Carne suína',   s:'Lombo, pernil, costela, palette'},
-    {i:'🌶️',l:'Calabresa',     s:'Linguiça calabresa, defumada'},
-    {i:'🧀',l:'Muçarela',      s:'Barra, fatiada, ralada'},
-    {i:'🌭',l:'Salsicha',      s:'Viena, hot-dog, cocktail'},
-    {i:'🍟',l:'Batata frita',  s:'Palito, rústica, smile, casquinha'}
-  ]},
-  // PASSO 2 — Especificação do produto
-  {q:'Qual especificação?', sub:'Selecione o tipo e embalagem desejada.',
-   opts_fn:'getEspecOpts'},
-  // PASSO 3 — Volume
-  {q:'Qual o volume necessário?', sub:'Informe a quantidade aproximada.',
-   opts:[
-    {i:'📦',l:'Até 500 kg / un',    s:'Reposição pontual'},
-    {i:'📦',l:'500 – 2.000 kg',     s:'Pequeno porte'},
-    {i:'📦',l:'2.001 – 10.000 kg',  s:'Médio volume'},
-    {i:'📦',l:'10.001 – 30.000 kg', s:'Alto volume'},
-    {i:'📦',l:'Acima de 30.000 kg', s:'Grande conta · FCL'}
-  ]},
-  // PASSO 4 — Entrega
-  {q:'Local de entrega?', sub:'Onde os fornecedores devem entregar.',
-   opts:[
-    {i:'📍',l:'São Paulo – SP',      s:'Capital e Grande SP'},
-    {i:'📍',l:'Rio de Janeiro – RJ', s:'CD Guadalupe / Duque de Caxias'},
-    {i:'📍',l:'Campinas – SP',       s:'CD Anhanguera / Viracopos'},
-    {i:'📍',l:'Belo Horizonte – MG', s:'CD Contagem / Betim'},
-    {i:'📍',l:'Curitiba – PR',       s:'CD Araucária / CIC'},
-    {i:'📍',l:'Outro estado',        s:'Informar no campo de preço'}
-  ]},
-  // PASSO 5 — Prazo
-  {q:'Qual o prazo?', sub:'Quando você precisa receber?',
-   opts:[
-    {i:'🔴',l:'Urgente · até 48h',   s:'Estoque crítico — disparo prioritário'},
-    {i:'🟡',l:'Até 5 dias úteis',    s:'Padrão · mais propostas'},
-    {i:'🟢',l:'Até 10 dias',         s:'Planejado · melhor preço'},
-    {i:'📅',l:'Data específica',      s:'Informar no campo de preço'}
-  ]},
-  // PASSO 6 — Pagamento
-  {q:'Condição de pagamento?', sub:'Quanto melhor o prazo pago, mais propostas você recebe.',
-   opts:[
-    {i:'💳',l:'À vista · PIX',        s:'Prioridade máxima dos fornecedores'},
-    {i:'📄',l:'14 dias · boleto',     s:'Agilidade'},
-    {i:'📄',l:'28 dias · boleto',     s:'Padrão foodservice'},
-    {i:'📄',l:'30 a 45 dias',         s:'Grandes volumes negociados'}
-  ]},
-  // PASSO 7 — Preço-alvo
-  {q:'Seu preço-alvo?', type:'input', ph:'Ex: 8.20', pre:'R$',
-   note:'Você define o preço. Os fornecedores competem para bater o seu alvo — quanto mais justo, mais propostas chegam.'}
+/* ── SCAN STEPS — CATÁLOGO RICO ── */
+var _SKIP_CONSERV = ['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
+var _SKIP_EMBIND  = ['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
+var _SKIP_TO_VOL  = ['Outro item'];
+
+var SCAN_CAT = [
+  {i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},
+  {i:'🧀',l:'Muçarela'},{i:'🌶️',l:'Calabresa'},{i:'🌭',l:'Salsicha'},{i:'🍟',l:'Batata Frita'},
+  {i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'},
+  {i:'✏️',l:'Outro item'}
 ];
 
-// Especificações dinâmicas por item nervoso
-var ESPEC_OPTS = {
-  'Ovos':         [{i:'🥚',l:'Ovo branco Tipo A · caixa 30un',s:'Granel ou embalado'},{i:'🥚',l:'Ovo vermelho Tipo A · caixa 30un',s:'Caipira ou comercial'},{i:'🥚',l:'Ovo jumbo · bandeja 15un',s:'Extra grande'},{i:'🥚',l:'Ovo líquido pasteurizado · kg',s:'Industrial'}],
-  'Carne bovina': [{i:'🥩',l:'Carne moída 70/30 · cx 20kg',s:'Dianteiro'},{i:'🥩',l:'Paleta bovina · cx 20kg',s:'Export quality'},{i:'🥩',l:'Acém · cx 20kg',s:'Peça inteira'},{i:'🥩',l:'Patinho · cx 20kg',s:'Porcionado ou peça'}],
-  'Frango':       [{i:'🍗',l:'Sassami IQF · cx 10kg',s:'Congelado individual'},{i:'🍗',l:'Peito s/osso · cx 15kg',s:'IQF'},{i:'🍗',l:'Coxa+Sobrecoxa · cx 20kg',s:'IQF'},{i:'🍗',l:'Frango inteiro · cx 12kg',s:'Congelado'}],
-  'Carne suína':  [{i:'🐷',l:'Lombo suíno · cx 15kg',s:'Resfriado ou congelado'},{i:'🐷',l:'Pernil com osso · cx 18kg',s:'Congelado'},{i:'🐷',l:'Costela suína · cx 15kg',s:'Fresca ou congelada'},{i:'🐷',l:'Palette suína · cx 15kg',s:'IQF'}],
-  'Calabresa':    [{i:'🌶️',l:'Linguiça calabresa · cx 10kg',s:'Defumada grossa'},{i:'🌶️',l:'Calabresa fina · cx 10kg',s:'Tipo italiana'},{i:'🌶️',l:'Linguiça Toscana · cx 10kg',s:'Sem pimenta'},{i:'🌶️',l:'Calabresa porcionada · cx 5kg',s:'Individual 200g'}],
-  'Muçarela':     [{i:'🧀',l:'Muçarela barra 2,3kg · cx 5un',s:'Foodservice'},{i:'🧀',l:'Muçarela fatiada 150g · cx 20un',s:'Varejo'},{i:'🧀',l:'Muçarela ralada 2kg · cx 5un',s:'Pizzaria'},{i:'🧀',l:'Muçarela búfala · kg',s:'Premium'}],
-  'Salsicha':     [{i:'🌭',l:'Salsicha Viena · cx 10kg',s:'Granel ou embalada'},{i:'🌭',l:'Salsicha Hot-dog · cx 10kg',s:'Tradicional'},{i:'🌭',l:'Salsicha cocktail · cx 5kg',s:'Mini'},{i:'🌭',l:'Salsicha defumada · cx 10kg',s:'Tipo Frankfurt'}],
-  'Batata frita': [{i:'🍟',l:'Batata palito 3/8" · cx 10kg',s:'IQF'},{i:'🍟',l:'Batata rústica · cx 10kg',s:'Com casca IQF'},{i:'🍟',l:'Batata smile · cx 10kg',s:'Infantil'},{i:'🍟',l:'Batata casquinha · cx 10kg',s:'Fina e crocante'}],
+var SCAN_CORTES = {
+  'Frango':['Sassami IQF','Filé de Peito s/osso IQF','Filé de Peito c/osso','Peito inteiro c/osso','Coxa c/osso','Coxa s/osso','Sobrecoxa c/osso','Sobrecoxa s/osso','Coxa+Sobrecoxa c/osso','Coxa+Sobrecoxa s/osso','Coxinha da Asa','Asa inteira','Frango Inteiro','Frango Corte ao Meio','Sassami temperado','Filé temperado','Coração','Moela','Pescoço','Pé de Frango'],
+  'Carne Bovina':['Moída 70/30','Moída 80/20','Moída 90/10 (magra)','Patinho peça','Patinho moído','Acém peça','Acém moído','Coxão Mole','Coxão Duro','Contrafilé peça','Contrafilé bife','Alcatra peça','Alcatra bife','Fraldinha','Maminha','Picanha','Paleta','Músculo','Costela ripa','Costela minga','Dianteiro bloco','Traseiro bloco','Cupim','Ossobuco','Miúdos bovinos'],
+  'Suínos':['Lombo s/osso','Lombo c/osso','Pernil c/osso','Pernil s/osso','Pernil fatiado','Costela suína','Palette s/osso','Palette c/osso','Barriga suína','Barriga sem couro','Joelho','Bisteca','Copa lombo','Filé mignon suíno','Bochecha','Toucinho','Miúdos suínos'],
+  'Ovos':['Branco bandeja 30un','Branco caixa 360un','Vermelho bandeja 30un','Vermelho caixa 360un','Caipira bandeja 30un','Caipira caixa 360un','Ovos granel saco 30kg'],
+  'Peixes':['Filé de Tilápia s/pele IQF','Filé de Tilápia c/pele IQF','Filé de Merluza IQF','Filé de Pescada IQF','Filé de Pintado IQF','Camarão 7/1 IQF','Camarão 13/15 IQF','Camarão com casca','Atum em lata 170g','Atum em lata 300g','Sardinha em lata','Bacalhau dessalgado'],
+  'Muçarela':['Barra bloco cx 10kg','Barra fatiada 150g bandeja','Ralada saco 5kg','Ralada saco 1kg','Muçarela de búfala','Provolone'],
+  'Calabresa':['Linguiça calabresa cx 10kg','Calabresa fatiada cx 5kg','Calabresa defumada cx 8kg','Calabresa picante','Pepperoni'],
+  'Salsicha':['Viena cx 10kg','Viena pacote 1kg','Hot-dog cx 10kg','Hot-dog pacote 500g','Cocktail cx 5kg','Salsicha de frango','Frankfurt'],
+  'Batata Frita':['Palito tradicional cx 10kg','Palito fino cx 10kg','Rústica cx 10kg','Smile cx 10kg','Casquinha cx 10kg','Pré-frita ondulada cx 10kg','Batata pré-cozida','Batata bolinha'],
+  'Manteiga':['Tablete s/sal 200g cx 30un','Tablete c/sal 200g cx 30un','Tablete s/sal 500g cx','Creme de manteiga balde 15kg','Manteiga ghee'],
+  'Linguiças':['Toscana cx 10kg','Toscana pacote 1kg','Frango cx 10kg','Mista cx 10kg','Defumada cx 10kg','Blumenau cx 8kg','Calabresa cx 10kg','Linguiça aperitivo','Paio'],
+  'Farinha de Trigo':['Tipo 1 saco 25kg','Tipo 2 saco 25kg','Especial saco 25kg','Integral saco 25kg','Sem glúten saco 5kg','Farinha de rosca','Amido de milho saco 25kg','Fubá saco 25kg'],
+  'Óleo de Soja':['Garrafa 900ml cx 20un','Galão 5L cx 4un','Tambor 18L','Lata 900ml cx 20un','Azeite 500ml cx 12un','Óleo de girassol','Gordura vegetal balde 15kg']
 };
 
-function getEspecOpts() {
-  // Returns opts for step 2 based on step 1 selection
-  var chosen = _scanChoices[0] || 'Frango';
-  return ESPEC_OPTS[chosen] || ESPEC_OPTS['Frango'];
-}
+var SCAN_CONSERV = [
+  {i:'❄️',l:'Congelado IQF',s:'Peças individuais soltas'},
+  {i:'❄️',l:'Congelado bloco',s:'Peças prensadas em bloco'},
+  {i:'🌡️',l:'Resfriado embalado',s:'Temperatura 0°C a 4°C'},
+  {i:'🌡️',l:'Resfriado a granel',s:'Sem embalagem individual'}
+];
+var SCAN_EMBMASTER = [
+  {i:'📦',l:'cx 10kg'},{i:'📦',l:'cx 12kg'},{i:'📦',l:'cx 15kg'},{i:'📦',l:'cx 20kg'},{i:'📦',l:'cx 25kg'},
+  {i:'🧺',l:'saco 25kg'},{i:'🧺',l:'saco 50kg'},{i:'📦',l:'fardo 30kg'},{i:'🏭',l:'granel (definir na proposta)'}
+];
+var SCAN_EMBIND = [
+  {i:'🔹',l:'IQF — congelado individualmente'},{i:'🔹',l:'Pacote 500g'},{i:'🔹',l:'Pacote 1kg'},
+  {i:'🔹',l:'Pacote 3kg'},{i:'🔹',l:'Pacote 5kg'},{i:'🔹',l:'Bandeja filme stretch'},{i:'🔹',l:'A granel sem embalagem individual'}
+];
+var SCAN_VOLUME = [
+  {i:'📦',l:'Até 500 kg',s:'Reposição pontual'},{i:'📦',l:'500 – 2.000 kg',s:'Pequeno porte'},
+  {i:'📦',l:'2.001 – 10.000 kg',s:'Médio volume'},{i:'📦',l:'10.001 – 30.000 kg',s:'Alto volume'},
+  {i:'📦',l:'Acima de 30.000 kg',s:'Grande conta FCL'}
+];
+var SCAN_LOCAL = [
+  'São Paulo – SP','Rio de Janeiro – RJ','Minas Gerais – MG','Paraná – PR','Rio Grande do Sul – RS',
+  'Santa Catarina – SC','Bahia – BA','Goiás – GO','Mato Grosso – MT','Mato Grosso do Sul – MS',
+  'Pará – PA','Ceará – CE','Pernambuco – PE','Maranhão – MA','Amazonas – AM','Espírito Santo – ES',
+  'Rio Grande do Norte – RN','Alagoas – AL','Piauí – PI','Paraíba – PB','Sergipe – SE',
+  'Rondônia – RO','Tocantins – TO','Acre – AC','Amapá – AP','Roraima – RR','Distrito Federal – DF'
+];
+var SCAN_PRAZO = [
+  {i:'🔴',l:'Urgente · até 48h',s:'Estoque crítico, disparo prioritário'},
+  {i:'🟡',l:'Até 5 dias úteis',s:'Padrão, mais propostas'},
+  {i:'🟢',l:'Até 10 dias',s:'Planejado, melhor preço'},
+  {i:'📅',l:'Data específica',s:'Informar na proposta'}
+];
+var SCAN_PAG = [
+  {i:'💳',l:'À vista · PIX',s:'Prioridade máxima dos fornecedores'},
+  {i:'📄',l:'14 dias · boleto',s:'Agilidade'},
+  {i:'📄',l:'28 dias · boleto',s:'Padrão foodservice'},
+  {i:'📄',l:'30 a 45 dias',s:'Grandes volumes negociados'}
+];
 
-var _scanChoices = []; // track choices per step for dynamic opts
+// Step definitions: id, title, sub, getOpts function
+var SCAN_FLOW = [
+  {id:'cat',q:'Qual item você precisa?',sub:'Catálogo completo — varredura nacional em segundos.',badge:'⚡ Mesa de Oportunidades'},
+  {id:'corte',q:'Qual corte ou tipo?',sub:'Selecione a especificação desejada.'},
+  {id:'conserv',q:'Conservação?',sub:'Como o produto deve ser conservado.'},
+  {id:'embmaster',q:'Embalagem master?',sub:'Embalagem de transporte.'},
+  {id:'embind',q:'Embalagem individual?',sub:'Embalagem dentro da caixa master.'},
+  {id:'volume',q:'Qual o volume necessário?',sub:'Quantidade aproximada.'},
+  {id:'local',q:'Local de entrega?',sub:'Onde os fornecedores devem entregar.'},
+  {id:'prazo',q:'Qual o prazo?',sub:'Quando você precisa receber?'},
+  {id:'pag',q:'Condição de pagamento?',sub:'Quanto melhor o prazo, mais propostas.'},
+  {id:'resumo',q:'Revise sua demanda',sub:'Toque em qualquer item para editar.',type:'resumo'},
+  {id:'preco',q:'Seu preço-alvo?',sub:'Você define o preço. Os fornecedores competem para bater o seu alvo.',type:'input'}
+];
 
+var _scanChoices = {};
+var _scanStepIdx = 0;
+var _scanStepSeq = [];
 var scanStep=0,timerInt=null,timerSec=0;
 
-function initScan(){scanStep=0;_scanChoices=[];startTimer();renderScan();}
+function _buildScanSeq(){
+  var cat = _scanChoices.cat || '';
+  var seq = ['cat'];
+  if(_SKIP_TO_VOL.indexOf(cat)>=0){
+    seq.push('volume','local','prazo','pag','resumo','preco');
+  } else {
+    seq.push('corte');
+    if(_SKIP_CONSERV.indexOf(cat)<0) seq.push('conserv');
+    seq.push('embmaster');
+    if(_SKIP_EMBIND.indexOf(cat)<0) seq.push('embind');
+    seq.push('volume','local','prazo','pag','resumo','preco');
+  }
+  _scanStepSeq = seq;
+}
+
+function initScan(){_scanChoices={};_scanStepIdx=0;_buildScanSeq();startTimer();renderScan();}
 function startTimer(){timerSec=0;clearInterval(timerInt);timerInt=setInterval(function(){timerSec++;var m=String(Math.floor(timerSec/60)).padStart(2,'0'),s=String(timerSec%60).padStart(2,'0');var el=document.getElementById('timer');if(el)el.textContent=m+':'+s;},1000);}
 function stopTimer(){clearInterval(timerInt);}
 
+function _getScanStepDef(){
+  var sid = _scanStepSeq[_scanStepIdx];
+  for(var i=0;i<SCAN_FLOW.length;i++){if(SCAN_FLOW[i].id===sid)return SCAN_FLOW[i];}
+  return SCAN_FLOW[0];
+}
+
+function _getScanOpts(sid){
+  var cat = _scanChoices.cat||'';
+  var catIcon = '';
+  SCAN_CAT.forEach(function(c){if(c.l===cat) catIcon=c.i;});
+  if(sid==='cat') return SCAN_CAT;
+  if(sid==='corte') return (SCAN_CORTES[cat]||[]).map(function(c){return {i:catIcon||'📦',l:c};});
+  if(sid==='conserv') return SCAN_CONSERV;
+  if(sid==='embmaster') return SCAN_EMBMASTER;
+  if(sid==='embind') return SCAN_EMBIND;
+  if(sid==='volume') return SCAN_VOLUME;
+  if(sid==='local') return SCAN_LOCAL.map(function(l){return {i:'📍',l:l};});
+  if(sid==='prazo') return SCAN_PRAZO;
+  if(sid==='pag') return SCAN_PAG;
+  return [];
+}
+
 function renderScan(){
-  var step=STEPS[scanStep],total=STEPS.length,pct=Math.round((scanStep+1)/total*100);
+  var step = _getScanStepDef();
+  var total = _scanStepSeq.length;
+  var pct = Math.round((_scanStepIdx+1)/total*100);
   document.getElementById('scan-prog').style.width=pct+'%';
-  document.getElementById('scan-step-lbl').textContent='Passo '+(scanStep+1)+' de '+total;
+  document.getElementById('scan-step-lbl').textContent='Passo '+(_scanStepIdx+1)+' de '+total;
   document.getElementById('scan-pct').textContent=pct+'%';
-  // Badge (passo 1 shows "Itens Nervosos" badge)
   var h='';
   if(step.badge){
     h+='<div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,64,96,.1);border:1px solid rgba(255,64,96,.25);border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:var(--rd);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">'+step.badge+'</div>';
@@ -3817,20 +3861,19 @@ function renderScan(){
     h+='<div style="font-size:9px;color:var(--ac);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700">📡 BUSCA DE OPORTUNIDADES</div>';
   }
   h+='<div style="font-size:20px;font-weight:700;margin-bottom:6px;line-height:1.3;letter-spacing:-.02em">'+step.q+'</div>';
-  if(step.sub){
-    h+='<div style="font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.5">'+step.sub+'</div>';
-  } else { h+='<div style="margin-bottom:14px"></div>'; }
-  if(step.type==='input'){
-    h+='<div style="background:var(--bg3);border:1px solid rgba(0,200,255,.18);border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--t1)">💡 '+step.note+'</div>';
-    h+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:14px"><span style="font-size:17px;color:var(--t2);font-weight:600">'+step.pre+'</span><input class="step-input" type="number" placeholder="'+step.ph+'" id="scan-val" style="flex:1;font-size:18px;font-weight:700"></div>';
-    h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--gn);color:#000" onclick="advanceScan()">📡 Colocar na mesa nacional →</button>';
+  h+='<div style="font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.5">'+(step.sub||'')+'</div>';
+
+  if(step.type==='resumo'){
+    h+=_buildResumoHTML();
+    h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000;margin-top:12px" onclick="advanceScan()">Está certo! Definir preço-alvo →</button>';
+  } else if(step.type==='input'){
+    h+='<div style="background:var(--bg3);border:1px solid rgba(0,200,255,.18);border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--t1)">💡 Você define o preço. Os fornecedores competem para bater o seu alvo.</div>';
+    h+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><span style="font-size:17px;color:var(--t2);font-weight:600">R$</span><input class="step-input" type="number" placeholder="Ex: 8.20" id="scan-val" style="flex:1;font-size:18px;font-weight:700"></div>';
+    h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--gn);color:#000;margin-bottom:8px" onclick="advanceScan()">🚀 Colocar na mesa nacional →</button>';
+    h+='<div style="text-align:center;font-size:11px;color:var(--ac);cursor:pointer" onclick="advanceScan()">Sem preço definido — receber todas as propostas</div>';
   } else {
-    // Get opts — either static or dynamic via fn
-    var opts = step.opts;
-    if(step.opts_fn && typeof window[step.opts_fn] === 'function'){
-      opts = window[step.opts_fn]();
-    }
-    h+='<div style="display:flex;flex-direction:column;gap:7px">';
+    var opts = _getScanOpts(step.id);
+    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:420px;overflow-y:auto">';
     opts.forEach(function(o,i){
       h+='<div class="opt" onclick="clickOpt(this,'+i+')"><span style="font-size:18px;flex-shrink:0">'+o.i+'</span><div style="flex:1"><div class="opt-lbl">'+o.l+'</div>'+(o.s?'<div class="opt-sub">'+o.s+'</div>':'')+'</div><span class="arr">›</span></div>';
     });
@@ -3839,18 +3882,41 @@ function renderScan(){
   document.getElementById('scan-box').innerHTML=h;
 }
 
+function _buildResumoHTML(){
+  var labels = {cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Embalagem master',embind:'Embalagem individual',volume:'Volume',local:'Local de entrega',prazo:'Prazo',pag:'Pagamento'};
+  var icons = {cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',local:'📍',prazo:'⏱️',pag:'💳'};
+  var h='<div style="display:flex;flex-direction:column;gap:6px">';
+  _scanStepSeq.forEach(function(sid,idx){
+    if(sid==='resumo'||sid==='preco') return;
+    var val = _scanChoices[sid];
+    if(!val) return;
+    h+='<div class="card" style="display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer" onclick="_scanStepIdx='+idx+';renderScan()">'+
+      '<span style="font-size:14px">'+(icons[sid]||'📋')+'</span>'+
+      '<div style="flex:1"><div style="font-size:10px;color:var(--t3)">'+(labels[sid]||sid)+'</div><div style="font-size:13px;font-weight:600">'+val+'</div></div>'+
+      '<span style="font-size:12px;color:var(--ac)">✏️</span>'+
+    '</div>';
+  });
+  h+='</div>';
+  return h;
+}
+
 function clickOpt(el, optIdx){
   el.style.borderColor='var(--ac)';el.style.background='var(--a3)';
-  // Record the chosen label for this step (used by dynamic spec step)
-  var opts = STEPS[scanStep].opts;
-  if(STEPS[scanStep].opts_fn && typeof window[STEPS[scanStep].opts_fn]==='function'){
-    opts = window[STEPS[scanStep].opts_fn]();
-  }
-  if(opts && opts[optIdx]) _scanChoices[scanStep] = opts[optIdx].l;
+  var sid = _scanStepSeq[_scanStepIdx];
+  var opts = _getScanOpts(sid);
+  if(opts && opts[optIdx]) _scanChoices[sid] = opts[optIdx].l;
+  // After category, rebuild sequence
+  if(sid==='cat') _buildScanSeq();
   setTimeout(function(){advanceScan();},240);
 }
 function advanceScan(){
-  if(scanStep<STEPS.length-1){scanStep++;renderScan();}
+  var sid = _scanStepSeq[_scanStepIdx];
+  // Capture price input if on preco step
+  if(sid==='preco'){
+    var valEl = document.getElementById('scan-val');
+    _scanChoices.preco = valEl ? valEl.value : '';
+  }
+  if(_scanStepIdx<_scanStepSeq.length-1){_scanStepIdx++;renderScan();}
   else{stopTimer();launchScan();}
 }
 async function launchScan(){
@@ -3858,24 +3924,25 @@ async function launchScan(){
   document.getElementById('launch-ref').textContent=ref;
   var dl=new Date();dl.setHours(dl.getHours()+24);
   document.getElementById('launch-dl').textContent=dl.toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
-  var item1 = _scanChoices[0]||'Frango';
-  var item2 = _scanChoices[1]||'Sassami IQF · cx 10kg';
-  var vol   = _scanChoices[2]||'10.000 – 30.000 kg';
-  var local = _scanChoices[3]||'São Paulo – SP';
-  var preco = document.getElementById('scan-val') ? (document.getElementById('scan-val').value||'') : '';
-  document.getElementById('launch-summary').innerHTML='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Resumo da Busca</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Item</div><div style="font-size:12px;font-weight:600;color:var(--rd)">⚡ '+item1+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Especificação</div><div style="font-size:12px;font-weight:600">'+item2+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Volume</div><div style="font-size:12px;font-weight:600">'+vol+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Entrega</div><div style="font-size:12px;font-weight:600">'+local+'</div></div></div>';
-  // Save demanda to Supabase
+  var c=_scanChoices;
+  var item1=c.cat||'';var item2=c.corte||'';var vol=c.volume||'';var local=c.local||'';
+  var conserv=c.conserv||'';var embM=c.embmaster||'';var embI=c.embind||'';
+  var especParts=[item2,conserv,embM,embI].filter(function(x){return x;});
+  var espec=especParts.join(' · ');
+  document.getElementById('launch-summary').innerHTML='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Resumo da Busca</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Item</div><div style="font-size:12px;font-weight:600;color:var(--rd)">⚡ '+item1+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Especificação</div><div style="font-size:12px;font-weight:600">'+espec+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Volume</div><div style="font-size:12px;font-weight:600">'+vol+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Entrega</div><div style="font-size:12px;font-weight:600">'+local+'</div></div></div>';
   if(_currentUser){
     var volNum=parseFloat((vol||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
-    var precoNum=parseFloat((preco||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
+    var precoRaw=c.preco||'';
+    var precoNum=parseFloat((precoRaw||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
     var { error } = await _sb.from('demandas').insert({
       user_id: _currentUser.id,
       produto_nome: item1,
-      especificacao: item2,
+      especificacao: espec||null,
       volume: volNum,
       unidade_volume: 'kg',
-      local_entrega: local,
+      local_entrega: local||null,
       preco_alvo: precoNum,
+      condicao_pagamento: c.pag||null,
       status: 'ativa'
     });
     if(error) console.log('Erro salvar demanda scan:', JSON.stringify(error));
