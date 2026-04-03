@@ -2260,6 +2260,7 @@ async function initIndApp(){
 })();
 
 // ── DEMANDAS DO MERCADO ──
+var _demandasMercado=[];
 async function loadDemandasMercado(){
   var el = document.getElementById('demandas-mercado-list');
   if(!el) return;
@@ -2267,21 +2268,24 @@ async function loadDemandasMercado(){
   var { data, error } = await _sb.from('demandas').select('*, profiles(nome, empresa)').eq('status','ativa').order('criado_em',{ascending:false});
   if(error){console.log('Erro demandas mercado:', JSON.stringify(error));el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
   if(!data||data.length===0){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma demanda ativa no momento.</div>';return;}
-  var html='<table class="tbl"><thead><tr><th>Produto</th><th>Volume</th><th>Preço-alvo</th><th>Região</th><th>Prazo</th><th></th></tr></thead><tbody>';
-  data.forEach(function(d){
+  _demandasMercado = data;
+  var html='<table class="tbl"><thead><tr><th>Produto</th><th>Volume</th><th>Preço-alvo</th><th>Região</th><th>Prazo</th><th>Status</th><th></th></tr></thead><tbody>';
+  data.forEach(function(d, idx){
     var produto = d.produto_nome||'—';
     var espec = d.especificacao||'';
     var vol = d.volume ? Number(d.volume).toLocaleString('pt-BR')+(d.unidade_volume||'kg') : '—';
     var alvo = d.preco_alvo ? 'R$'+Number(d.preco_alvo).toFixed(2)+(d.unidade_volume==='kg'?'/kg':'') : '—';
     var regiao = d.local_entrega||'—';
     var prazo = d.prazo_especifico ? new Date(d.prazo_especifico).toLocaleDateString('pt-BR') : (d.prazo||'—');
+    var badge = d.preco_alvo ? '<span class="badge b-go">🟢 Match</span>' : '<span class="badge b-ic">⚪ Oportunidade</span>';
     html+='<tr>'+
       '<td><strong>'+produto+'</strong>'+(espec?'<br><span style="font-size:11px;color:var(--w3)">'+espec+'</span>':'')+'</td>'+
       '<td style="font-family:var(--mono)">'+vol+'</td>'+
       '<td style="font-family:var(--mono);color:var(--go)">'+alvo+'</td>'+
       '<td>'+regiao+'</td>'+
       '<td style="font-family:var(--mono)">'+prazo+'</td>'+
-      '<td><button class="btn btn-am sm" onclick="openResponder(\''+d.id+'\',\''+produto.replace(/'/g,"\\'")+'\',\''+vol+'\',\''+alvo+'\')">Responder →</button></td>'+
+      '<td>'+badge+'</td>'+
+      '<td><button class="btn btn-am sm" onclick="openResponder('+idx+')">Responder →</button></td>'+
     '</tr>';
   });
   html+='</tbody></table>';
@@ -2405,47 +2409,203 @@ function updatePricingSim(){
 }
 
 /* ── RESPONDER MODAL ── */
-var _respDemandaId = null;
-function openResponder(demandaId, produto, volume, alvo){
-  _respDemandaId = demandaId;
-  document.getElementById('resp-produto').textContent = produto||'—';
-  document.getElementById('resp-volume').textContent = volume||'—';
-  document.getElementById('resp-alvo').textContent = alvo||'—';
-  document.getElementById('resp-preco').value = '';
-  document.getElementById('resp-unidade').value = '/kg';
-  document.getElementById('resp-vol-ofertado').value = '';
-  document.getElementById('resp-prazo-dias').value = '';
-  document.getElementById('resp-pagamento').value = '';
-  document.getElementById('resp-nota').value = '';
-  var msgEl = document.getElementById('resp-msg');
-  if(msgEl) msgEl.style.display='none';
+var _respDemanda = null;
+var _respSpecOk = null;
+var _respReqOk = null;
+function openResponder(idx){
+  _respDemanda = _demandasMercado[idx];
+  _respSpecOk = null;
+  _respReqOk = null;
+  if(!_respDemanda) return;
+  var d = _respDemanda;
+  var produto = d.produto_nome||'—';
+  var espec = d.especificacao||'';
+  var vol = d.volume ? Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg') : '—';
+  var local = d.local_entrega||'—';
+  var prazo = d.prazo_especifico ? new Date(d.prazo_especifico).toLocaleDateString('pt-BR') : (d.prazo||'—');
+  var pag = d.condicao_pagamento||'—';
+  var alvo = d.preco_alvo ? 'R$'+Number(d.preco_alvo).toFixed(2) : '';
+
+  // Build modal content dynamically
+  var box = document.getElementById('resp-body');
+  var h = '';
+
+  // BLOCO 1 — Demanda header (read-only)
+  h+='<div style="background:rgba(245,184,0,.08);border:1px solid rgba(245,184,0,.2);border-radius:10px;padding:14px;margin-bottom:14px">';
+  h+='<div style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-family:var(--mono)">📋 O que o comprador precisa:</div>';
+  h+='<div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">'+produto+'</div>';
+  if(espec) h+='<div style="font-size:12px;color:var(--w2);margin-bottom:6px">'+espec+'</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--w3)">';
+  h+='<span>📦 '+vol+'</span>';
+  h+='<span>📍 '+local+'</span>';
+  h+='<span>⏱️ '+prazo+'</span>';
+  h+='<span>💳 '+pag+'</span>';
+  if(alvo) h+='<span style="color:var(--am);font-weight:700">🎯 Alvo: '+alvo+'</span>';
+  h+='</div></div>';
+
+  // BLOCO 2 — Confirmação de especificações
+  h+='<div style="margin-bottom:14px">';
+  h+='<div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-family:var(--mono)">Confirmação de especificações</div>';
+  var specText = produto + (espec ? ' · '+espec : '');
+  h+='<div style="font-size:13px;color:var(--w);margin-bottom:8px;font-weight:600">'+specText+'</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap" id="resp-spec-btns">';
+  h+='<button onclick="respSetSpec(\'exato\')" style="padding:7px 14px;border-radius:7px;border:1px solid rgba(0,229,160,.3);background:rgba(0,229,160,.08);color:var(--go);font-size:12px;font-weight:600;cursor:pointer;font-family:sans-serif">✅ Tenho exatamente</button>';
+  h+='<button onclick="respSetSpec(\'similar\')" style="padding:7px 14px;border-radius:7px;border:1px solid rgba(245,184,0,.3);background:rgba(245,184,0,.08);color:var(--am);font-size:12px;font-weight:600;cursor:pointer;font-family:sans-serif">⚠️ Tenho similar</button>';
+  h+='<button onclick="respSetSpec(\'nao\')" style="padding:7px 14px;border-radius:7px;border:1px solid rgba(255,77,106,.3);background:rgba(255,77,106,.08);color:var(--rd);font-size:12px;font-weight:600;cursor:pointer;font-family:sans-serif">❌ Não tenho</button>';
+  h+='</div>';
+  h+='<div id="resp-spec-extra" style="display:none;margin-top:8px"></div>';
+  h+='</div>';
+
+  // BLOCO 3 — Validação de observações (if demanda has especificacao with obs)
+  var obsText = '';
+  if(espec && espec.indexOf('Obs:')>=0) obsText = espec.split('Obs:')[1].trim();
+  if(obsText){
+    h+='<div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.15);border-radius:10px;padding:12px;margin-bottom:14px">';
+    h+='<div style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">⚠️ Requisitos específicos do comprador:</div>';
+    h+='<div style="font-size:12px;color:var(--w);margin-bottom:8px">'+obsText+'</div>';
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap" id="resp-req-btns">';
+    h+='<button onclick="respSetReq(\'ok\')" style="padding:7px 12px;border-radius:7px;border:1px solid rgba(0,229,160,.3);background:rgba(0,229,160,.08);color:var(--go);font-size:11px;font-weight:600;cursor:pointer;font-family:sans-serif">✅ Atendo todos</button>';
+    h+='<button onclick="respSetReq(\'parcial\')" style="padding:7px 12px;border-radius:7px;border:1px solid rgba(245,184,0,.3);background:rgba(245,184,0,.08);color:var(--am);font-size:11px;font-weight:600;cursor:pointer;font-family:sans-serif">⚠️ Parcialmente</button>';
+    h+='<button onclick="respSetReq(\'nao\')" style="padding:7px 12px;border-radius:7px;border:1px solid rgba(255,77,106,.3);background:rgba(255,77,106,.08);color:var(--rd);font-size:11px;font-weight:600;cursor:pointer;font-family:sans-serif">❌ Não atendo</button>';
+    h+='</div>';
+    h+='<div id="resp-req-extra" style="display:none;margin-top:8px"></div>';
+    h+='</div>';
+  }
+
+  // BLOCO 4 — Proposta form
+  h+='<div style="margin-bottom:14px">';
+  h+='<div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;font-family:var(--mono)">Sua proposta</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:10px">';
+  h+='<div style="display:flex;gap:10px"><div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Volume que pode fornecer</div><div style="display:flex;gap:6px"><input id="resp-vol" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">'+(d.unidade_volume||'kg')+'</span></div></div>';
+  h+='<div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo de entrega</div><div style="display:flex;gap:6px"><input id="resp-prazo" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">dias úteis</span></div></div></div>';
+  h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Condição de pagamento</div><select id="resp-pag" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;outline:none"><option value="">Selecione</option><option value="À vista PIX">À vista · PIX</option><option value="14 dias boleto">14 dias · boleto</option><option value="28 dias boleto">28 dias · boleto</option><option value="30 dias boleto">30 dias · boleto</option><option value="45 dias boleto">45 dias · boleto</option><option value="Outro">Outro</option></select></div>';
+  // Price with comparison
+  h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Seu preço *</div><div style="display:flex;gap:6px;align-items:center"><span style="font-size:14px;color:var(--w3)">R$</span><input id="resp-preco" type="number" step="0.01" placeholder="0.00" oninput="respUpdatePreco()" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:16px;font-weight:700;color:#fff;font-family:var(--mono);outline:none"><span style="font-size:12px;color:var(--w3)">'+(d.unidade_volume==='kg'?'/kg':'/un')+'</span></div>';
+  if(alvo) h+='<div id="resp-preco-cmp" style="margin-top:4px;font-size:11px;font-family:var(--mono)">Alvo do comprador: <strong style="color:var(--am)">'+alvo+'</strong></div>';
+  h+='</div>';
+  h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Nota adicional (opcional)</div><textarea id="resp-nota" rows="2" placeholder="Informações adicionais..." style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;resize:vertical;box-sizing:border-box"></textarea></div>';
+  h+='</div></div>';
+
+  // BLOCO 5 — Submit
+  h+='<div id="resp-msg" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:8px;font-size:12px"></div>';
+  h+='<button id="resp-submit-btn" onclick="submitResposta()" style="width:100%;border:none;border-radius:9px;padding:13px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--go);color:#000;margin-top:4px;opacity:.5;pointer-events:none">Enviar proposta →</button>';
+
+  box.innerHTML = h;
   document.getElementById('resp-success').style.display='none';
   document.getElementById('modal-responder').style.display='flex';
+  respCheckSubmit();
 }
 function closeResponder(){ document.getElementById('modal-responder').style.display='none'; }
+
+function respSetSpec(val){
+  _respSpecOk = val;
+  var extra = document.getElementById('resp-spec-extra');
+  if(val==='similar'){
+    extra.style.display='block';
+    extra.innerHTML='<input id="resp-spec-desc" type="text" placeholder="Descreva o que você tem..." style="width:100%;background:var(--s3);border:1px solid rgba(245,184,0,.3);border-radius:8px;padding:9px;font-size:12px;color:#fff;outline:none;box-sizing:border-box">';
+  } else if(val==='nao'){
+    extra.style.display='block';
+    extra.innerHTML='<div style="background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.2);border-radius:8px;padding:10px;font-size:11px;color:var(--rd)">Recomendamos não enviar proposta. Isso pode prejudicar seu score FoodHub.<div style="display:flex;gap:8px;margin-top:8px"><button onclick="closeResponder()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--b2);background:var(--s3);color:var(--w2);font-size:11px;cursor:pointer;font-family:sans-serif">Cancelar</button><span onclick="_respSpecOk=\'nao_forcar\';respCheckSubmit();this.parentNode.parentNode.parentNode.style.display=\'none\'" style="font-size:11px;color:var(--am);cursor:pointer;align-self:center">Enviar mesmo assim</span></div></div>';
+  } else {
+    extra.style.display='none';
+  }
+  // Highlight selected button
+  var btns = document.querySelectorAll('#resp-spec-btns button');
+  btns.forEach(function(b){b.style.opacity='.4';});
+  if(val==='exato') btns[0].style.opacity='1';
+  if(val==='similar') btns[1].style.opacity='1';
+  if(val==='nao') btns[2].style.opacity='1';
+  respCheckSubmit();
+}
+
+function respSetReq(val){
+  _respReqOk = val;
+  var extra = document.getElementById('resp-req-extra');
+  if(val==='parcial'){
+    extra.style.display='block';
+    extra.innerHTML='<input id="resp-req-desc" type="text" placeholder="Explique o que não atende..." style="width:100%;background:var(--s3);border:1px solid rgba(245,184,0,.3);border-radius:8px;padding:9px;font-size:12px;color:#fff;outline:none;box-sizing:border-box">';
+  } else if(val==='nao'){
+    extra.style.display='block';
+    extra.innerHTML='<div style="background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.2);border-radius:8px;padding:10px;font-size:11px;color:var(--rd)">Recomendamos não enviar proposta.<div style="display:flex;gap:8px;margin-top:8px"><button onclick="closeResponder()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--b2);background:var(--s3);color:var(--w2);font-size:11px;cursor:pointer;font-family:sans-serif">Cancelar</button><span onclick="_respReqOk=\'nao_forcar\';respCheckSubmit();this.parentNode.parentNode.parentNode.style.display=\'none\'" style="font-size:11px;color:var(--am);cursor:pointer;align-self:center">Enviar mesmo assim</span></div></div>';
+  } else {
+    extra.style.display='none';
+  }
+  var btns = document.querySelectorAll('#resp-req-btns button');
+  btns.forEach(function(b){b.style.opacity='.4';});
+  if(val==='ok') btns[0].style.opacity='1';
+  if(val==='parcial') btns[1].style.opacity='1';
+  if(val==='nao') btns[2].style.opacity='1';
+  respCheckSubmit();
+}
+
+function respUpdatePreco(){
+  if(!_respDemanda||!_respDemanda.preco_alvo) return;
+  var cmp = document.getElementById('resp-preco-cmp');
+  if(!cmp) return;
+  var meu = parseFloat(document.getElementById('resp-preco').value)||0;
+  var alvo = Number(_respDemanda.preco_alvo);
+  if(meu>0 && meu<=alvo){
+    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--go)">✅ Seu preço está abaixo!</strong>';
+  } else if(meu>0){
+    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--rd)">⚠️ Acima do alvo</strong>';
+  }
+}
+
+function respCheckSubmit(){
+  var btn = document.getElementById('resp-submit-btn');
+  if(!btn) return;
+  var preco = parseFloat((document.getElementById('resp-preco')||{}).value)||0;
+  var specOk = _respSpecOk==='exato'||_respSpecOk==='similar'||_respSpecOk==='nao_forcar';
+  // If there are req buttons, check those too
+  var reqBtns = document.getElementById('resp-req-btns');
+  var reqOk = !reqBtns || _respReqOk==='ok'||_respReqOk==='parcial'||_respReqOk==='nao_forcar';
+  if(preco>0 && specOk && reqOk){
+    btn.style.opacity='1';btn.style.pointerEvents='auto';
+  } else {
+    btn.style.opacity='.5';btn.style.pointerEvents='none';
+  }
+}
+
 async function submitResposta(){
-  var msgEl = document.getElementById('resp-msg');
+  var d = _respDemanda;
+  if(!d){showRespMsg('Erro: demanda não identificada.','err');return;}
+  if(!_fornecedorId){showRespMsg('Nenhum fornecedor vinculado.','err');return;}
   var preco = parseFloat(document.getElementById('resp-preco').value);
-  var unidade = document.getElementById('resp-unidade').value.trim()||'/kg';
-  var volume = parseFloat(document.getElementById('resp-vol-ofertado').value)||null;
-  var prazo = parseInt(document.getElementById('resp-prazo-dias').value)||null;
-  var pagamento = document.getElementById('resp-pagamento').value.trim()||null;
-  var nota = document.getElementById('resp-nota').value.trim()||null;
-  if(!_respDemandaId){showRespMsg('Erro: demanda não identificada.','err');return;}
-  if(!_fornecedorId){showRespMsg('Erro: nenhum fornecedor vinculado ao seu login.','err');return;}
-  if(!preco||preco<=0){showRespMsg('Informe o preço ofertado.','err');return;}
+  if(!preco||preco<=0){showRespMsg('Informe o preço.','err');return;}
+  var volume = parseFloat((document.getElementById('resp-vol')||{}).value)||null;
+  var prazo = parseInt((document.getElementById('resp-prazo')||{}).value)||null;
+  var pagSel = document.getElementById('resp-pag');
+  var pagamento = pagSel?pagSel.value:null;
+  var nota = (document.getElementById('resp-nota')||{}).value||'';
+  // Build nota with spec/req confirmations
+  var notaParts = [];
+  if(_respSpecOk==='exato') notaParts.push('Spec: tenho exatamente');
+  if(_respSpecOk==='similar'){
+    var desc = (document.getElementById('resp-spec-desc')||{}).value||'';
+    notaParts.push('Spec: tenho similar'+(desc?' — '+desc:''));
+  }
+  if(_respSpecOk==='nao_forcar') notaParts.push('Spec: não tenho (enviou mesmo assim)');
+  if(_respReqOk==='ok') notaParts.push('Requisitos: atende todos');
+  if(_respReqOk==='parcial'){
+    var rdesc = (document.getElementById('resp-req-desc')||{}).value||'';
+    notaParts.push('Requisitos: parcial'+(rdesc?' — '+rdesc:''));
+  }
+  if(_respReqOk==='nao_forcar') notaParts.push('Requisitos: não atende (enviou mesmo assim)');
+  if(nota) notaParts.push(nota);
+  var notaFinal = notaParts.join(' | ');
+  var unidade = d.unidade_volume==='kg'?'/kg':'/un';
   var { error } = await _sb.from('propostas').insert({
-    demanda_id: _respDemandaId,
+    demanda_id: d.id,
     fornecedor_id: _fornecedorId,
     preco_ofertado: preco,
     unidade_preco: unidade,
     volume_ofertado: volume,
     prazo_entrega_dias: prazo,
     condicao_pagamento: pagamento,
-    nota_fornecedor: nota,
+    nota_fornecedor: notaFinal||null,
     status: 'recebida'
   });
-  if(error){console.log('Erro proposta:', JSON.stringify(error));showRespMsg('Erro ao enviar: '+error.message,'err');return;}
+  if(error){console.log('Erro proposta:', JSON.stringify(error));showRespMsg('Erro: '+error.message,'err');return;}
   document.getElementById('resp-success').style.display='flex';
   setTimeout(function(){ closeResponder(); },2500);
 }
@@ -2707,54 +2867,16 @@ async function ofPublish(){
 </div>
 
 <!-- ════════ MODAL: RESPONDER DEMANDA ════════ -->
-<div id="modal-responder" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeResponder()">
-  <div style="background:#0A1020;border:1px solid rgba(0,224,154,.22);border-radius:16px;width:100%;max-width:520px;padding:24px;position:relative;max-height:90vh;overflow-y:auto">
-    <button onclick="closeResponder()" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--w3);font-size:18px;cursor:pointer;line-height:1">✕</button>
-    <div style="font-family:var(--disp);font-size:22px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:4px">Responder Demanda</div>
-    <div style="font-size:12px;color:var(--w2);margin-bottom:16px">Envie sua proposta real para esta demanda</div>
-    <!-- DEMANDA INFO -->
-    <div style="background:rgba(0,0,0,.3);border-radius:9px;padding:12px 14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <div><div style="font-size:9px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PRODUTO</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-produto">—</div></div>
-      <div><div style="font-size:9px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">VOLUME</div><div style="font-size:13px;font-weight:600;color:#fff" id="resp-volume">—</div></div>
-      <div><div style="font-size:9px;color:var(--w3);font-family:var(--mono);margin-bottom:2px">PREÇO ALVO</div><div style="font-size:13px;font-weight:700;color:var(--gold)" id="resp-alvo">—</div></div>
+<div id="modal-responder" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeResponder()">
+  <div style="background:#0A0810;border:1px solid rgba(245,184,0,.2);border-radius:16px;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(245,184,0,.1);flex-shrink:0">
+      <div style="font-family:var(--disp);font-size:18px;font-weight:900;text-transform:uppercase;color:var(--am)">Responder Demanda</div>
+      <button onclick="closeResponder()" style="background:transparent;border:none;color:var(--w3);font-size:18px;cursor:pointer;line-height:1">✕</button>
     </div>
-    <div id="resp-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px"></div>
-    <!-- FORM -->
-    <div style="display:flex;flex-direction:column;gap:11px">
-      <div style="display:flex;gap:10px">
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Preço ofertado (R$) *</div>
-          <input id="resp-preco" type="number" step="0.01" placeholder="0.00" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:var(--mono);outline:none;box-sizing:border-box">
-        </div>
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Unidade preço</div>
-          <input id="resp-unidade" type="text" value="/kg" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px">
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Volume disponível</div>
-          <input id="resp-vol-ofertado" type="number" placeholder="kg" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:var(--mono);outline:none;box-sizing:border-box">
-        </div>
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo entrega (dias)</div>
-          <input id="resp-prazo-dias" type="number" placeholder="0" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:var(--mono);outline:none;box-sizing:border-box">
-        </div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Condição de pagamento</div>
-        <input id="resp-pagamento" type="text" placeholder="Ex: 28 dias boleto" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;box-sizing:border-box">
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--w2);margin-bottom:3px">Observações</div>
-        <textarea id="resp-nota" rows="3" placeholder="Detalhes sobre produto, certificações, condições especiais..." style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:#fff;font-family:sans-serif;outline:none;box-sizing:border-box;resize:vertical"></textarea>
-      </div>
-      <button style="width:100%;border:none;border-radius:9px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--go);color:#000;margin-top:4px" onclick="submitResposta()">Enviar proposta</button>
-    </div>
-    <!-- SUCCESS -->
-    <div id="resp-success" style="display:none;position:absolute;inset:0;background:rgba(10,16,32,.97);border-radius:16px;align-items:center;justify-content:center;flex-direction:column;gap:10px">
+    <div id="resp-body" style="flex:1;overflow-y:auto;padding:18px 20px"></div>
+    <div id="resp-success" style="display:none;position:absolute;inset:0;background:rgba(10,8,16,.97);border-radius:16px;align-items:center;justify-content:center;flex-direction:column;gap:10px">
       <div style="font-size:48px">✅</div>
-      <div style="font-family:var(--disp);font-size:22px;font-weight:900;color:var(--gn)">PROPOSTA ENVIADA</div>
+      <div style="font-family:var(--disp);font-size:22px;font-weight:900;color:var(--go)">PROPOSTA ENVIADA</div>
       <div style="font-size:13px;color:var(--w2)">O comprador receberá sua oferta em instantes.</div>
     </div>
   </div>
