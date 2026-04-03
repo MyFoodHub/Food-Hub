@@ -27,7 +27,7 @@ Plataforma B2B de intermediação de compras de alimentos. Mesa Nacional de Opor
 ## Módulos a conectar (em ordem de prioridade)
 1. ✅ Demandas — criar e listar do banco (FEITO)
 2. ✅ Fornecedores — listar do banco + tela de cadastro (FEITO)
-3. ⏳ Propostas — fornecedores enviando propostas reais
+3. ✅ Propostas — fornecedores enviando propostas reais (FEITO)
 4. ⏳ Negociação — chat em tempo real com Supabase Realtime
 5. ⏳ Notificações — badge ao vivo sem refresh
 6. ⏳ Relatórios — métricas reais do banco
