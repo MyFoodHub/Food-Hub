@@ -1032,7 +1032,7 @@ window.go = window.go || function(id) {
   <!-- FORMULÁRIO PASSO A PASSO — visível por padrão -->
   <div style="flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;padding:16px 16px 20px">
     <div style="width:100%;max-width:460px;overflow-x:hidden">
-      <div id="scan-box"></div>
+      <div id="scan-box" style="overflow-x:hidden"></div>
       <p style="text-align:center;font-size:10px;color:var(--t3);margin-top:10px">Toque em uma opção para avançar · <strong style="color:var(--ac)">menos de 60 segundos</strong></p>
     </div>
   </div>
@@ -3722,7 +3722,7 @@ function atuPostRender(){}
 /* ── SCAN STEPS — CATÁLOGO RICO v2 ── */
 var _SKIP_CONSERV = ['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
 var _SKIP_TO_VOL  = ['Outro item'];
-var _FRANGO_NO_OSSO = ['Sassami','Coração','Moela','Pescoço','Pé de Frango'];
+var _FRANGO_NO_OSSO = ['Sassami','Coração','Moela','Pescoço','Pé de Frango','Frango Inteiro'];
 
 var SCAN_CAT = [
   {i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},
@@ -3780,7 +3780,7 @@ var SCAN_FLOW = [
   {id:'ovoemb',q:'Embalagem dos ovos?',sub:'Selecione o tipo de embalagem.'},
   {id:'volume',q:'Qual o volume necessário?',sub:'Informe a quantidade aproximada.',type:'volume'},
   {id:'local',q:'Local de entrega — Estado?',sub:'Onde os fornecedores devem entregar.'},
-
+  {id:'cidade',q:'Qual cidade?',sub:'Informe a cidade de entrega.',type:'cidade'},
   {id:'prazo',q:'Qual o prazo?',sub:'Quando você precisa receber?'},
   {id:'pag',q:'Condição de pagamento?',sub:'Quanto melhor o prazo, mais propostas.'},
   {id:'obs',q:'Alguma observação importante?',sub:'Certificações, condições especiais, requisitos de entrega...',type:'obs'},
@@ -3798,20 +3798,20 @@ function _buildScanSeq(){
   var corte = _scanChoices.corte || '';
   var seq = ['cat'];
   if(_SKIP_TO_VOL.indexOf(cat)>=0){
-    seq.push('volume','local','prazo','pag','obs','resumo','preco');
+    seq.push('volume','local','cidade','prazo','pag','obs','resumo','preco');
   } else if(cat==='Frango'){
     seq.push('corte');
     if(_FRANGO_NO_OSSO.indexOf(corte)<0) seq.push('osso');
     if(corte==='Frango Inteiro'){seq.push('miudos','cabeca');}
-    seq.push('conserv','embtipo','volume','local','prazo','pag','obs','resumo','preco');
+    seq.push('conserv','embtipo','volume','local','cidade','prazo','pag','obs','resumo','preco');
   } else if(cat==='Ovos'){
-    seq.push('corte','ovoemb','volume','local','prazo','pag','obs','resumo','preco');
+    seq.push('corte','ovoemb','volume','local','cidade','prazo','pag','obs','resumo','preco');
   } else if(cat==='Farinha de Trigo'||cat==='Óleo de Soja'){
-    seq.push('corte','volume','local','prazo','pag','obs','resumo','preco');
+    seq.push('corte','volume','local','cidade','prazo','pag','obs','resumo','preco');
   } else {
     seq.push('corte');
     if(_SKIP_CONSERV.indexOf(cat)<0) seq.push('conserv','embtipo');
-    seq.push('volume','local','prazo','pag','obs','resumo','preco');
+    seq.push('volume','local','cidade','prazo','pag','obs','resumo','preco');
   }
   _scanStepSeq = seq;
 }
@@ -3848,7 +3848,7 @@ function _getScanOpts(sid){
 }
 
 function _miniResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',prazo:'Prazo',pag:'Pagamento',obs:'Observações'};
+  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',obs:'Observações'};
   var filled=[];
   _scanStepSeq.forEach(function(sid,idx){
     if(idx>=_scanStepIdx||sid==='resumo'||sid==='preco') return;
@@ -3898,6 +3898,10 @@ function renderScan(){
     h+='<select id="scan-vol-un" style="width:90px;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:13px;color:var(--t1);outline:none"><option value="kg">kg</option><option value="cx">cx</option><option value="un">un</option><option value="fardo">fardo</option></select>';
     h+='</div>';
     h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000" onclick="scanConfirmVolume()">Confirmar volume →</button>';
+  } else if(step.type==='cidade'){
+    h+='<input type="text" placeholder="Digite o nome da cidade..." id="scan-cidade-inp" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--t1);outline:none;box-sizing:border-box;margin-bottom:10px">';
+    h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000;margin-bottom:8px" onclick="scanConfirmCidade()">Confirmar cidade →</button>';
+    h+='<div style="text-align:center;font-size:11px;color:var(--ac);cursor:pointer" onclick="_scanChoices.cidade=\'\';advanceScan()">Qualquer cidade do estado →</div>';
   } else if(step.type==='obs'){
     h+='<textarea id="scan-obs-txt" rows="4" placeholder="Ex: Exige certificação GFSI. Entrega obrigatoriamente CIF. Produto sem glúten..." style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>';
     h+='<button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000;margin-bottom:8px" onclick="scanConfirmObs()">Adicionar observação →</button>';
@@ -3917,8 +3921,8 @@ function renderScan(){
 }
 
 function _buildResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',prazo:'Prazo',pag:'Pagamento',obs:'Observações'};
-  var icons = {cat:'🍽️',corte:'🔪',osso:'🦴',miudos:'🫀',cabeca:'🐔',conserv:'❄️',embtipo:'📦',ovoemb:'🥚',volume:'📦',local:'📍',prazo:'⏱️',pag:'💳',obs:'📝'};
+  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',obs:'Observações'};
+  var icons = {cat:'🍽️',corte:'🔪',osso:'🦴',miudos:'🫀',cabeca:'🐔',conserv:'❄️',embtipo:'📦',ovoemb:'🥚',volume:'📦',local:'📍',cidade:'🏙️',prazo:'⏱️',pag:'💳',obs:'📝'};
   var h='<div style="display:flex;flex-direction:column;gap:6px">';
   _scanStepSeq.forEach(function(sid,idx){
     if(sid==='resumo'||sid==='preco') return;
@@ -3939,6 +3943,12 @@ function scanConfirmVolume(){
   var un=document.getElementById('scan-vol-un').value;
   if(!num){return;}
   _scanChoices.volume=Number(num).toLocaleString('pt-BR')+' '+un;
+  advanceScan();
+}
+function scanConfirmCidade(){
+  var c=document.getElementById('scan-cidade-inp').value.trim();
+  if(!c){return;}
+  _scanChoices.cidade=c;
   advanceScan();
 }
 function scanConfirmDate(){
@@ -3990,7 +4000,7 @@ async function launchScan(){
   document.getElementById('launch-dl').textContent=dl.toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
   var c=_scanChoices;
   var item1=c.cat||'';var item2=c.corte||'';var vol=c.volume||'';
-  var local=c.local||'';
+  var local=(c.local||'')+(c.cidade?' · '+c.cidade:'');
   var especParts=[item2,c.osso||'',c.miudos||'',c.cabeca||'',c.conserv||'',c.embtipo||'',c.ovoemb||''].filter(function(x){return x;});
   var espec=especParts.join(' · ');
   if(c.obs) espec = espec ? espec+' | Obs: '+c.obs : 'Obs: '+c.obs;
