@@ -20,6 +20,8 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 #sScan,#sScan *{max-width:100%;box-sizing:border-box}
+html,body,#sScan{overflow-x:hidden !important}
+::-webkit-scrollbar-horizontal{display:none}
 html,body{height:100%;overflow:hidden;overflow-x:hidden}
 body{background:#050810;color:#ECF0FF;font-family:sans-serif;font-size:14px}
 
@@ -112,8 +114,8 @@ body{background:#050810;color:#ECF0FF;font-family:sans-serif;font-size:14px}
 .sh h3{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:500}
 
 /* STEP OPTS */
-.opt{background:var(--bg3);border:1px solid var(--b1);border-radius:9px;padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:11px;transition:all .12s}
-.opt:hover{border-color:var(--ac);background:linear-gradient(90deg,var(--a3),var(--a2));transform:translateX(4px);box-shadow:inset 3px 0 0 var(--ac)}
+.opt{background:var(--bg3);border:1px solid var(--b1);border-radius:9px;padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:11px;transition:all .12s;width:100%;box-sizing:border-box}
+.opt:hover{border-color:var(--ac);background:linear-gradient(90deg,var(--a3),var(--a2));box-shadow:inset 3px 0 0 var(--ac)}
 .opt:hover .opt-lbl{color:var(--ac)}
 .opt:hover .arr{opacity:1;transform:translateX(3px)}
 .opt-lbl{font-weight:600;font-size:13px;transition:color .12s}
@@ -3937,7 +3939,7 @@ function renderScan(){
     h+='<div style="text-align:center;font-size:11px;color:var(--ac);cursor:pointer" onclick="advanceScan()">Sem observações — continuar</div>';
   } else {
     var opts = _getScanOpts(step.id);
-    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:380px;overflow-y:auto">';
+    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:60vh;overflow-y:auto;overflow-x:hidden">';
     opts.forEach(function(o,i){
       h+='<div class="opt" onclick="clickOpt(this,'+i+')"><span style="font-size:18px;flex-shrink:0">'+o.i+'</span><div style="flex:1"><div class="opt-lbl">'+o.l+'</div>'+(o.s?'<div class="opt-sub">'+o.s+'</div>':'')+'</div><span class="arr">›</span></div>';
     });
@@ -3996,17 +3998,23 @@ function scanConfirmObs(){
 
 function scanUsarModelo(){
   var saved=JSON.parse(localStorage.getItem('fh_modelo_'+_scanChoices.cat)||'{}');
-  Object.keys(saved).forEach(function(k){_scanChoices[k]=saved[k];});
+  var cat=_scanChoices.cat;
+  Object.keys(saved).forEach(function(k){if(k!=='_modeloShown'&&k!=='preco')_scanChoices[k]=saved[k];});
+  _scanChoices.cat=cat;
   _scanChoices._modeloShown=true;
   _buildScanSeq();
-  // Jump to preco step (last)
-  _scanStepIdx=_scanStepSeq.length-1;
+  // Jump to resumo step (second to last)
+  for(var i=0;i<_scanStepSeq.length;i++){if(_scanStepSeq[i]==='resumo'){_scanStepIdx=i;break;}}
   renderScan();
 }
 function scanCriarDoZero(){
   _scanChoices._modeloShown=true;
   _buildScanSeq();
-  advanceScan();
+  // Find current position and advance past modelo
+  for(var i=0;i<_scanStepSeq.length;i++){
+    if(_scanStepSeq[i]==='corte'||_scanStepSeq[i]==='volume'){_scanStepIdx=i;break;}
+  }
+  renderScan();
 }
 function gerarPdfDemanda(){
   var jsPDF=window.jspdf.jsPDF;
