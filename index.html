@@ -1430,7 +1430,7 @@ window.go = window.go || function(id) {
 
 <!-- ══ NEGÓCIOS ══ -->
 <div id="sNegocios" class="screen">
-  <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><button class="btn-ghost sm" onclick="go('s1')">← Dashboard</button></div>
+  <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><div style="display:flex;gap:7px"><button class="btn-ghost sm" onclick="go('s1')">← Dashboard</button><button class="btn sm" onclick="go('sScan')">+ Nova Demanda</button></div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
@@ -1444,44 +1444,21 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
     </div>
     <div class="main">
-
-      <!-- ── BUSCA + FILTROS ── -->
-      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:12px 14px;margin-bottom:12px">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-          <div style="flex:1;position:relative">
-            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none">🔍</span>
-            <input id="neg-search" type="text" placeholder="Buscar por produto, fornecedor ou nº do negócio..."
-              style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:8px 10px 8px 32px;font-size:12px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box"
-              oninput="negFiltrar()"
-              onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--b1)'">
-          </div>
-          <button onclick="negLimpar()" style="background:none;border:1px solid var(--b1);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--t3);cursor:pointer;white-space:nowrap;font-family:sans-serif">✕ Limpar</button>
-        </div>
-        <!-- filtros rápidos -->
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="neg-filt active" data-filt="todos" onclick="negSetFilt(this,'todos')">Todos</button>
-          <button class="neg-filt" data-filt="andamento" onclick="negSetFilt(this,'andamento')">Em andamento</button>
-          <button class="neg-filt" data-filt="transito" onclick="negSetFilt(this,'transito')">Em trânsito</button>
-          <button class="neg-filt" data-filt="aguardando" onclick="negSetFilt(this,'aguardando')">Aguardando NF</button>
-          <button class="neg-filt" data-filt="entregue" onclick="negSetFilt(this,'entregue')">Entregue</button>
-          <button class="neg-filt" data-filt="cancelado" onclick="negSetFilt(this,'cancelado')">Cancelado</button>
-        </div>
+      <div class="sh"><h3>Meus Negócios</h3></div>
+      <!-- Filtros -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="neg-filtros">
+        <button class="neg-filt active" onclick="negSetFilt(this,'todos')">Todos</button>
+        <button class="neg-filt" onclick="negSetFilt(this,'com_propostas')">Com propostas</button>
+        <button class="neg-filt" onclick="negSetFilt(this,'negociando')">Em negociação</button>
+        <button class="neg-filt" onclick="negSetFilt(this,'fechado')">Fechados</button>
+        <button class="neg-filt" onclick="negSetFilt(this,'expirado')">Expirados</button>
       </div>
-
-      <!-- ── RESUMO ── -->
-      <div id="neg-resumo" style="display:flex;gap:8px;margin-bottom:12px">
-        <div class="metric" style="flex:1"><div class="ml">Em andamento</div><div class="mv" style="color:var(--ac);font-size:18px" id="neg-cnt-and">3</div></div>
-        <div class="metric" style="flex:1"><div class="ml">Volume total</div><div class="mv" style="font-size:15px" id="neg-vol-total">R$334k</div></div>
-        <div class="metric" style="flex:1"><div class="ml">Entregues (mês)</div><div class="mv" style="color:var(--gn);font-size:18px" id="neg-cnt-ent">1</div></div>
-        <div class="metric" style="flex:1"><div class="ml">Saving gerado</div><div class="mv" style="color:var(--gn);font-size:15px">R$24k</div></div>
+      <!-- KPIs -->
+      <div id="neg-kpis" style="display:flex;gap:8px;margin-bottom:12px"></div>
+      <!-- Lista -->
+      <div id="neg-lista">
+        <div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Carregando negócios...</div>
       </div>
-
-      <!-- ── LISTA DE NEGÓCIOS ── -->
-      <div id="neg-lista"></div>
-      <div id="neg-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--t3);font-size:13px">
-        Nenhum negócio encontrado para "<span id="neg-empty-q"></span>"
-      </div>
-
     </div>
   </div>
 </div>
@@ -4158,91 +4135,87 @@ async function launchScan(){
 
 
 /* ── NEGÓCIOS DATA ── */
-var NEG_DATA = [
-  {id:'FH-2026-04781', status:'transito',  statusLbl:'Em trânsito',  statusCls:'bg', produto:'Frango Sassami IQF',      fornecedor:'Avícola Três Coroas',       kg:'10.000 kg', valor:'R$81.500',  data:'18/03/26', entrega:'22/03/26', onclick:"go('sTracking')"},
-  {id:'FH-2026-04756', status:'aguardando',statusLbl:'Aguard. NF',   statusCls:'ba', produto:'Muçarela cx 10kg',         fornecedor:'Laticínios Bela Vista',     kg:'5.000 kg',  valor:'R$124.500', data:'16/03/26', entrega:'23/03/26', onclick:''},
-  {id:'FH-2026-04803', status:'transito',  statusLbl:'Em trânsito',  statusCls:'bg', produto:'Coxinha da Asa Congelada',  fornecedor:'Frigorífico MG',            kg:'8.000 kg',  valor:'R$72.800',  data:'20/03/26', entrega:'24/03/26', onclick:''},
-  {id:'FH-2026-04729', status:'aguardando',statusLbl:'Aguard. NF',   statusCls:'ba', produto:'Óleo de Soja 900ml',        fornecedor:'Granol Alimentos',          kg:'3.600 un',  valor:'R$21.600',  data:'15/03/26', entrega:'21/03/26', onclick:''},
-  {id:'FH-2026-04690', status:'aguardando',statusLbl:'Aguard. NF',   statusCls:'ba', produto:'Batata Palito Congelada',   fornecedor:'McCain Alimentos',          kg:'6.000 kg',  valor:'R$33.600',  data:'14/03/26', entrega:'20/03/26', onclick:''},
-  {id:'FH-2026-04621', status:'entregue',  statusLbl:'Entregue',     statusCls:'bg', produto:'Batata Congelada cx 10kg',  fornecedor:'Frigimax Alimentos',        kg:'10.000 kg', valor:'R$128.000', data:'12/03/26', entrega:'17/03/26', onclick:"go('sEval')"},
-  {id:'FH-2026-04588', status:'entregue',  statusLbl:'Entregue',     statusCls:'bg', produto:'Queijo Mussarela Bloco',    fornecedor:'Polenghi Alimentos',        kg:'2.500 kg',  valor:'R$62.500',  data:'10/03/26', entrega:'14/03/26', onclick:''},
-  {id:'FH-2026-04512', status:'entregue',  statusLbl:'Entregue',     statusCls:'bg', produto:'Frango Inteiro Congelado',  fornecedor:'BRF — Sadia',               kg:'12.000 kg', valor:'R$93.600',  data:'07/03/26', entrega:'11/03/26', onclick:''},
-  {id:'FH-2026-04441', status:'entregue',  statusLbl:'Entregue',     statusCls:'bg', produto:'Presunto Cozido Fatiado',   fornecedor:'Perdigão Premium',          kg:'1.200 kg',  valor:'R$22.800',  data:'05/03/26', entrega:'09/03/26', onclick:''},
-  {id:'FH-2026-04380', status:'cancelado', statusLbl:'Cancelado',    statusCls:'br', produto:'Carne Bovina Patinho',      fornecedor:'JBS Fribo',                 kg:'4.000 kg',  valor:'—',         data:'03/03/26', entrega:'—',        onclick:''},
-];
-
 var _negFiltAtivo = 'todos';
-var _negQuery = '';
+var _negDemandas = [];
 
-function negRender(){
-  var q = (_negQuery||'').toLowerCase().trim();
-  var f = _negFiltAtivo;
-  var filtered = NEG_DATA.filter(function(n){
-    var matchFilt = f==='todos' || n.status===f ||
-      (f==='andamento' && (n.status==='transito'||n.status==='aguardando'));
-    if(!matchFilt) return false;
-    if(!q) return true;
-    return (n.id+n.produto+n.fornecedor+n.valor+n.kg+n.data).toLowerCase().indexOf(q)>=0;
-  });
-
+async function negRender(){
   var lista = document.getElementById('neg-lista');
-  var empty = document.getElementById('neg-empty');
+  var kpis = document.getElementById('neg-kpis');
   if(!lista) return;
-
-  if(filtered.length===0){
-    lista.innerHTML='';
-    empty.style.display='block';
-    document.getElementById('neg-empty-q').textContent=q||f;
-    return;
+  if(!_currentUser){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Faça login para ver seus negócios.</div>';return;}
+  lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando negócios...</div>';
+  var { data, error } = await _sb.from('demandas').select('*, propostas(id)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  if(error){console.log('Erro negocios:', JSON.stringify(error));lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
+  _negDemandas = data||[];
+  // Check negociacoes for each demanda
+  var demIds=_negDemandas.map(function(d){return d.id;});
+  var negMap={};
+  if(demIds.length){
+    var { data: negs } = await _sb.from('negociacoes').select('demanda_id,status').in('demanda_id',demIds);
+    if(negs) negs.forEach(function(n){negMap[n.demanda_id]=n.status;});
   }
-  empty.style.display='none';
-
-  // group: andamento vs historico
-  var andamento = filtered.filter(function(n){return n.status==='transito'||n.status==='aguardando';});
-  var outros    = filtered.filter(function(n){return n.status!=='transito'&&n.status!=='aguardando';});
-
-  var html = '';
-  if(andamento.length){
-    html += '<div class="sh" style="margin-top:0"><h3>Em andamento</h3><span style="font-size:11px;color:var(--t2)">'+andamento.length+' ativo'+(andamento.length>1?'s':'')+'</span></div>';
-    html += andamento.map(negCardHTML).join('');
-  }
-  if(outros.length){
-    html += '<div class="sh"><h3>Histórico</h3><span style="font-size:11px;color:var(--t2)">'+outros.length+' negócio'+(outros.length>1?'s':'')+'</span></div>';
-    html += outros.map(function(n){return negCardHTML(n,true);}).join('');
-  }
-  lista.innerHTML = html;
-
-  // update counters
-  var cntAnd = NEG_DATA.filter(function(n){return n.status==='transito'||n.status==='aguardando';}).length;
-  var cntEnt = NEG_DATA.filter(function(n){return n.status==='entregue';}).length;
-  var elA=document.getElementById('neg-cnt-and'), elE=document.getElementById('neg-cnt-ent');
-  if(elA) elA.textContent=cntAnd;
-  if(elE) elE.textContent=cntEnt;
-}
-
-function negCardHTML(n, opaque){
-  var clickAttr = n.onclick ? 'onclick="'+n.onclick+'"' : '';
-  var statusColor = n.status==='cancelado' ? 'var(--rd)' : n.status==='entregue' ? 'var(--gn)' : n.status==='transito' ? 'var(--ac)' : 'var(--am)';
-  var arrow = n.onclick ? '<span style="margin-left:auto;font-size:11px;color:var(--ac)">Ver →</span>' : '';
-  return '<div class="neg-card" '+(opaque?'style="opacity:.8"':'')+' '+clickAttr+'>'
-    +'<div class="neg-card-header">'
-    +'<span class="badge '+n.statusCls+'" style="font-size:10px">'+n.statusLbl+'</span>'
-    +'<span style="font-family:var(--mono);font-size:10px;color:var(--t3)">'+n.id+'</span>'
-    +'<span style="margin-left:auto;font-size:11px;color:var(--t2)">'+n.data+'</span>'
-    +'</div>'
-    +'<div class="neg-card-body">'+n.produto+' · <span style="font-weight:400;color:var(--t2)">'+n.fornecedor+'</span></div>'
-    +'<div class="neg-card-meta">'
-    +'<span>📦 '+n.kg+'</span>'
-    +'<span style="color:var(--gn);font-weight:600">'+n.valor+'</span>'
-    +(n.entrega!=='—'?'<span>🚚 Entrega '+n.entrega+'</span>':'')
-    +arrow
-    +'</div>'
-    +'</div>';
-}
-
-function negFiltrar(){
-  _negQuery = document.getElementById('neg-search').value;
-  negRender();
+  // Compute status for each demanda
+  _negDemandas.forEach(function(d){
+    var propCount=(d.propostas&&d.propostas.length)||0;
+    var negStatus=negMap[d.id]||null;
+    if(d.status==='fechada') d._negStatus='fechado';
+    else if(d.status==='expirada'||d.status==='cancelada') d._negStatus='expirado';
+    else if(negStatus==='em_andamento'||negStatus==='aceita') d._negStatus='negociando';
+    else if(propCount>0) d._negStatus='com_propostas';
+    else d._negStatus='aguardando';
+    d._propCount=propCount;
+  });
+  // Filter
+  var f=_negFiltAtivo;
+  var filtered=_negDemandas.filter(function(d){return f==='todos'||d._negStatus===f;});
+  // KPIs
+  var cntAguard=_negDemandas.filter(function(d){return d._negStatus==='aguardando';}).length;
+  var cntProp=_negDemandas.filter(function(d){return d._negStatus==='com_propostas';}).length;
+  var cntNeg=_negDemandas.filter(function(d){return d._negStatus==='negociando';}).length;
+  var cntFech=_negDemandas.filter(function(d){return d._negStatus==='fechado';}).length;
+  if(kpis) kpis.innerHTML='<div class="metric" style="flex:1"><div class="ml">Aguardando</div><div class="mv" style="color:var(--am);font-size:18px">'+cntAguard+'</div></div>'
+    +'<div class="metric" style="flex:1"><div class="ml">Com propostas</div><div class="mv" style="color:var(--gn);font-size:18px">'+cntProp+'</div></div>'
+    +'<div class="metric" style="flex:1"><div class="ml">Negociando</div><div class="mv" style="color:var(--ac);font-size:18px">'+cntNeg+'</div></div>'
+    +'<div class="metric" style="flex:1"><div class="ml">Fechados</div><div class="mv" style="color:var(--gn);font-size:18px">'+cntFech+'</div></div>';
+  // Render list
+  if(!filtered.length){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">Nenhum negócio encontrado.</div>';return;}
+  var html='<div style="display:flex;flex-direction:column;gap:6px">';
+  filtered.forEach(function(d){
+    var st=d._negStatus;
+    var statusIcon=st==='aguardando'?'🟡':st==='com_propostas'?'🟢':st==='negociando'?'🔵':st==='fechado'?'✅':'⚫';
+    var statusLbl=st==='aguardando'?'Aguardando propostas':st==='com_propostas'?d._propCount+' proposta'+(d._propCount>1?'s':'')+' recebida'+(d._propCount>1?'s':''):st==='negociando'?'Em negociação':st==='fechado'?'Fechado':'Expirado';
+    var statusColor=st==='aguardando'?'var(--am)':st==='com_propostas'?'var(--gn)':st==='negociando'?'var(--ac)':st==='fechado'?'var(--gn)':'var(--t3)';
+    var produto=d.produto_nome||'Demanda';
+    var espec=d.especificacao||'';
+    var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'';
+    var local=d.local_entrega||'';
+    var prazo=d.prazo_especifico?new Date(d.prazo_especifico).toLocaleDateString('pt-BR'):(d.condicao_pagamento||'');
+    var codigo=d.codigo||'';
+    var data=d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'';
+    var btnHtml='';
+    if(st==='com_propostas') btnHtml='<button class="btn sm btn-g" onclick="event.stopPropagation();abrirDemanda(\''+d.id+'\')" style="font-size:11px;flex-shrink:0">Ver propostas →</button>';
+    else if(st==='negociando') btnHtml='<button class="btn sm" onclick="event.stopPropagation();go(\'sNeg\')" style="font-size:11px;flex-shrink:0">Continuar →</button>';
+    else if(st==='fechado') btnHtml='<button class="btn-ghost sm" onclick="event.stopPropagation();go(\'sContract\')" style="font-size:11px;flex-shrink:0">Ver contrato →</button>';
+    else if(st==='aguardando') btnHtml='<span style="font-size:11px;color:var(--t3);flex-shrink:0">Aguardando...</span>';
+    html+='<div class="card" style="padding:12px 14px;cursor:pointer" onclick="abrirDemanda(\''+d.id+'\')">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+    html+='<span style="font-size:9px;background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.2);color:var(--ac);padding:2px 7px;border-radius:4px;font-weight:700">📡 Demanda</span>';
+    html+='<span style="font-size:12px;color:'+statusColor+';font-weight:600">'+statusIcon+' '+statusLbl+'</span>';
+    if(codigo) html+='<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3)">'+codigo+'</span>';
+    html+='</div>';
+    html+='<div style="font-weight:700;font-size:13px;margin-bottom:3px">'+produto+(espec?' · <span style="font-weight:400;color:var(--t2)">'+espec.split('|')[0].trim()+'</span>':'')+'</div>';
+    html+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+    html+='<div style="display:flex;gap:10px;font-size:11px;color:var(--t2);flex:1;flex-wrap:wrap">';
+    if(vol) html+='<span>📦 '+vol+'</span>';
+    if(local) html+='<span>📍 '+local+'</span>';
+    if(data) html+='<span>📅 '+data+'</span>';
+    html+='</div>';
+    html+=btnHtml;
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  lista.innerHTML=html;
 }
 
 function negSetFilt(btn, filt){
@@ -4253,9 +4226,6 @@ function negSetFilt(btn, filt){
 }
 
 function negLimpar(){
-  _negQuery='';
-  var el=document.getElementById('neg-search');
-  if(el) el.value='';
   _negFiltAtivo='todos';
   document.querySelectorAll('.neg-filt').forEach(function(b){b.classList.remove('active');});
   var todos=document.querySelector('.neg-filt[data-filt="todos"]');
