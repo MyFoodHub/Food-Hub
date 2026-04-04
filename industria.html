@@ -397,6 +397,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div id="ind-auth-gate" style="display:flex;align-items:center;justify-content:center;height:100vh;background:#06050A">
@@ -451,6 +452,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni on" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
       <div class="nsec">Crescimento</div>
       <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
@@ -624,7 +626,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   <!-- FEED — PROPOSTAS DO FORNECEDOR -->
   <div style="font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:11px;display:flex;align-items:center;gap:8px">
     <div style="width:5px;height:5px;border-radius:50%;background:var(--am);animation:blink 1.4s infinite"></div>
-    MINHAS PROPOSTAS
+    MEU PIPELINE
     <span style="margin-left:auto;font-size:10px;cursor:pointer;color:var(--am)" onclick="openOfertaFlow()">+ Nova oferta</span>
   </div>
   <div id="minhas-ofertas-list">
@@ -648,6 +650,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
       <div class="ni on"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
       <div class="nsec">Crescimento</div>
       <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
@@ -687,6 +690,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
       <div class="nsec">Crescimento</div>
       <div class="ni on" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
@@ -780,6 +784,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
       <div class="nsec">Crescimento</div>
       <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="ni on" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
@@ -1852,6 +1857,27 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 </div>
 
 
+<div id="s-pipeline" class="screen">
+  <div class="bloomberg">
+    <div class="bb-brand"><div class="bb-dot"></div><div class="bb-logo">Food<span style="color:var(--am)">Hub</span></div></div>
+    <div class="bb-right"><button class="btn btn-am sm" onclick="go('s-main')">← Dashboard</button></div>
+  </div>
+  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Pipeline de Negociações</div></div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nsec">Operação</div>
+      <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
+      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Meu Pipeline</div>
+      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas</div>
+      <div class="ni on"><span class="nicon">🤝</span>Negociações</div>
+    </div>
+    <div class="main">
+      <div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:var(--mono)">🤝 PIPELINE DE NEGOCIAÇÕES</div>
+      <div id="pipeline-lista"><div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: TORPEDO DIRETO -->
 <div id="modal-torpedo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeModal(this)">
   <div class="modal-am">
@@ -2303,8 +2329,9 @@ async function loadMinhasOfertas(){
   el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando propostas...</div>';
   if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum fornecedor vinculado.</div>';return;}
   var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  var { data: ofertas } = await _sb.from('ofertas').select('*').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
   if(error){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
-  if(!data||!data.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta enviada ainda.</div>';return;}
+  if((!data||!data.length)&&(!ofertas||!ofertas.length)){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta enviada ainda.</div>';return;}
   var receb=[],negoc=[],aceita=[],recus=[];
   data.forEach(function(p){
     if(p.status==='aceita') aceita.push(p);
@@ -2347,7 +2374,56 @@ async function loadMinhasOfertas(){
     recus.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--rd);flex-shrink:0">Recusada</span>');});
     html+='</div>';
   }
+  if(ofertas&&ofertas.length){
+    html+=secHeader('📢','OFERTAS PUBLICADAS',ofertas.length,'of-sec-ofertas');
+    html+='<div id="of-sec-ofertas">';
+    ofertas.forEach(function(o){
+      var preco=o.preco?'R$'+Number(o.preco).toFixed(2)+(o.unidade_preco||'/kg'):'';
+      var dt=o.criado_em?new Date(o.criado_em).toLocaleDateString('pt-BR'):'';
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(o.nome||'Oferta')+'</div><div style="font-size:10px;color:var(--w3)">'+preco+(dt?' · '+dt:'')+(o.descricao?' · '+o.descricao:'')+'</div></div><span style="font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(245,184,0,.1);color:var(--am);font-weight:700;flex-shrink:0">'+(o.status||'ativa')+'</span></div>';
+    });
+    html+='</div>';
+  }
   if(!html) html='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta ainda.</div>';
+  el.innerHTML=html;
+}
+
+// ── PIPELINE ──
+async function loadPipeline(){
+  var el=document.getElementById('pipeline-lista');
+  if(!el)return;
+  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum fornecedor vinculado.</div>';return;}
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando...</div>';
+  var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  if(error){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro.</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma negociação ainda.</div>';return;}
+  var propIds=data.map(function(p){return p.id;});
+  var negMap={};
+  var { data: negs } = await _sb.from('negociacoes').select('proposta_id,status').in('proposta_id',propIds);
+  if(negs) negs.forEach(function(n){negMap[n.proposta_id]=n.status;});
+  var enviadas=[],negociando=[],fechados=[],recusados=[];
+  data.forEach(function(p){
+    var ns=negMap[p.id]||null;
+    if(p.status==='aceita') fechados.push(p);
+    else if(p.status==='recusada') recusados.push(p);
+    else if(ns==='em_andamento') negociando.push(p);
+    else enviadas.push(p);
+  });
+  function ln(p,btn){
+    var dem=p.demandas||{};var prod=dem.produto_nome||'Proposta';
+    var preco='R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg');
+    var dt=p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w)">'+prod+'</div><div style="font-size:10px;color:var(--w3)">'+preco+(dt?' · '+dt:'')+'</div></div>'+btn+'</div>';
+  }
+  function sec(icon,label,count,id){
+    return '<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="var s=document.getElementById(\''+id+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);color:var(--w3)">'+icon+' '+label+' ('+count+')</span><span style="margin-left:auto;font-size:10px;color:var(--w4)">▾</span></div>';
+  }
+  var html='';
+  if(enviadas.length){html+=sec('📨','PROPOSTAS ENVIADAS',enviadas.length,'pip-env');html+='<div id="pip-env">';enviadas.forEach(function(p){html+=ln(p,'<span style="font-size:11px;color:var(--am);flex-shrink:0">Aguardando...</span>');});html+='</div>';}
+  if(negociando.length){html+=sec('🔵','EM NEGOCIAÇÃO',negociando.length,'pip-neg');html+='<div id="pip-neg">';negociando.forEach(function(p){html+=ln(p,'<button style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--b2);background:var(--s3);color:var(--w2);cursor:pointer;flex-shrink:0;font-family:sans-serif">Continuar →</button>');});html+='</div>';}
+  if(fechados.length){html+=sec('✅','FECHADOS',fechados.length,'pip-fech');html+='<div id="pip-fech">';fechados.forEach(function(p){html+=ln(p,'<span style="font-size:11px;color:var(--go);flex-shrink:0">Aceita ✓</span>');});html+='</div>';}
+  if(recusados.length){html+=sec('❌','RECUSADOS/EXPIRADOS',recusados.length,'pip-rec');html+='<div id="pip-rec">';recusados.forEach(function(p){html+=ln(p,'<span style="font-size:11px;color:var(--rd);flex-shrink:0">Recusada</span>');});html+='</div>';}
+  if(!html) html='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma negociação ainda.</div>';
   el.innerHTML=html;
 }
 
@@ -2363,6 +2439,7 @@ function go(id){
   });
   if(id==='s-demandas') loadDemandasMercado();
   if(id==='s-minhas-ofertas') loadMinhasOfertas();
+  if(id==='s-pipeline') loadPipeline();
 }
 function goX(id){
   document.querySelectorAll('.screen,.xs').forEach(function(s){s.classList.remove('on')});
@@ -2702,8 +2779,7 @@ var OF_STEPS=[
   {id:'embmaster',q:'Embalagem master?',sub:'Embalagem de transporte.'},
   {id:'embind',q:'Embalagem individual?',sub:'Dentro da caixa master.'},
   {id:'volume',q:'Volume disponível?',sub:'Informe a quantidade.',type:'volume'},
-  {id:'canal',q:'Canal alvo?',sub:'Para quem você quer vender.'},
-  {id:'segmento',q:'Segmento?',sub:'Refine o público-alvo.'},
+  {id:'segmento',q:'Qual segmento de mercado?',sub:'Selecione o público-alvo da sua oferta.'},
   {id:'regioes',q:'Regiões atendidas?',sub:'Marque os estados onde você entrega.',type:'regioes'},
   {id:'prazo',q:'Prazo de faturamento/expedição?',sub:'Tempo para faturar após fechar.'},
   {id:'pag',q:'Condição de pagamento?',sub:'Condições que você aceita.'},
@@ -2717,13 +2793,13 @@ var _ofChoices={};var _ofStepIdx=0;var _ofSeq=[];
 
 function _buildOfSeq(){
   var cat=_ofChoices.cat||'';var seq=['cat'];
-  if(_OFSKIP_TO_VOL.indexOf(cat)>=0){seq.push('volume','canal','segmento','regioes','prazo','pag','frete','tipo','resumo','preco');}
+  if(_OFSKIP_TO_VOL.indexOf(cat)>=0){seq.push('volume','segmento','regioes','prazo','pag','frete','tipo','resumo','preco');}
   else{
     seq.push('corte');
     if(_OFSKIP_CONSERV.indexOf(cat)<0)seq.push('conserv');
     seq.push('embmaster');
     if(_OFSKIP_EMBIND.indexOf(cat)<0)seq.push('embind');
-    seq.push('volume','canal','segmento','regioes','prazo','pag','frete','tipo','resumo','preco');
+    seq.push('volume','segmento','regioes','prazo','pag','frete','tipo','resumo','preco');
   }
   _ofSeq=seq;
 }
@@ -2750,8 +2826,7 @@ function _getOfOpts(sid){
   if(sid==='conserv')return OF_CONSERV;
   if(sid==='embmaster')return OF_EMBM;
   if(sid==='embind')return OF_EMBI;
-  if(sid==='canal')return OF_CANAL;
-  if(sid==='segmento'){var ch=_ofChoices.canal||'';return ch==='Food Service'?OF_SEG_FS:ch==='Revenda'?OF_SEG_REV:[{i:'🌐',l:'Todos os segmentos'}].concat(OF_SEG_FS).concat(OF_SEG_REV);}
+  if(sid==='segmento') return [{i:'🌐',l:'Todos os segmentos'},{i:'🍽️',l:'Todos do Food Service'},{i:'🍔',l:'Redes Fast Food'},{i:'🏭',l:'Cozinhas Industriais'},{i:'🍽️',l:'Food Service Geral'},{i:'🚚',l:'Distribuidores FS'},{i:'🛒',l:'Todos da Revenda'},{i:'🛒',l:'Varejo'},{i:'📦',l:'Atacado'},{i:'🏪',l:'Distribuidores regionais'},{i:'🏬',l:'Centrais de compras'}];
   if(sid==='prazo')return OF_PRAZO;
   if(sid==='pag')return OF_PAG;
   if(sid==='frete')return[{i:'🚚',l:'Só CIF',s:'Entrego no destino, frete incluso'},{i:'📦',l:'Só FOB',s:'Preço saída fábrica'},{i:'🤝',l:'Flexível',s:'CIF ou FOB'}];
@@ -2759,7 +2834,7 @@ function _getOfOpts(sid){
   return[];
 }
 function _ofMiniResumo(){
-  var labels={cat:'Categoria',corte:'Corte',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. ind.',volume:'Volume',canal:'Canal',segmento:'Segmento',regioes:'Regiões',prazo:'Prazo',pag:'Pagamento',frete:'Frete',tipo:'Tipo'};
+  var labels={cat:'Categoria',corte:'Corte',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. ind.',volume:'Volume',segmento:'Segmento',regioes:'Regiões',prazo:'Prazo',pag:'Pagamento',frete:'Frete',tipo:'Tipo'};
   var filled=[];
   _ofSeq.forEach(function(sid,idx){if(idx>=_ofStepIdx||sid==='resumo'||sid==='preco')return;var val=_ofChoices[sid];if(!val)return;filled.push({sid:sid,idx:idx,lbl:labels[sid]||sid,val:val});});
   if(!filled.length)return'';
@@ -2816,8 +2891,8 @@ function renderOfStep(){
   document.getElementById('of-box').innerHTML=h;
 }
 function _buildOfResumo(){
-  var labels={cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. individual',volume:'Volume',canal:'Canal',segmento:'Segmento',regioes:'Regiões',prazo:'Prazo',pag:'Pagamento',frete:'Frete',tipo:'Tipo'};
-  var icons={cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',canal:'🎯',segmento:'👥',regioes:'🗺️',prazo:'🚚',pag:'💳',frete:'🚚',tipo:'🏷️'};
+  var labels={cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. individual',volume:'Volume',segmento:'Segmento',regioes:'Regiões',prazo:'Prazo',pag:'Pagamento',frete:'Frete',tipo:'Tipo'};
+  var icons={cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',segmento:'👥',regioes:'🗺️',prazo:'🚚',pag:'💳',frete:'🚚',tipo:'🏷️'};
   var h='<div style="display:flex;flex-direction:column;gap:6px">';
   _ofSeq.forEach(function(sid,idx){if(sid==='resumo'||sid==='preco')return;var val=_ofChoices[sid];if(!val)return;
     h+='<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:9px;cursor:pointer" onclick="_ofStepIdx='+idx+';renderOfStep()"><span style="font-size:14px">'+(icons[sid]||'📋')+'</span><div style="flex:1"><div style="font-size:10px;color:var(--w3)">'+(labels[sid]||sid)+'</div><div style="font-size:13px;font-weight:600;color:var(--w)">'+val+'</div></div><span style="font-size:12px;color:var(--am)">✏️</span></div>';
@@ -2872,13 +2947,64 @@ async function ofPublish(){
     preco:preco,unidade_preco:unidade,
     quantidade:volNum?Math.round(volNum):null,
     unidade_quantidade:c.volume||null,
-    condicao_especial:(c.canal||'')+' · '+(c.segmento||'')+' · Frete: '+(c.frete||'Flexível')+' · '+(c.tipo||'')+' · Regiões: '+(c.regioes||''),
+    condicao_especial:(c.segmento||'')+' · Frete: '+(c.frete||'Flexível')+' · '+(c.tipo||'')+' · Regiões: '+(c.regioes||''),
     status:'ativa'
   });
   if(error){console.log('Erro oferta:',JSON.stringify(error));fireToast('Erro: '+error.message);return;}
   closeOfertaFlow();
   fireToast('Oferta publicada! Compradores serão notificados. 🚀');
   if(document.getElementById('s-minhas-ofertas').classList.contains('on'))loadMinhasOfertas();
+  // Save last published offer data for PDF
+  window._lastOferta = {choices:JSON.parse(JSON.stringify(c)),preco:preco,unidade:unidade,ref:'OF-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*90000)+10000)};
+  // Show PDF download after short delay
+  setTimeout(function(){
+    var t=document.getElementById('toasts-ind');
+    if(t){
+      var el2=document.createElement('div');
+      el2.style.cssText='background:#060818;border:1px solid var(--am);border-radius:9px;padding:10px 13px;font-size:12px;color:#fff;pointer-events:auto;box-shadow:0 4px 18px rgba(245,184,0,.2);cursor:pointer';
+      el2.innerHTML='📄 Baixar PDF da oferta';
+      el2.onclick=function(){gerarPdfOferta();if(el2.parentNode)el2.parentNode.removeChild(el2);};
+      t.appendChild(el2);
+      setTimeout(function(){if(el2.parentNode)el2.parentNode.removeChild(el2);},15000);
+    }
+  },1500);
+}
+function gerarPdfOferta(){
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF();
+  var o=window._lastOferta||{};
+  var c=o.choices||{};
+  var ref=o.ref||'OF-0000';
+  var now=new Date().toLocaleString('pt-BR');
+  doc.setFontSize(20);doc.setTextColor(245,184,0);
+  doc.text('FoodHub Ind\u00fastria',20,25);
+  doc.setFontSize(10);doc.setTextColor(100);
+  doc.text('Mesa Nacional de Oportunidades',20,32);
+  doc.setDrawColor(200);doc.line(20,36,190,36);
+  doc.setFontSize(14);doc.setTextColor(0);
+  doc.text('Oferta Publicada',20,48);
+  doc.setFontSize(11);doc.setTextColor(60);
+  doc.text('N\u00ba: '+ref,20,56);
+  doc.text('Data: '+now,20,63);
+  doc.line(20,67,190,67);
+  var y=77;
+  var fields=[
+    ['Produto',c.cat||''],['Corte/Tipo',c.corte||''],['Conserva\u00e7\u00e3o',c.conserv||''],
+    ['Emb. master',c.embmaster||''],['Emb. individual',c.embind||''],['Volume',c.volume||''],
+    ['Segmento',c.segmento||''],['Regi\u00f5es',c.regioes||''],
+    ['Prazo faturamento',c.prazo||''],['Pagamento',c.pag||''],['Frete',c.frete||''],
+    ['Tipo de oferta',c.tipo||''],['Pre\u00e7o','R$'+(o.preco||'')+(o.unidade||'/kg')]
+  ];
+  fields.forEach(function(f){
+    if(!f[1])return;
+    doc.setFontSize(9);doc.setTextColor(130);doc.text(f[0],20,y);
+    doc.setFontSize(11);doc.setTextColor(30);doc.text(String(f[1]),75,y);
+    y+=9;
+  });
+  doc.setDrawColor(200);doc.line(20,y+4,190,y+4);
+  doc.setFontSize(8);doc.setTextColor(150);
+  doc.text('Oferta publicada na plataforma FoodHub \u00b7 myfoodhub.github.io/Food-Hub/industria.html',20,y+12);
+  doc.save('oferta_'+ref+'.pdf');
 }
 </script>
 
