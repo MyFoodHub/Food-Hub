@@ -1197,7 +1197,7 @@ window.go = window.go || function(id) {
         <div class="cf"><span class="cf-l">Fornecedor</span><span class="cf-v">Avícola Três Coroas · SIF 4412</span></div>
         <div class="cf"><span class="cf-l">Volume</span><span class="cf-v">10.000 kg</span></div>
         <div class="cf"><span class="cf-l">Preço total</span><span class="cf-v" style="color:var(--gn);font-family:var(--mono)">R$ 81.500,00</span></div>
-        <div class="cf"><span class="cf-l">Entrega</span><span class="cf-v">SP Capital · 4 dias úteis</span></div>
+        <div class="cf"><span class="cf-l">Entrega</span><span class="cf-v">SP Capital · 4 dias úteis p/ faturar</span></div>
         <div class="cf"><span class="cf-l">Pagamento</span><span class="cf-v">28 dias · Boleto</span></div>
         <div class="cf"><span class="cf-l">Frete</span><span class="cf-v">CIF (incluso)</span></div>
       </div>
@@ -1386,7 +1386,7 @@ window.go = window.go || function(id) {
               <input id="prop-volume" type="number" placeholder="0" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
             </div>
             <div style="flex:1">
-              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Prazo entrega (dias)</label>
+              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Prazo expedição (dias)</label>
               <input id="prop-prazo" type="number" placeholder="0" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
             </div>
           </div>
@@ -1695,7 +1695,7 @@ window.go = window.go || function(id) {
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div style="width:36px;height:36px;border-radius:8px;background:var(--g2);display:flex;align-items:center;justify-content:center;font-size:15px">🏭</div><div><div style="font-weight:600">Avícola Três Coroas</div><div style="font-size:11px;color:var(--t2)">Três Coroas – RS · Score: 91</div></div></div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div><div style="font-size:12px;color:var(--t2);margin-bottom:5px">Qualidade do produto</div><div class="stars" id="stars-q"><span class="star lit" onclick="rate('q',1)">★</span><span class="star lit" onclick="rate('q',2)">★</span><span class="star lit" onclick="rate('q',3)">★</span><span class="star lit" onclick="rate('q',4)">★</span><span class="star" onclick="rate('q',5)">★</span></div></div>
-          <div><div style="font-size:12px;color:var(--t2);margin-bottom:5px">Prazo de entrega</div><div class="stars" id="stars-p"><span class="star lit" onclick="rate('p',1)">★</span><span class="star lit" onclick="rate('p',2)">★</span><span class="star lit" onclick="rate('p',3)">★</span><span class="star lit" onclick="rate('p',4)">★</span><span class="star lit" onclick="rate('p',5)">★</span></div></div>
+          <div><div style="font-size:12px;color:var(--t2);margin-bottom:5px">Prazo faturamento/expedição</div><div class="stars" id="stars-p"><span class="star lit" onclick="rate('p',1)">★</span><span class="star lit" onclick="rate('p',2)">★</span><span class="star lit" onclick="rate('p',3)">★</span><span class="star lit" onclick="rate('p',4)">★</span><span class="star lit" onclick="rate('p',5)">★</span></div></div>
           <div><div style="font-size:12px;color:var(--t2);margin-bottom:5px">Comunicação</div><div class="stars" id="stars-c"><span class="star lit" onclick="rate('c',1)">★</span><span class="star lit" onclick="rate('c',2)">★</span><span class="star lit" onclick="rate('c',3)">★</span><span class="star lit" onclick="rate('c',4)">★</span><span class="star" onclick="rate('c',5)">★</span></div></div>
         </div>
       </div>
@@ -1800,7 +1800,7 @@ window.go = window.go || function(id) {
         <div style="background:rgba(0,200,255,.08);border-radius:7px;padding:7px 10px;margin-bottom:8px">
           <div style="font-size:12px;color:#E8E8E8;display:flex;justify-content:space-between;margin-bottom:3px"><span>Preço ofertado</span><strong style="color:#25D366">R$8,15/kg ✓</strong></div>
           <div style="font-size:12px;color:#E8E8E8;display:flex;justify-content:space-between;margin-bottom:3px"><span>Volume</span><span>12.000 kg</span></div>
-          <div style="font-size:12px;color:#E8E8E8;display:flex;justify-content:space-between"><span>Prazo entrega</span><span>4 dias úteis</span></div>
+          <div style="font-size:12px;color:#E8E8E8;display:flex;justify-content:space-between"><span>Prazo expedição</span><span>4 dias úteis p/ faturar</span></div>
         </div>
         <div style="font-size:10px;color:#25D366;margin-bottom:3px">✓ Abaixo do seu preço-alvo (R$8,20)</div>
         <div style="font-size:10px;color:rgba(255,255,255,.3);text-align:right">11:17 ✓✓</div>
@@ -3588,7 +3588,7 @@ var SCAN_LOCAL = [
 ];
 var SCAN_PRAZO = [
   {i:'🔴',l:'Urgente · até 48h',s:'Estoque crítico, disparo prioritário'},
-  {i:'🟡',l:'Até 5 dias úteis',s:'Padrão, mais propostas'},
+  {i:'🟡',l:'Até 5 dias úteis p/ faturar',s:'Padrão, mais propostas'},
   {i:'🟢',l:'Até 10 dias',s:'Planejado, melhor preço'},
   {i:'📅',l:'Data específica',s:'Informar na proposta'}
 ];
@@ -3613,7 +3613,7 @@ var SCAN_FLOW = [
   {id:'volume',q:'Qual o volume necessário?',sub:'Informe a quantidade aproximada.',type:'volume'},
   {id:'local',q:'Local de entrega — Estado?',sub:'Onde os fornecedores devem entregar.'},
   {id:'cidade',q:'Qual cidade?',sub:'Informe a cidade de entrega.',type:'cidade'},
-  {id:'prazo',q:'Qual o prazo?',sub:'Quando você precisa receber?'},
+  {id:'prazo',q:'Qual o prazo de faturamento?',sub:'Quando o fornecedor deve faturar e expedir.'},
   {id:'pag',q:'Condição de pagamento?',sub:'Quanto melhor o prazo, mais propostas.'},
   {id:'frete',q:'Preferência de frete?',sub:'Só receberá propostas de fornecedores que atendam sua condição.'},
   {id:'obs',q:'Alguma observação importante?',sub:'Certificações, condições especiais, requisitos de entrega...',type:'obs'},
@@ -3686,7 +3686,7 @@ function _getScanOpts(sid){
 }
 
 function _miniResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',frete:'Frete',obs:'Observações'};
+  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Expedição',pag:'Pagamento',frete:'Frete',obs:'Observações'};
   var filled=[];
   _scanStepSeq.forEach(function(sid,idx){
     if(idx>=_scanStepIdx||sid==='resumo'||sid==='preco') return;
@@ -3813,7 +3813,7 @@ function renderScan(){
 }
 
 function _buildResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',frete:'Frete',obs:'Observações'};
+  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Expedição',pag:'Pagamento',frete:'Frete',obs:'Observações'};
   var icons = {cat:'🍽️',corte:'🔪',osso:'🦴',miudos:'🫀',cabeca:'🐔',conserv:'❄️',embtipo:'📦',ovoemb:'🥚',volume:'📦',local:'📍',cidade:'🏙️',prazo:'⏱️',pag:'💳',frete:'🚚',obs:'📝'};
   var h='<div style="display:flex;flex-direction:column;gap:6px">';
   _scanStepSeq.forEach(function(sid,idx){
@@ -6336,7 +6336,7 @@ var SCAN_CAMPOS = {
   volume:   { label:'Volume',      pergunta:'Qual o volume? Ex: 500 caixas, 2 toneladas, 1.000 kg.' },
   alvo:     { label:'Preço-alvo',  pergunta:'Qual o preço-alvo? Ex: R$8,20 por quilo, R$14,00 por caixa.' },
   entrega:  { label:'Entrega',     pergunta:'Onde é a entrega? Cidade e estado.' },
-  prazo:    { label:'Prazo',       pergunta:'Qual o prazo de entrega? Ex: 5 dias, urgente em 48h.' },
+  prazo:    { label:'Prazo',       pergunta:'Qual o prazo de faturamento? Ex: 5 dias, urgente em 48h.' },
   pagto:    { label:'Pagamento',   pergunta:'Condição de pagamento? Ex: 28 dias boleto, PIX, 14 dias.' },
 };
 

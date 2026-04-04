@@ -602,7 +602,6 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--am);margin-left:12px">MINHAS OFERTAS</div>
     <div style="margin-left:auto;display:flex;gap:8px">
       <button onclick="openOfertaFlow()" style="border:none;border-radius:9px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000">+ Criar oferta proativa</button>
-      <button onclick="go('s-demandas')" style="background:transparent;color:var(--w2);border:1px solid var(--am3);border-radius:9px;padding:9px 16px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Demandas fora do portfólio →</button>
     </div>
   </div>
 
@@ -625,7 +624,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   <!-- FEED — PROPOSTAS DO FORNECEDOR -->
   <div style="font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:11px;display:flex;align-items:center;gap:8px">
     <div style="width:5px;height:5px;border-radius:50%;background:var(--am);animation:blink 1.4s infinite"></div>
-    Suas propostas enviadas
+    MINHAS PROPOSTAS
     <span style="margin-left:auto;font-size:10px;cursor:pointer;color:var(--am)" onclick="openOfertaFlow()">+ Nova oferta</span>
   </div>
   <div id="minhas-ofertas-list">
@@ -666,7 +665,6 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       </div>
       <div style="margin-top:14px;display:flex;gap:9px">
         <button class="btn btn-am">+ Criar oferta proativa</button>
-        <button class="btn-gh">Ver demandas fora do meu portfólio</button>
       </div>
     </div>
   </div>
@@ -2302,41 +2300,54 @@ async function loadDemandasMercado(){
 async function loadMinhasOfertas(){
   var el = document.getElementById('minhas-ofertas-list');
   if(!el) return;
-  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando suas propostas...</div>';
-  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum fornecedor vinculado a este login. Verifique o cadastro.</div>';return;}
-  var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume, local_entrega)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
-  if(error){console.log('Erro minhas ofertas:', JSON.stringify(error));el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar propostas.</div>';return;}
-  if(!data||data.length===0){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta enviada ainda.</div>';return;}
-  var html='<div class="ind-feed">';
+  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando propostas...</div>';
+  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum fornecedor vinculado.</div>';return;}
+  var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  if(error){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta enviada ainda.</div>';return;}
+  var receb=[],negoc=[],aceita=[],recus=[];
   data.forEach(function(p){
-    var dem = p.demandas||{};
-    var statusColor = p.status==='aceita'?'var(--go)':p.status==='recusada'?'var(--rd)':'var(--am)';
-    var statusLabel = p.status ? p.status.charAt(0).toUpperCase()+p.status.slice(1) : 'Recebida';
-    html+='<div class="ind-card">'+
-      '<div class="ind-card-img" style="background:linear-gradient(135deg,#0a0810,#1a1428)">'+
-        '<div style="font-size:50px;filter:drop-shadow(0 4px 14px rgba(0,0,0,.6))">📦</div>'+
-        '<div class="ind-card-badge" style="background:'+statusColor+'">'+statusLabel+'</div>'+
-      '</div>'+
-      '<div class="ind-card-body">'+
-        '<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px">'+(dem.produto_nome||'Proposta')+'</div>'+
-        '<div style="font-size:10.5px;color:var(--w2);margin-bottom:7px">'+(dem.local_entrega||'')+'</div>'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">'+
-          '<div class="ind-card-price">R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg')+'</div>'+
-          (p.volume_ofertado?'<span style="font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(0,255,157,.1);color:var(--gn);font-weight:700">'+Number(p.volume_ofertado).toLocaleString('pt-BR')+' '+(dem.unidade_volume||'kg')+'</span>':'') +
-        '</div>'+
-        '<div style="display:flex;gap:8px;font-size:11px;color:var(--w3);margin-bottom:8px">'+
-          (p.prazo_entrega_dias?'<span>Prazo: '+p.prazo_entrega_dias+'d</span>':'')+
-          (p.condicao_pagamento?'<span>· '+p.condicao_pagamento+'</span>':'')+
-        '</div>'+
-        (p.nota_fornecedor?'<div style="font-size:10px;color:var(--w3);margin-bottom:8px">'+p.nota_fornecedor+'</div>':'')+
-      '</div>'+
-    '</div>';
+    if(p.status==='aceita') aceita.push(p);
+    else if(p.status==='recusada') recus.push(p);
+    else if(p.status==='negociada') negoc.push(p);
+    else receb.push(p);
   });
-  html+='<div class="ind-card" style="border-style:dashed;opacity:.7;align-items:center;justify-content:center;min-height:280px;display:flex;flex-direction:column;gap:10px" onclick="openModal(\'modal-nova-oferta\')">'+
-    '<div style="font-size:40px">➕</div>'+
-    '<div style="font-size:14px;font-weight:700;color:var(--am)">Criar nova oferta</div>'+
-    '<div style="font-size:11px;color:var(--w3);text-align:center;max-width:140px;line-height:1.5">Proativa ou resposta a uma demanda</div>'+
-  '</div></div>';
+  function lineRow(p,btn){
+    var dem=p.demandas||{};
+    var produto=dem.produto_nome||'Proposta';
+    var preco='R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg');
+    var dt=p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+produto+'</div><div style="font-size:10px;color:var(--w3)">'+preco+(dt?' · '+dt:'')+'</div></div>'+btn+'</div>';
+  }
+  function secHeader(icon,label,count,id){
+    return '<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="var s=document.getElementById(\''+id+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);color:var(--w3)">'+icon+' '+label+' ('+count+')</span><span style="margin-left:auto;font-size:10px;color:var(--w4)">▾</span></div>';
+  }
+  var html='';
+  if(receb.length){
+    html+=secHeader('📨','RECEBIDAS',receb.length,'of-sec-receb');
+    html+='<div id="of-sec-receb">';
+    receb.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--am);flex-shrink:0">Aguardando...</span>');});
+    html+='</div>';
+  }
+  if(negoc.length){
+    html+=secHeader('🔵','EM NEGOCIAÇÃO',negoc.length,'of-sec-negoc');
+    html+='<div id="of-sec-negoc">';
+    negoc.forEach(function(p){html+=lineRow(p,'<button style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--b2);background:var(--s3);color:var(--w2);cursor:pointer;flex-shrink:0;font-family:sans-serif">Continuar →</button>');});
+    html+='</div>';
+  }
+  if(aceita.length){
+    html+=secHeader('✅','ACEITAS',aceita.length,'of-sec-aceita');
+    html+='<div id="of-sec-aceita">';
+    aceita.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--go);flex-shrink:0">Aceita ✓</span>');});
+    html+='</div>';
+  }
+  if(recus.length){
+    html+=secHeader('❌','RECUSADAS',recus.length,'of-sec-recus');
+    html+='<div id="of-sec-recus">';
+    recus.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--rd);flex-shrink:0">Recusada</span>');});
+    html+='</div>';
+  }
+  if(!html) html='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta ainda.</div>';
   el.innerHTML=html;
 }
 
@@ -2497,7 +2508,7 @@ function openResponder(idx){
   h+='<div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;font-family:var(--mono)">Sua proposta</div>';
   h+='<div style="display:flex;flex-direction:column;gap:10px">';
   h+='<div style="display:flex;gap:10px"><div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Volume que pode fornecer</div><div style="display:flex;gap:6px"><input id="resp-vol" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">'+(d.unidade_volume||'kg')+'</span></div></div>';
-  h+='<div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo de entrega</div><div style="display:flex;gap:6px"><input id="resp-prazo" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">dias úteis</span></div></div></div>';
+  h+='<div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo de faturamento/expedição</div><div style="display:flex;gap:6px"><input id="resp-prazo" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">dias úteis para faturar</span></div></div></div>';
   h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Condição de pagamento</div><select id="resp-pag" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;outline:none"><option value="">Selecione</option><option value="À vista PIX">À vista · PIX</option><option value="14 dias boleto">14 dias · boleto</option><option value="28 dias boleto">28 dias · boleto</option><option value="30 dias boleto">30 dias · boleto</option><option value="45 dias boleto">45 dias · boleto</option><option value="Outro">Outro</option></select></div>';
   // Price with comparison
   h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Seu preço *</div><div style="display:flex;gap:6px;align-items:center"><span style="font-size:14px;color:var(--w3)">R$</span><input id="resp-preco" type="number" step="0.01" placeholder="0.00" oninput="respUpdatePreco();respCheckSubmit()" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:16px;font-weight:700;color:#fff;font-family:var(--mono);outline:none"><span style="font-size:12px;color:var(--w3)">'+(d.unidade_volume==='kg'?'/kg':'/un')+'</span></div>';
@@ -2671,12 +2682,18 @@ var OF_CONSERV=[{i:'❄️',l:'Congelado',s:'Temperatura abaixo de -18°C'},{i:'
 var OF_EMBM=[{i:'📦',l:'cx 10kg'},{i:'📦',l:'cx 12kg'},{i:'📦',l:'cx 15kg'},{i:'📦',l:'cx 20kg'},{i:'📦',l:'cx 25kg'},{i:'🧺',l:'saco 25kg'},{i:'🧺',l:'saco 50kg'},{i:'📦',l:'fardo 30kg'},{i:'🏭',l:'granel'}];
 var OF_EMBI=[{i:'🔹',l:'IQF individual'},{i:'🔹',l:'Pacote 500g'},{i:'🔹',l:'Pacote 1kg'},{i:'🔹',l:'Pacote 3kg'},{i:'🔹',l:'Pacote 5kg'},{i:'🔹',l:'Bandeja filme stretch'},{i:'🔹',l:'A granel'}];
 var OF_CANAL=[{i:'🍽️',l:'Food Service',s:'Restaurantes, redes, cozinhas'},{i:'🛒',l:'Revenda',s:'Varejo, atacado, distribuidores'},{i:'🏭',l:'Ambos os canais',s:'Food Service + Revenda'}];
-var OF_SEG_FS=[{i:'🍔',l:'Redes Fast Food'},{i:'🏭',l:'Cozinhas Industriais'},{i:'🍽️',l:'Food Service Geral'},{i:'🚚',l:'Distribuidores'}];
-var OF_SEG_REV=[{i:'🛒',l:'Varejo'},{i:'📦',l:'Atacado'},{i:'🏪',l:'Distribuidores regionais'},{i:'🏬',l:'Centrais de compras'}];
+var OF_SEG_FS=[{i:'🍽️',l:'Todos do Food Service'},{i:'🍔',l:'Redes Fast Food'},{i:'🏭',l:'Cozinhas Industriais'},{i:'🍽️',l:'Food Service Geral'},{i:'🚚',l:'Distribuidores'}];
+var OF_SEG_REV=[{i:'🛒',l:'Todos da Revenda'},{i:'🛒',l:'Varejo'},{i:'📦',l:'Atacado'},{i:'🏪',l:'Distribuidores regionais'},{i:'🏬',l:'Centrais de compras'}];
 var OF_PRAZO=[{i:'⚡',l:'24h'},{i:'🚚',l:'3 dias'},{i:'🚚',l:'5 dias'},{i:'🚚',l:'7 dias'},{i:'📅',l:'10+ dias'}];
 var OF_PAG=[{i:'💳',l:'À vista · PIX'},{i:'📄',l:'14 dias · boleto'},{i:'📄',l:'28 dias · boleto'},{i:'📄',l:'30 dias · boleto'},{i:'📄',l:'45 dias · boleto'}];
 var OF_TIPO=[{i:'⚡',l:'Estoque disponível',s:'Pronta entrega'},{i:'📢',l:'Lançamento',s:'Novo produto'},{i:'🏷️',l:'Promoção',s:'Preço especial temporário'},{i:'📦',l:'Volume excedente',s:'Lote para escoar'}];
-var OF_ESTADOS=['SP','RJ','MG','PR','RS','SC','BA','GO','MT','MS','PA','CE','PE','MA','AM','ES','RN','AL','PI','PB','SE','RO','TO','AC','AP','RR','DF'];
+var OF_REGIOES={
+  'Norte':['AM','PA','RO','RR','AC','AP','TO'],
+  'Nordeste':['BA','CE','MA','PE','PB','PI','RN','AL','SE'],
+  'Centro-Oeste':['GO','MT','MS','DF'],
+  'Sudeste':['SP','RJ','MG','ES'],
+  'Sul':['PR','RS','SC']
+};
 
 var OF_STEPS=[
   {id:'cat',q:'Qual produto você oferta?',sub:'Selecione a categoria.'},
@@ -2688,7 +2705,7 @@ var OF_STEPS=[
   {id:'canal',q:'Canal alvo?',sub:'Para quem você quer vender.'},
   {id:'segmento',q:'Segmento?',sub:'Refine o público-alvo.'},
   {id:'regioes',q:'Regiões atendidas?',sub:'Marque os estados onde você entrega.',type:'regioes'},
-  {id:'prazo',q:'Prazo de entrega?',sub:'Tempo para entregar após fechar.'},
+  {id:'prazo',q:'Prazo de faturamento/expedição?',sub:'Tempo para faturar após fechar.'},
   {id:'pag',q:'Condição de pagamento?',sub:'Condições que você aceita.'},
   {id:'frete',q:'Sua condição de frete?',sub:'Só aparecerá para compradores compatíveis.'},
   {id:'tipo',q:'Tipo de oferta?',sub:'Classifique sua oferta.'},
@@ -2734,7 +2751,7 @@ function _getOfOpts(sid){
   if(sid==='embmaster')return OF_EMBM;
   if(sid==='embind')return OF_EMBI;
   if(sid==='canal')return OF_CANAL;
-  if(sid==='segmento'){var ch=_ofChoices.canal||'';return ch==='Food Service'?OF_SEG_FS:ch==='Revenda'?OF_SEG_REV:OF_SEG_FS.concat(OF_SEG_REV);}
+  if(sid==='segmento'){var ch=_ofChoices.canal||'';return ch==='Food Service'?OF_SEG_FS:ch==='Revenda'?OF_SEG_REV:[{i:'🌐',l:'Todos os segmentos'}].concat(OF_SEG_FS).concat(OF_SEG_REV);}
   if(sid==='prazo')return OF_PRAZO;
   if(sid==='pag')return OF_PAG;
   if(sid==='frete')return[{i:'🚚',l:'Só CIF',s:'Entrego no destino, frete incluso'},{i:'📦',l:'Só FOB',s:'Preço saída fábrica'},{i:'🤝',l:'Flexível',s:'CIF ou FOB'}];
@@ -2773,13 +2790,21 @@ function renderOfStep(){
     h+='<div style="display:flex;gap:8px;margin-bottom:10px"><input type="number" placeholder="Ex: 10000" id="of-vol-num" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:16px;font-weight:700;color:#fff;font-family:var(--mono);outline:none"><select id="of-vol-un" style="width:90px;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:13px;color:#fff;outline:none"><option value="kg">kg</option><option value="cx">cx</option><option value="un">un</option><option value="fardo">fardo</option></select></div>';
     h+='<button style="width:100%;border:none;border-radius:9px;padding:12px;font-family:sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--am);color:#000" onclick="ofConfirmVol()">Confirmar volume →</button>';
   } else if(step.type==='regioes'){
-    h+='<button style="width:100%;border:none;border-radius:9px;padding:10px;font-family:sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:rgba(245,184,0,.12);color:var(--am);border:1px solid rgba(245,184,0,.3);margin-bottom:10px" onclick="ofSelectAllRegioes()">✅ Atendo todo o Brasil</button>';
-    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">';
-    OF_ESTADOS.forEach(function(uf){
-      h+='<label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:var(--s2);border:1px solid var(--b1);border-radius:7px;font-size:12px;color:var(--w);cursor:pointer"><input type="checkbox" class="of-uf-cb" value="'+uf+'" style="accent-color:var(--am)"> '+uf+'</label>';
+    h+='<button style="width:100%;border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(245,184,0,.12);color:var(--am);border:1px solid rgba(245,184,0,.3);margin-bottom:10px" onclick="ofSelectAllRegioes()">✅ Atendo todo o Brasil</button>';
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
+    Object.keys(OF_REGIOES).forEach(function(reg){
+      h+='<button onclick="ofToggleCluster(\''+reg+'\')" style="padding:6px 12px;border-radius:7px;border:1px solid var(--b1);background:var(--s3);color:var(--w2);font-size:11px;font-weight:600;cursor:pointer;font-family:sans-serif">'+reg+'</button>';
     });
     h+='</div>';
-    h+='<button style="width:100%;border:none;border-radius:9px;padding:12px;font-family:sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--am);color:#000" onclick="ofConfirmRegioes()">Confirmar regiões →</button>';
+    Object.keys(OF_REGIOES).forEach(function(reg){
+      h+='<div style="font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:.08em;margin:8px 0 4px;font-family:var(--mono)">'+reg+'</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">';
+      OF_REGIOES[reg].forEach(function(uf){
+        h+='<label style="display:flex;align-items:center;gap:4px;padding:5px 8px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;font-size:11px;color:var(--w);cursor:pointer"><input type="checkbox" class="of-uf-cb" value="'+uf+'" data-reg="'+reg+'" style="accent-color:var(--am)"> '+uf+'</label>';
+      });
+      h+='</div>';
+    });
+    h+='<button style="width:100%;border:none;border-radius:9px;padding:12px;font-family:sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:var(--am);color:#000;margin-top:10px" onclick="ofConfirmRegioes()">Confirmar regiões →</button>';
   } else {
     var opts=_getOfOpts(step.id);
     h+='<div style="display:flex;flex-direction:column;gap:7px;overflow-y:auto;overflow-x:hidden">';
@@ -2805,6 +2830,13 @@ function ofConfirmVol(){
 }
 function ofSelectAllRegioes(){
   document.querySelectorAll('.of-uf-cb').forEach(function(cb){cb.checked=true;});
+}
+function ofToggleCluster(reg){
+  var ufs=OF_REGIOES[reg]||[];
+  var cbs=document.querySelectorAll('.of-uf-cb');
+  var allChecked=true;
+  cbs.forEach(function(cb){if(ufs.indexOf(cb.value)>=0&&!cb.checked)allChecked=false;});
+  cbs.forEach(function(cb){if(ufs.indexOf(cb.value)>=0)cb.checked=!allChecked;});
 }
 function ofConfirmRegioes(){
   var sel=[];document.querySelectorAll('.of-uf-cb:checked').forEach(function(cb){sel.push(cb.value);});
