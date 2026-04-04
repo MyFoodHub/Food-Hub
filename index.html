@@ -1126,178 +1126,38 @@ window.go = window.go || function(id) {
 
 <!-- ══ MARKET ══ -->
 <div id="sMarket" class="screen">
-
-  <!-- TOPBAR: logo · tabs · voz -->
-  <div style="display:flex;align-items:center;gap:0;padding:0 14px;background:var(--bg2);border-bottom:1px solid var(--b1);flex-shrink:0;height:48px">
-    <div class="logo" style="margin-right:12px;flex-shrink:0"><div class="logo-dot"></div>Food<span>Hub</span></div>
-    <!-- TABS inline no topbar -->
-    <div style="display:flex;flex:1;height:100%">
-      <button onclick="mktTab(this,'nervosos')" id="mkt-t-nervosos"
-        style="flex:1;height:100%;background:none;border:none;border-bottom:2px solid var(--ac);color:var(--ac);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0 8px">
-        ⚡ Itens Nervosos <span id="mkt-badge-n" style="background:var(--gn);color:#000;border-radius:8px;padding:1px 5px;font-size:9px;margin-left:2px">4</span>
-      </button>
-      <button onclick="mktTab(this,'interesses')" id="mkt-t-interesses"
-        style="flex:1;height:100%;background:none;border:none;border-bottom:2px solid transparent;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0 8px">
-        🎯 Meus Interesses <span style="background:var(--p2);color:var(--pu);border-radius:8px;padding:1px 5px;font-size:9px;margin-left:2px">3</span>
-      </button>
-    </div>
-    <!-- Voz + live -->
-    <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;margin-left:8px">
-      <div style="display:flex;align-items:center;gap:4px">
-        <div style="width:5px;height:5px;border-radius:50%;background:var(--gn);box-shadow:0 0 4px var(--gn);animation:pulse-dot 1.8s infinite"></div>
-        <span style="font-size:9px;color:var(--gn);font-weight:700">live</span>
-      </div>
-      <button onclick="go('sVoz')" style="background:linear-gradient(135deg,rgba(0,200,255,.15),rgba(155,122,255,.1));border:1px solid rgba(0,200,255,.25);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--ac);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700">🎙️</button>
-      <button class="btn-ghost sm" onclick="go('s1')" style="font-size:11px;padding:5px 10px">← Mesa</button>
+  <div class="topbar">
+    <div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:5px;height:5px;border-radius:50%;background:var(--gn);box-shadow:0 0 4px var(--gn);animation:pulse-dot 1.8s infinite"></div><span style="font-size:9px;color:var(--gn);font-weight:700">LIVE</span></div>
+      <button class="btn-ghost sm" onclick="go('s1')">← Mesa</button>
     </div>
   </div>
-
-  <!-- SUB-BAR: filtros rápidos (só visível na tab nervosos) -->
-  <div id="mkt-filtro-bar" style="display:flex;gap:5px;padding:7px 14px;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.04);background:var(--bg);flex-shrink:0">
-    <button onclick="mktFiltro(this,'todas')"    class="mkt-f" style="flex-shrink:0;background:var(--a2);border:1px solid var(--ac);border-radius:10px;padding:3px 11px;font-size:10px;color:var(--ac);font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Todos</button>
-    <button onclick="mktFiltro(this,'urgente')"  class="mkt-f" style="flex-shrink:0;background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:3px 11px;font-size:10px;color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">🔴 Urgente</button>
-    <button onclick="mktFiltro(this,'queda')"    class="mkt-f" style="flex-shrink:0;background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:3px 11px;font-size:10px;color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">📉 Queda</button>
-    <button onclick="mktFiltro(this,'proposta')" class="mkt-f" style="flex-shrink:0;background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:3px 11px;font-size:10px;color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">📋 Propostas</button>
-  </div>
-
-<!-- TAB NERVOSOS -->
-  <div id="mkt-tab-nervosos" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0">
-
-    <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px" id="mkt-feed">
-
-      <!-- FRANGO -->
-      <div class="mkt-card" id="mkt-card-frango" data-tag="queda proposta">
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
-          <div style="width:42px;height:42px;border-radius:10px;background:rgba(0,224,154,.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🍗</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:2px">
-              <span style="font-size:13px;font-weight:700;color:var(--t1)">Frango Sassami IQF</span>
-              <span style="font-size:9px;background:rgba(0,224,154,.15);color:var(--gn);padding:1px 6px;border-radius:3px;font-weight:700">📉 -8%</span>
-            </div>
-            <div style="font-size:10px;color:var(--t3)">cx 10kg · Avícola Três Coroas · SIF 4412 · PR</div>
-            <div style="font-size:10px;color:var(--gn);font-weight:600;margin-top:3px">✓ 2 propostas abaixo do alvo R$8,20/kg</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:17px;font-weight:700;font-family:monospace;color:var(--gn)">R$7,20</div>
-            <div style="font-size:9px;color:var(--t3)">/kg · 5d · Score 91</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:5px" id="mkt-actions-frango">
-          <button onclick="mktFechar('frango','Avícola Três Coroas','R$7,20/kg')" style="flex:2;background:var(--gn);border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif">⚡ Fechar</button>
-          <button onclick="go('sContra');mktPrepContra('frango','Avícola Três Coroas','7.20','/kg','Frango Sassami IQF · cx 10kg','8.20')" style="flex:2;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:12px;color:var(--ac);cursor:pointer;font-family:'DM Sans',sans-serif">↩ Contra</button>
-          <button onclick="mktSalvar('frango')" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:14px;cursor:pointer">🔖</button>
-        </div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-sec">Mesa</div>
+      <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
+      <div class="nav-item active"><span class="ni">🏷️</span>Mesa ao Vivo</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
+      <div class="nav-sec">Gestão</div>
+      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+    </div>
+    <div class="main">
+      <div class="sh"><h3>⚡ Mesa ao Vivo</h3><span id="mkt-count" class="badge bb"></span></div>
+      <div style="display:flex;gap:6px;margin-bottom:12px" id="mkt-filtros">
+        <button class="neg-filt active" onclick="mktSetFilt(this,'todos')">Todos</button>
+        <button class="neg-filt" onclick="mktSetFilt(this,'urgente')">🔴 Urgente</button>
+        <button class="neg-filt" onclick="mktSetFilt(this,'queda')">📉 Queda</button>
+        <button class="neg-filt" onclick="mktSetFilt(this,'proposta')">📋 Com proposta</button>
       </div>
-
-      <!-- MUÇARELA -->
-      <div class="mkt-card" id="mkt-card-mucala" data-tag="urgente proposta" style="border-color:rgba(255,64,96,.25);border-left-color:var(--rd)">
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
-          <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,64,96,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🧀</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:2px">
-              <span style="font-size:13px;font-weight:700;color:var(--t1)">Muçarela Barra 2,3kg</span>
-              <span style="font-size:9px;background:rgba(255,64,96,.15);color:var(--rd);padding:1px 6px;border-radius:3px;font-weight:700">🔴 Expira 3h</span>
-            </div>
-            <div style="font-size:10px;color:var(--t3)">cx 5un · Laticínios Bela Vista · SIF 2207 · MG</div>
-            <div style="font-size:10px;color:var(--rd);font-weight:600;margin-top:3px">Urgente — abaixo do alvo · feche agora</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:17px;font-weight:700;font-family:monospace;color:var(--gn)">R$23,40</div>
-            <div style="font-size:9px;color:var(--t3)">/kg · 2d · Score 93</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:5px" id="mkt-actions-mucala">
-          <button onclick="mktFechar('mucala','Laticínios Bela Vista','R$23,40/kg')" style="flex:2;background:var(--rd);border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif">⚡ Fechar agora</button>
-          <button onclick="go('sContra');mktPrepContra('mucala','Laticínios Bela Vista','23.40','/kg','Muçarela Barra 2,3kg · cx 5un','23.80')" style="flex:2;background:var(--bg3);border:1px solid rgba(255,64,96,.2);border-radius:8px;padding:10px;font-size:12px;color:var(--rd);cursor:pointer;font-family:'DM Sans',sans-serif">↩ Contra</button>
-          <button onclick="mktSalvar('mucala')" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:14px;cursor:pointer">🔖</button>
-        </div>
+      <div id="mkt-live-list">
+        <div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Carregando ofertas...</div>
       </div>
-
-      <!-- OVOS -->
-      <div class="mkt-card" id="mkt-card-ovos" data-tag="proposta" style="border-left-color:var(--am)">
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
-          <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,160,0,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🥚</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:2px">
-              <span style="font-size:13px;font-weight:700;color:var(--t1)">Ovos Branco Tipo A</span>
-              <span style="font-size:9px;background:rgba(255,160,0,.15);color:var(--am);padding:1px 6px;border-radius:3px;font-weight:700">⚠ acima alvo</span>
-            </div>
-            <div style="font-size:10px;color:var(--t3)">cx 30dz · Granja Boa Vista · SP · 3.000 cx</div>
-            <div style="font-size:10px;color:var(--am);font-weight:600;margin-top:3px">R$14,50 · alvo R$14,20 · Δ R$0,30/cx</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:17px;font-weight:700;font-family:monospace;color:var(--am)">R$14,50</div>
-            <div style="font-size:9px;color:var(--t3)">/cx · 3d · Score 84</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:5px" id="mkt-actions-ovos">
-          <button onclick="go('sContra');mktPrepContra('ovos','Granja Boa Vista','14.50','/cx','Ovos Branco Tipo A · cx 30dz','14.20')" style="flex:2;background:var(--am);border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif">↩ Negociar R$14,20</button>
-          <button onclick="go('sScan')" style="flex:2;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:12px;color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">📡 Criar demanda</button>
-          <button onclick="mktSalvar('ovos')" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:14px;cursor:pointer">🔖</button>
-        </div>
-      </div>
-
-      <!-- CARNE BOVINA -->
-      <div class="mkt-card" id="mkt-card-bovina" data-tag="queda" style="border-left-color:var(--ac)">
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
-          <div style="width:42px;height:42px;border-radius:10px;background:var(--a2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🥩</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px">Carne Moída 70/30</div>
-            <div style="font-size:10px;color:var(--t3)">cx 20kg · Minerva Foods · SIF 4108 · GO</div>
-            <div style="font-size:10px;color:var(--t3);margin-top:3px">Sem propostas ainda — 41 fornecedores notificados</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:17px;font-weight:700;font-family:monospace;color:var(--t1)">R$18,90</div>
-            <div style="font-size:9px;color:var(--t3)">/kg · 5d</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:5px">
-          <button onclick="go('sScan')" style="flex:1;background:var(--a2);border:1px solid var(--ac);border-radius:8px;padding:10px;font-size:12px;color:var(--ac);font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">📡 Criar demanda</button>
-          <button onclick="mktSalvar('bovina')" style="flex:0 0 44px;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:14px;cursor:pointer">🔖</button>
-        </div>
-      </div>
-
-      <!-- CTA Criar demanda -->
-      <div style="background:linear-gradient(135deg,rgba(0,200,255,.06),rgba(0,200,255,.02));border:1px solid rgba(0,200,255,.15);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:2px">
-        <span style="font-size:20px">📡</span>
-        <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--t1)">Não encontrou?</div><div style="font-size:11px;color:var(--t2)">Crie uma demanda — 500+ fornecedores em 24h.</div></div>
-        <button onclick="go('sScan')" class="btn sm" style="font-size:11px;flex-shrink:0">Criar →</button>
-      </div>
-
     </div>
   </div>
-
-  <!-- TAB INTERESSES -->
-  <div id="mkt-tab-interesses" style="display:none;flex:1;overflow-y:auto;flex-direction:column;min-height:0">
-    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-
-      <div style="background:linear-gradient(135deg,rgba(155,122,255,.08),rgba(155,122,255,.02));border:1px solid rgba(155,122,255,.2);border-radius:10px;padding:9px 13px;margin-bottom:2px">
-        <div style="font-size:11px;color:var(--t1);line-height:1.6"><strong style="color:var(--pu)">Ofertas das categorias que você acompanha.</strong> Quanto mais você nos conta, melhores ficam.</div>
-        <button onclick="go('sOfertasTemas')" style="background:none;border:none;font-size:11px;color:var(--pu);cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:3px;padding:0">+ Gerenciar categorias →</button>
-      </div>
-
-      <div class="card click" style="display:flex;align-items:center;gap:11px;padding:12px 14px;border-left:3px solid var(--pu)" onclick="go('sOfertas')">
-        <div style="width:42px;height:42px;border-radius:10px;background:var(--p2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🍫</div>
-        <div style="flex:1"><div style="font-size:10px;color:var(--pu);font-weight:700;margin-bottom:2px">ACHOCOLATADOS · Nestlé</div><div style="font-size:12px;font-weight:600">Nescau 2.0 · cx 6un × 400g</div><div style="font-size:10px;color:var(--t2)">800 cx · Entrega 5d · indústria parceira</div></div>
-        <div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:700;font-family:monospace;color:var(--gn)">R$89,90</div><div style="font-size:9px;color:var(--pu);font-weight:700">-8% canal</div></div>
-      </div>
-
-      <div class="card click" style="display:flex;align-items:center;gap:11px;padding:12px 14px;border-left:3px solid var(--am)" onclick="go('sOfertas')">
-        <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,160,0,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🧴</div>
-        <div style="flex:1"><div style="font-size:10px;color:var(--am);font-weight:700;margin-bottom:2px">HIGIENE · Unilever</div><div style="font-size:12px;font-weight:600">Kit Dove + Rexona · 48un</div><div style="font-size:10px;color:var(--t2)">Válido até 31/03 · Mín 2 kits</div></div>
-        <div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:700;font-family:monospace;color:var(--gn)">R$312</div><div style="font-size:9px;color:var(--am);font-weight:700">-12% canal</div></div>
-      </div>
-
-      <div class="card click" style="display:flex;align-items:center;gap:11px;padding:12px 14px;border-left:3px solid var(--ac)" onclick="go('sOfertas')">
-        <div style="width:42px;height:42px;border-radius:10px;background:var(--a2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🥛</div>
-        <div style="flex:1"><div style="font-size:10px;color:var(--ac);font-weight:700;margin-bottom:2px">LEITE EM PÓ · Nestlé</div><div style="font-size:12px;font-weight:600">Ninho Integral · cx 24 × 400g</div><div style="font-size:10px;color:var(--t2)">500 cx · CIF SP capital</div></div>
-        <div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:700;font-family:monospace;color:var(--gn)">R$198</div><div style="font-size:9px;color:var(--ac);font-weight:700">-13% canal</div></div>
-      </div>
-
-      <button onclick="go('sOfertas')" class="btn-ghost" style="width:100%;margin-top:4px;font-size:12px">Ver todas as ofertas →</button>
-    </div>
-  </div>
-
 </div>
 
 <div id="sOffers" class="screen">
@@ -1444,18 +1304,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
     </div>
     <div class="main">
-      <div class="sh"><h3>Meus Negócios</h3></div>
-      <!-- Filtros -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="neg-filtros">
-        <button class="neg-filt active" onclick="negSetFilt(this,'todos')">Todos</button>
-        <button class="neg-filt" onclick="negSetFilt(this,'com_propostas')">Com propostas</button>
-        <button class="neg-filt" onclick="negSetFilt(this,'negociando')">Em negociação</button>
-        <button class="neg-filt" onclick="negSetFilt(this,'fechado')">Fechados</button>
-        <button class="neg-filt" onclick="negSetFilt(this,'expirado')">Expirados</button>
-      </div>
-      <!-- KPIs -->
-      <div id="neg-kpis" style="display:flex;gap:8px;margin-bottom:12px"></div>
-      <!-- Lista -->
+      <div class="sh"><h3>Pipeline de Negócios</h3></div>
       <div id="neg-lista">
         <div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Carregando negócios...</div>
       </div>
@@ -3672,7 +3521,7 @@ function go(id){
   if(id==='sNegocios')negRender();
   if(id==='sKYC')setTimeout(initKYC,50);
   if(id==='sPerfil')setTimeout(populatePerfil,50);
-  if(id==='sMarket'){setTimeout(function(){mktTab(null,'nervosos');},80);}
+  if(id==='sMarket')loadMarketLive();
   if(id==='sVoz')setTimeout(vozBriefing,400);
   if(id==='sScan'){_scanVozOn=false;_scanVozData=null;var v=document.getElementById('scan-voz-validacao');if(v)v.style.display='none';scanVozStop();}
   if(id==='sPerfil')setTimeout(populatePerfil,50);
@@ -4146,121 +3995,114 @@ async function launchScan(){
 
 
 
-/* ── NEGÓCIOS DATA ── */
-var _negFiltAtivo = 'todos';
+/* ── NEGÓCIOS PIPELINE ── */
 var _negDemandas = [];
+var _negSections = {};
 
 async function negRender(){
   var lista = document.getElementById('neg-lista');
-  var kpis = document.getElementById('neg-kpis');
   if(!lista) return;
   if(!_currentUser){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Faça login para ver seus negócios.</div>';return;}
-  lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando negócios...</div>';
-  var { data, error } = await _sb.from('demandas').select('*, propostas(id)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
-  if(error){console.log('Erro negocios:', JSON.stringify(error));lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
+  lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando pipeline...</div>';
+  // Fetch demandas with propostas
+  var { data, error } = await _sb.from('demandas').select('*, propostas(id, fornecedor_id, preco_ofertado, score_total, fornecedores(nome))').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  if(error){lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
   _negDemandas = data||[];
-  // Check negociacoes for each demanda
+  // Fetch negociacoes
   var demIds=_negDemandas.map(function(d){return d.id;});
   var negMap={};
   if(demIds.length){
-    var { data: negs } = await _sb.from('negociacoes').select('demanda_id,status').in('demanda_id',demIds);
-    if(negs) negs.forEach(function(n){negMap[n.demanda_id]=n.status;});
+    var { data: negs } = await _sb.from('negociacoes').select('demanda_id,status,fornecedor_id').in('demanda_id',demIds);
+    if(negs) negs.forEach(function(n){negMap[n.demanda_id]=n;});
   }
-  // Compute status for each demanda
+  // Fetch contra-propostas
+  var { data: cps } = await _sb.from('contra_propostas').select('*, propostas:proposta_id(preco_ofertado, fornecedores:fornecedor_id(nome))').eq('user_id',_currentUser.id);
+  // Classify demandas
+  var secProp=[],secNeg=[],secFech=[],secAguard=[];
   _negDemandas.forEach(function(d){
-    var propCount=(d.propostas&&d.propostas.length)||0;
-    var negStatus=negMap[d.id]||null;
-    if(d.status==='fechada') d._negStatus='fechado';
-    else if(d.status==='expirada'||d.status==='cancelada') d._negStatus='expirado';
-    else if(negStatus==='em_andamento'||negStatus==='aceita') d._negStatus='negociando';
-    else if(propCount>0) d._negStatus='com_propostas';
-    else d._negStatus='aguardando';
-    d._propCount=propCount;
+    var props=(d.propostas&&d.propostas.length)?d.propostas:[];
+    var neg=negMap[d.id]||null;
+    if(d.status==='fechada'){secFech.push(d);d._sec='fechado';}
+    else if(neg&&(neg.status==='em_andamento'||neg.status==='aceita')){secNeg.push(d);d._sec='neg';d._neg=neg;}
+    else if(props.length>0){secProp.push(d);d._sec='prop';}
+    else if(d.status==='ativa'){secAguard.push(d);d._sec='aguard';}
   });
-  // Filter
-  var f=_negFiltAtivo;
-  var filtered=_negDemandas.filter(function(d){return f==='todos'||d._negStatus===f;});
-  // KPIs
-  var cntAguard=_negDemandas.filter(function(d){return d._negStatus==='aguardando';}).length;
-  var cntProp=_negDemandas.filter(function(d){return d._negStatus==='com_propostas';}).length;
-  var cntNeg=_negDemandas.filter(function(d){return d._negStatus==='negociando';}).length;
-  var cntFech=_negDemandas.filter(function(d){return d._negStatus==='fechado';}).length;
-  if(kpis) kpis.innerHTML='<div class="metric" style="flex:1"><div class="ml">Aguardando</div><div class="mv" style="color:var(--am);font-size:18px">'+cntAguard+'</div></div>'
-    +'<div class="metric" style="flex:1"><div class="ml">Com propostas</div><div class="mv" style="color:var(--gn);font-size:18px">'+cntProp+'</div></div>'
-    +'<div class="metric" style="flex:1"><div class="ml">Negociando</div><div class="mv" style="color:var(--ac);font-size:18px">'+cntNeg+'</div></div>'
-    +'<div class="metric" style="flex:1"><div class="ml">Fechados</div><div class="mv" style="color:var(--gn);font-size:18px">'+cntFech+'</div></div>';
-  // Render list
-  if(!filtered.length){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">Nenhum negócio encontrado.</div>';return;}
-  var html='<div style="display:flex;flex-direction:column;gap:6px">';
-  filtered.forEach(function(d){
-    var st=d._negStatus;
-    var statusIcon=st==='aguardando'?'🟡':st==='com_propostas'?'🟢':st==='negociando'?'🔵':st==='fechado'?'✅':'⚫';
-    var statusLbl=st==='aguardando'?'Aguardando propostas':st==='com_propostas'?d._propCount+' proposta'+(d._propCount>1?'s':'')+' recebida'+(d._propCount>1?'s':''):st==='negociando'?'Em negociação':st==='fechado'?'Fechado':'Expirado';
-    var statusColor=st==='aguardando'?'var(--am)':st==='com_propostas'?'var(--gn)':st==='negociando'?'var(--ac)':st==='fechado'?'var(--gn)':'var(--t3)';
-    var produto=d.produto_nome||'Demanda';
-    var espec=d.especificacao||'';
-    var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'';
-    var local=d.local_entrega||'';
-    var prazo=d.prazo_especifico?new Date(d.prazo_especifico).toLocaleDateString('pt-BR'):(d.condicao_pagamento||'');
-    var codigo=d.codigo||'';
-    var data=d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'';
-    var btnHtml='';
-    if(st==='com_propostas') btnHtml='<button class="btn sm btn-g" onclick="event.stopPropagation();abrirDemanda(\''+d.id+'\')" style="font-size:11px;flex-shrink:0">Ver propostas →</button>';
-    else if(st==='negociando') btnHtml='<button class="btn sm" onclick="event.stopPropagation();go(\'sNeg\')" style="font-size:11px;flex-shrink:0">Continuar →</button>';
-    else if(st==='fechado') btnHtml='<button class="btn-ghost sm" onclick="event.stopPropagation();go(\'sContract\')" style="font-size:11px;flex-shrink:0">Ver contrato →</button>';
-    else if(st==='aguardando') btnHtml='<span style="font-size:11px;color:var(--t3);flex-shrink:0">Aguardando...</span>';
-    html+='<div class="card" style="padding:12px 14px;cursor:pointer" onclick="abrirDemanda(\''+d.id+'\')">';
-    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-    html+='<span style="font-size:9px;background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.2);color:var(--ac);padding:2px 7px;border-radius:4px;font-weight:700">📡 Demanda</span>';
-    html+='<span style="font-size:12px;color:'+statusColor+';font-weight:600">'+statusIcon+' '+statusLbl+'</span>';
-    if(codigo) html+='<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3)">'+codigo+'</span>';
-    html+='</div>';
-    html+='<div style="font-weight:700;font-size:13px;margin-bottom:3px">'+produto+(espec?' · <span style="font-weight:400;color:var(--t2)">'+espec.split('|')[0].trim()+'</span>':'')+'</div>';
-    html+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
-    html+='<div style="display:flex;gap:10px;font-size:11px;color:var(--t2);flex:1;flex-wrap:wrap">';
-    if(vol) html+='<span>📦 '+vol+'</span>';
-    if(local) html+='<span>📍 '+local+'</span>';
-    if(data) html+='<span>📅 '+data+'</span>';
-    html+='</div>';
-    html+=btnHtml;
-    html+='</div>';
-    html+='</div>';
-  });
-  html+='</div>';
-  // Fetch contra-propostas pendentes
-  var { data: cps } = await _sb.from('contra_propostas').select('*, negociacoes(demanda_id, fornecedor_id, propostas:proposta_id(preco_ofertado)), propostas:proposta_id(preco_ofertado)').eq('user_id',_currentUser.id);
-  if(cps&&cps.length&&(f==='todos'||f==='negociando')){
-    html+='<div class="sh" style="margin-top:14px"><h3>Contra-propostas</h3></div>';
-    html+='<div style="display:flex;flex-direction:column;gap:6px">';
-    cps.forEach(function(cp){
-      html+='<div class="card" style="padding:12px 14px;cursor:pointer" onclick="go(\'sNeg\')">';
-      html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-      html+='<span style="font-size:9px;background:rgba(155,122,255,.1);border:1px solid rgba(155,122,255,.2);color:var(--pu);padding:2px 7px;border-radius:4px;font-weight:700">📨 Contra-proposta</span>';
-      html+='<span style="font-size:12px;color:var(--ac);font-weight:600">🔵 Aguardando resposta</span>';
-      html+='</div>';
-      html+='<div style="display:flex;gap:12px;font-size:12px;color:var(--t2)">';
-      html+='<span>Preço original: <strong style="color:var(--t1)">R$'+Number(cp.preco_original).toFixed(2)+'</strong></span>';
-      html+='<span>Sua contra: <strong style="color:var(--gn)">R$'+Number(cp.preco_contra).toFixed(2)+'</strong></span>';
-      html+='</div></div>';
+  var html='';
+  // Helper for line row
+  function lineRow(produto,detail,right,btn,onclick){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="'+onclick+'">'
+      +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+produto+'</div>'
+      +'<div style="font-size:10px;color:var(--t3)">'+detail+'</div></div>'
+      +'<div style="text-align:right;flex-shrink:0;font-size:12px">'+right+'</div>'
+      +btn+'</div>';
+  }
+  // 📨 PROPOSTAS RECEBIDAS
+  if(secProp.length){
+    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2)" onclick="document.getElementById(\'neg-sec-prop\').style.display=document.getElementById(\'neg-sec-prop\').style.display===\'none\'?\'block\':\'none\'">';
+    html+='<span style="font-size:10px;color:var(--gn);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">📨 PROPOSTAS RECEBIDAS ('+secProp.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
+    html+='<div id="neg-sec-prop">';
+    secProp.forEach(function(d){
+      var bestProp=d.propostas[0]||{};
+      var fornNome=(bestProp.fornecedores&&bestProp.fornecedores.nome)||'';
+      var preco=bestProp.preco_ofertado?'R$'+Number(bestProp.preco_ofertado).toFixed(2):'';
+      var sc=bestProp.score_total||'';
+      html+=lineRow(d.produto_nome||'Demanda',fornNome+(sc?' · Score '+sc:''),preco+(d.propostas.length>1?' <span style="color:var(--t3);font-size:10px">+'+( d.propostas.length-1)+'</span>':''),
+        '<button class="btn sm btn-g" onclick="event.stopPropagation();abrirDemanda(\''+d.id+'\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Ver →</button>',
+        "abrirDemanda('"+d.id+"')");
     });
     html+='</div>';
   }
+  // 🔵 EM NEGOCIAÇÃO
+  if(secNeg.length){
+    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-neg\').style.display=document.getElementById(\'neg-sec-neg\').style.display===\'none\'?\'block\':\'none\'">';
+    html+='<span style="font-size:10px;color:var(--ac);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">🔵 EM NEGOCIAÇÃO ('+secNeg.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
+    html+='<div id="neg-sec-neg">';
+    secNeg.forEach(function(d){
+      html+=lineRow(d.produto_nome||'Demanda','Negociação em andamento','',
+        '<button class="btn sm" onclick="event.stopPropagation();go(\'sNeg\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Continuar →</button>',
+        "go('sNeg')");
+    });
+    html+='</div>';
+  }
+  // ↩️ CONTRA-PROPOSTAS
+  if(cps&&cps.length){
+    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-cp\').style.display=document.getElementById(\'neg-sec-cp\').style.display===\'none\'?\'block\':\'none\'">';
+    html+='<span style="font-size:10px;color:var(--pu);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">↩️ CONTRA-PROPOSTAS ('+cps.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
+    html+='<div id="neg-sec-cp">';
+    cps.forEach(function(cp){
+      var fornNome=(cp.propostas&&cp.propostas.fornecedores&&cp.propostas.fornecedores.nome)||'';
+      html+=lineRow('Contra-proposta',fornNome+' · Original R$'+Number(cp.preco_original).toFixed(2),'<span style="color:var(--gn);font-weight:700">R$'+Number(cp.preco_contra).toFixed(2)+'</span>',
+        '<button class="btn-ghost sm" onclick="event.stopPropagation();go(\'sNeg\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Ver →</button>',
+        "go('sNeg')");
+    });
+    html+='</div>';
+  }
+  // ✅ FECHADOS
+  if(secFech.length){
+    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-fech\').style.display=document.getElementById(\'neg-sec-fech\').style.display===\'none\'?\'block\':\'none\'">';
+    html+='<span style="font-size:10px;color:var(--gn);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">✅ FECHADOS ('+secFech.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
+    html+='<div id="neg-sec-fech">';
+    secFech.forEach(function(d){
+      html+=lineRow(d.produto_nome||'Demanda',d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'','',
+        '<button class="btn-ghost sm" onclick="event.stopPropagation();go(\'sContract\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Contrato →</button>',
+        "go('sContract')");
+    });
+    html+='</div>';
+  }
+  // 🟡 AGUARDANDO
+  if(secAguard.length){
+    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-aguard\').style.display=document.getElementById(\'neg-sec-aguard\').style.display===\'none\'?\'block\':\'none\'">';
+    html+='<span style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">🟡 AGUARDANDO PROPOSTAS ('+secAguard.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
+    html+='<div id="neg-sec-aguard">';
+    secAguard.forEach(function(d){
+      var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'';
+      html+=lineRow(d.produto_nome||'Demanda',(d.local_entrega||'')+(vol?' · '+vol:''),'<span style="color:var(--t3)">Aguardando...</span>','',
+        "abrirDemanda('"+d.id+"')");
+    });
+    html+='</div>';
+  }
+  if(!html) html='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">Nenhum negócio ainda. Crie sua primeira demanda!</div>';
   lista.innerHTML=html;
-}
-
-function negSetFilt(btn, filt){
-  _negFiltAtivo = filt;
-  document.querySelectorAll('.neg-filt').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  negRender();
-}
-
-function negLimpar(){
-  _negFiltAtivo='todos';
-  document.querySelectorAll('.neg-filt').forEach(function(b){b.classList.remove('active');});
-  var todos=document.querySelector('.neg-filt[data-filt="todos"]');
-  if(todos) todos.classList.add('active');
-  negRender();
 }
 
 /* ── LAUNCH COUNTER ── */
@@ -4492,6 +4334,51 @@ async function sendMsg(){
     });
     if(error) console.log('Erro enviar msg:', JSON.stringify(error));
   }
+}
+
+/* ── MARKET LIVE ── */
+var _mktFilt = 'todos';
+var _mktOfertas = [];
+async function loadMarketLive(){
+  var el = document.getElementById('mkt-live-list');
+  var countEl = document.getElementById('mkt-count');
+  if(!el) return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando ofertas...</div>';
+  var { data, error } = await _sb.from('ofertas').select('*, fornecedores(nome)').eq('status','ativa').order('criado_em',{ascending:false});
+  if(error||!data){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
+  _mktOfertas = data;
+  renderMarketList();
+}
+function renderMarketList(){
+  var el = document.getElementById('mkt-live-list');
+  var countEl = document.getElementById('mkt-count');
+  if(!el) return;
+  var data = _mktOfertas;
+  if(countEl) countEl.textContent = data.length+' oferta'+(data.length!==1?'s':'');
+  if(!data.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma oferta ativa no momento.</div>';return;}
+  var html='';
+  data.forEach(function(o){
+    var nome = o.nome||'Produto';
+    var desc = o.descricao||'';
+    var preco = o.preco ? 'R$'+Number(o.preco).toFixed(2)+(o.unidade_preco||'/kg') : '—';
+    var forn = (o.fornecedores&&o.fornecedores.nome)||'';
+    var emoji = nome.indexOf('Frango')>=0?'🍗':nome.indexOf('Bovina')>=0||nome.indexOf('Carne')>=0?'🥩':nome.indexOf('Ovo')>=0?'🥚':nome.indexOf('Muçarela')>=0||nome.indexOf('Queijo')>=0?'🧀':nome.indexOf('Batata')>=0?'🍟':nome.indexOf('Calabresa')>=0?'🌶️':nome.indexOf('Salsicha')>=0?'🌭':nome.indexOf('Suín')>=0?'🐷':'📦';
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="go(\'sScan\')">';
+    html+='<span style="font-size:16px;flex-shrink:0">'+emoji+'</span>';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>';
+    if(desc) html+='<div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+desc+(forn?' · '+forn:'')+'</div>';
+    html+='</div>';
+    html+='<div style="text-align:right;flex-shrink:0"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--gn)">'+preco+'</div></div>';
+    html+='<button class="btn sm" onclick="event.stopPropagation();go(\'sScan\')" style="font-size:11px;flex-shrink:0">Cotar →</button>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+function mktSetFilt(btn, filt){
+  _mktFilt = filt;
+  document.querySelectorAll('#mkt-filtros .neg-filt').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderMarketList();
 }
 
 /* ── SUPPLIERS ── */
