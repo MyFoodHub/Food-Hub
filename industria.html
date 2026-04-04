@@ -2269,7 +2269,7 @@ async function loadDemandasMercado(){
   if(error){console.log('Erro demandas mercado:', JSON.stringify(error));el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
   if(!data||data.length===0){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma demanda ativa no momento.</div>';return;}
   _demandasMercado = data;
-  var html='<table class="tbl"><thead><tr><th>Produto</th><th>Volume</th><th>Preço-alvo</th><th>Região</th><th>Prazo</th><th>Status</th><th></th></tr></thead><tbody>';
+  var html='<table class="tbl"><thead><tr><th>Produto</th><th>Volume</th><th>Preço-alvo</th><th>Região</th><th>Prazo</th><th>Frete</th><th>Status</th><th></th></tr></thead><tbody>';
   data.forEach(function(d, idx){
     var produto = d.produto_nome||'—';
     var espec = d.especificacao||'';
@@ -2278,12 +2278,20 @@ async function loadDemandasMercado(){
     var regiao = d.local_entrega||'—';
     var prazo = d.prazo_especifico ? new Date(d.prazo_especifico).toLocaleDateString('pt-BR') : (d.prazo||'—');
     var badge = d.preco_alvo ? '<span class="badge b-go">🟢 Match</span>' : '<span class="badge b-ic">⚪ Oportunidade</span>';
+    var freteBadge = '—';
+    if(d.frete_preferencia){
+      var fp = d.frete_preferencia;
+      if(fp==='CIF obrigatório') freteBadge='<span class="badge b-am">CIF</span>';
+      else if(fp==='FOB obrigatório') freteBadge='<span class="badge b-ic">FOB</span>';
+      else freteBadge='<span class="badge b-go">Flex</span>';
+    }
     html+='<tr>'+
       '<td><strong>'+produto+'</strong>'+(espec?'<br><span style="font-size:11px;color:var(--w3)">'+espec+'</span>':'')+'</td>'+
       '<td style="font-family:var(--mono)">'+vol+'</td>'+
       '<td style="font-family:var(--mono);color:var(--go)">'+alvo+'</td>'+
       '<td>'+regiao+'</td>'+
       '<td style="font-family:var(--mono)">'+prazo+'</td>'+
+      '<td>'+freteBadge+'</td>'+
       '<td>'+badge+'</td>'+
       '<td><button class="btn btn-am sm" onclick="openResponder('+idx+')">Responder →</button></td>'+
     '</tr>';
@@ -2418,6 +2426,14 @@ function openResponder(idx){
   _respReqOk = null;
   if(!_respDemanda) return;
   var d = _respDemanda;
+
+  // Frete compatibility check
+  var demFrete = d.frete_preferencia||'';
+  var fornFrete = ''; // Will be determined from fornecedor's ofertas
+  // For now, show warning if incompatible based on known data
+  var freteBlock = false;
+  var freteMsg = '';
+  // This will be enhanced when ofertas have frete data
   var produto = d.produto_nome||'—';
   var espec = d.especificacao||'';
   var vol = d.volume ? Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg') : '—';
@@ -2442,6 +2458,12 @@ function openResponder(idx){
   h+='<span>💳 '+pag+'</span>';
   if(alvo) h+='<span style="color:var(--am);font-weight:700">🎯 Alvo: '+alvo+'</span>';
   h+='</div></div>';
+
+  if(demFrete && (demFrete==='CIF obrigatório'||demFrete==='FOB obrigatório')){
+    h+='<div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.15);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;display:flex;align-items:center;gap:6px">';
+    h+='<span>🚚</span><span style="color:var(--am)">Frete exigido: <strong>'+demFrete+'</strong></span>';
+    h+='</div>';
+  }
 
   // BLOCO 2 — Confirmação de especificações
   h+='<div style="margin-bottom:14px">';
@@ -2686,6 +2708,7 @@ var OF_STEPS=[
   {id:'canal',q:'Canal alvo?',sub:'Para quem você quer vender.'},
   {id:'segmento',q:'Segmento?',sub:'Refine o público-alvo.'},
   {id:'validade',q:'Validade da oferta?',sub:'Por quanto tempo a oferta fica ativa.'},
+  {id:'frete',q:'Sua condição de frete?',sub:'Só aparecerá para compradores compatíveis.'},
   {id:'resumo',q:'Revise sua oferta',sub:'Toque em qualquer item para editar.',type:'resumo'},
   {id:'preco',q:'Seu preço de oferta?',sub:'Preço competitivo atrai mais negócios.',type:'input'}
 ];
@@ -2695,13 +2718,13 @@ var _ofChoices={};var _ofStepIdx=0;var _ofSeq=[];
 function _buildOfSeq(){
   var cat=_ofChoices.cat||'';
   var seq=['cat'];
-  if(_OFSKIP_TO_VOL.indexOf(cat)>=0){seq.push('volume','canal','segmento','validade','resumo','preco');}
+  if(_OFSKIP_TO_VOL.indexOf(cat)>=0){seq.push('volume','canal','segmento','validade','frete','resumo','preco');}
   else{
     seq.push('corte');
     if(_OFSKIP_CONSERV.indexOf(cat)<0)seq.push('conserv');
     seq.push('embmaster');
     if(_OFSKIP_EMBIND.indexOf(cat)<0)seq.push('embind');
-    seq.push('volume','canal','segmento','validade','resumo','preco');
+    seq.push('volume','canal','segmento','validade','frete','resumo','preco');
   }
   _ofSeq=seq;
 }
@@ -2736,6 +2759,7 @@ function _getOfOpts(sid){
     return OF_SEG_FS.concat(OF_SEG_REV);
   }
   if(sid==='validade')return OF_VALIDADE;
+  if(sid==='frete') return [{i:'🚚',l:'Só vendo CIF',s:'Entrego no destino, frete incluso'},{i:'📦',l:'Só vendo FOB',s:'Preço saída fábrica, comprador retira'},{i:'🤝',l:'Flexível',s:'Negocio CIF ou FOB'}];
   return[];
 }
 
@@ -2766,8 +2790,8 @@ function renderOfStep(){
 }
 
 function _buildOfResumo(){
-  var labels={cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. individual',volume:'Volume',canal:'Canal',segmento:'Segmento',validade:'Validade'};
-  var icons={cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',canal:'🎯',segmento:'👥',validade:'📅'};
+  var labels={cat:'Categoria',corte:'Corte/Tipo',conserv:'Conservação',embmaster:'Emb. master',embind:'Emb. individual',volume:'Volume',canal:'Canal',segmento:'Segmento',validade:'Validade',frete:'Frete'};
+  var icons={cat:'🍽️',corte:'🔪',conserv:'❄️',embmaster:'📦',embind:'🔹',volume:'📦',canal:'🎯',segmento:'👥',validade:'📅',frete:'🚚'};
   var h='<div style="display:flex;flex-direction:column;gap:6px">';
   _ofSeq.forEach(function(sid,idx){
     if(sid==='resumo'||sid==='preco')return;
@@ -2814,7 +2838,7 @@ async function ofPublish(){
     unidade_preco:unidade,
     quantidade:volNum?Math.round(volNum):null,
     unidade_quantidade:c.volume||null,
-    condicao_especial:(c.canal||'')+' · '+(c.segmento||''),
+    condicao_especial:(c.canal||'')+' · '+(c.segmento||'')+' · Frete: '+(c.frete||'Flexível'),
     status:'ativa'
   });
   if(error){console.log('Erro oferta:',JSON.stringify(error));fireToast('Erro: '+error.message);return;}

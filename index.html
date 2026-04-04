@@ -3766,6 +3766,7 @@ var SCAN_FLOW = [
   {id:'cidade',q:'Qual cidade?',sub:'Informe a cidade de entrega.',type:'cidade'},
   {id:'prazo',q:'Qual o prazo?',sub:'Quando você precisa receber?'},
   {id:'pag',q:'Condição de pagamento?',sub:'Quanto melhor o prazo, mais propostas.'},
+  {id:'frete',q:'Preferência de frete?',sub:'Só receberá propostas de fornecedores que atendam sua condição.'},
   {id:'obs',q:'Alguma observação importante?',sub:'Certificações, condições especiais, requisitos de entrega...',type:'obs'},
   {id:'resumo',q:'Revise sua demanda',sub:'Toque em qualquer item para editar.',type:'resumo'},
   {id:'preco',q:'Seu preço-alvo?',sub:'Você define o preço. Os fornecedores competem para bater o seu alvo.',type:'input'}
@@ -3785,20 +3786,20 @@ function _buildScanSeq(){
     seq.push('modelo');
   }
   if(_SKIP_TO_VOL.indexOf(cat)>=0){
-    seq.push('volume','local','cidade','prazo','pag','obs','resumo','preco');
+    seq.push('volume','local','cidade','prazo','pag','frete','obs','resumo','preco');
   } else if(cat==='Frango'){
     seq.push('corte');
     if(_FRANGO_NO_OSSO.indexOf(corte)<0) seq.push('osso');
     if(corte==='Frango Inteiro'){seq.push('miudos','cabeca');}
-    seq.push('conserv','embtipo','volume','local','cidade','prazo','pag','obs','resumo','preco');
+    seq.push('conserv','embtipo','volume','local','cidade','prazo','pag','frete','obs','resumo','preco');
   } else if(cat==='Ovos'){
-    seq.push('corte','ovoemb','volume','local','cidade','prazo','pag','obs','resumo','preco');
+    seq.push('corte','ovoemb','volume','local','cidade','prazo','pag','frete','obs','resumo','preco');
   } else if(cat==='Farinha de Trigo'||cat==='Óleo de Soja'){
-    seq.push('corte','volume','local','cidade','prazo','pag','obs','resumo','preco');
+    seq.push('corte','volume','local','cidade','prazo','pag','frete','obs','resumo','preco');
   } else {
     seq.push('corte');
     if(_SKIP_CONSERV.indexOf(cat)<0) seq.push('conserv','embtipo');
-    seq.push('volume','local','cidade','prazo','pag','obs','resumo','preco');
+    seq.push('volume','local','cidade','prazo','pag','frete','obs','resumo','preco');
   }
   _scanStepSeq = seq;
 }
@@ -3831,11 +3832,12 @@ function _getScanOpts(sid){
   if(sid==='local') return SCAN_LOCAL.map(function(l){return {i:'📍',l:l};});
   if(sid==='prazo') return SCAN_PRAZO;
   if(sid==='pag') return SCAN_PAG;
+  if(sid==='frete') return [{i:'🚚',l:'CIF obrigatório',s:'Só propostas com frete incluso'},{i:'📦',l:'FOB obrigatório',s:'Vou retirar eu mesmo'},{i:'🤝',l:'Aceito qualquer condição',s:'CIF ou FOB, tanto faz'}];
   return [];
 }
 
 function _miniResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',obs:'Observações'};
+  var labels = {cat:'Categoria',corte:'Corte',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',frete:'Frete',obs:'Observações'};
   var filled=[];
   _scanStepSeq.forEach(function(sid,idx){
     if(idx>=_scanStepIdx||sid==='resumo'||sid==='preco') return;
@@ -3962,8 +3964,8 @@ function renderScan(){
 }
 
 function _buildResumoHTML(){
-  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',obs:'Observações'};
-  var icons = {cat:'🍽️',corte:'🔪',osso:'🦴',miudos:'🫀',cabeca:'🐔',conserv:'❄️',embtipo:'📦',ovoemb:'🥚',volume:'📦',local:'📍',cidade:'🏙️',prazo:'⏱️',pag:'💳',obs:'📝'};
+  var labels = {cat:'Categoria',corte:'Corte/Tipo',osso:'Osso',miudos:'Miúdos',cabeca:'Cabeça',conserv:'Conservação',embtipo:'Embalagem',ovoemb:'Embalagem',volume:'Volume',local:'Estado',cidade:'Cidade',prazo:'Prazo',pag:'Pagamento',frete:'Frete',obs:'Observações'};
+  var icons = {cat:'🍽️',corte:'🔪',osso:'🦴',miudos:'🫀',cabeca:'🐔',conserv:'❄️',embtipo:'📦',ovoemb:'🥚',volume:'📦',local:'📍',cidade:'🏙️',prazo:'⏱️',pag:'💳',frete:'🚚',obs:'📝'};
   var h='<div style="display:flex;flex-direction:column;gap:6px">';
   _scanStepSeq.forEach(function(sid,idx){
     if(sid==='resumo'||sid==='preco') return;
@@ -4133,6 +4135,7 @@ async function launchScan(){
       local_entrega: local||null,
       preco_alvo: precoNum,
       condicao_pagamento: c.pag||null,
+      frete_preferencia: c.frete||null,
       status: 'ativa'
     });
     if(error) console.log('Erro salvar demanda scan:', JSON.stringify(error));
@@ -4331,6 +4334,13 @@ function calcScoreProposta(p, dem){
   var sForn=f.score_foodhub||70;
   // FINAL
   var total=Math.round(sPreco*0.35+sP*0.25+sV*0.20+sPag*0.10+sForn*0.10);
+  // Frete incompatibility cap
+  if(dem&&dem.frete_preferencia){
+    var fp=dem.frete_preferencia;
+    var fc=(p.condicao_frete||p.nota_fornecedor||'').toLowerCase();
+    if(fp==='CIF obrigatório'&&fc.indexOf('fob')>=0) total=Math.min(total,40);
+    if(fp==='FOB obrigatório'&&fc.indexOf('cif')>=0) total=Math.min(total,40);
+  }
   return {total:total,preco:sPreco,prazo:sP,volume:sV,pagamento:sPag,fornecedor:sForn};
 }
 async function loadPropostas(){
@@ -4599,6 +4609,7 @@ async function loadDetalhesDemanda(){
         (dem.especificacao?'<div style="font-size:12px;color:var(--t2)"><strong>Obs:</strong> '+dem.especificacao+'</div>':'')+
         (dem.preco_alvo?'<div style="font-size:12px;color:var(--ac)"><strong>Alvo:</strong> R$'+Number(dem.preco_alvo).toFixed(2)+'</div>':'')+
         (dem.local_entrega?'<div style="font-size:12px;color:var(--t2)"><strong>Local:</strong> '+dem.local_entrega+'</div>':'')+
+        (dem.frete_preferencia?'<div style="font-size:12px;color:var(--am)"><strong>Frete:</strong> '+dem.frete_preferencia+'</div>':'')+
       '</div>'+
     '</div>';
   }
@@ -4633,6 +4644,17 @@ async function loadDetalhesDemanda(){
     var badges='';
     if(i===0) badges+=' <span class="badge bg" style="font-size:9px">🥇 Melhor oferta</span>';
     if(i===minPrecoIdx&&i!==0) badges+=' <span class="badge bb" style="font-size:9px">💰 Menor preço</span>';
+    var freteOk=true;
+    if(dem&&dem.frete_preferencia){
+      var fp=dem.frete_preferencia;
+      if(fp==='CIF obrigatório'||fp==='FOB obrigatório'){
+        var pNota=(p.nota_fornecedor||'').toLowerCase();
+        if(fp==='CIF obrigatório'&&pNota.indexOf('fob')>=0) freteOk=false;
+        if(fp==='FOB obrigatório'&&pNota.indexOf('cif')>=0) freteOk=false;
+      }
+    }
+    if(freteOk) badges+=' <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(0,224,154,.1);color:var(--gn);font-weight:700">✅ Frete</span>';
+    else badges+=' <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(255,77,77,.1);color:var(--rd);font-weight:700">❌ Frete</span>';
     // Score breakdown mini-bars
     var sb=p._scores;
     var barHTML='<div style="display:flex;gap:4px;margin-bottom:8px">';
@@ -4641,7 +4663,7 @@ async function loadDetalhesDemanda(){
       barHTML+='<div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--t3);margin-bottom:2px">'+b.l+'</div><div style="height:4px;background:var(--bg4);border-radius:2px"><div style="height:100%;width:'+b.v+'%;background:'+b.c+';border-radius:2px"></div></div><div style="font-size:8px;color:var(--t3);margin-top:1px">'+b.v+'</div></div>';
     });
     barHTML+='</div>';
-    html+='<div class="card" style="padding:13px 15px">'+
+    html+='<div class="card" style="padding:13px 15px'+(freteOk?'':';opacity:.5')+'">'+
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
         '<div style="width:36px;height:36px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div>'+
         '<div style="flex:1;min-width:0">'+
