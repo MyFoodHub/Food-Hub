@@ -3679,7 +3679,7 @@ function go(id){
   if(id==='s1')setTimeout(renderDashSegBar,100);
   if(id==='sOfertas')setTimeout(renderOfertasFeed,80);
   if(id==='sOfertasTemas')setTimeout(renderTemasGrid,80);
-  if(id==='sRelatorios')setTimeout(function(){var btns=document.querySelectorAll('.rel-pbtn');if(btns[2])relPeriod(btns[2],'mes');},120);
+  if(id==='sRelatorios'){setTimeout(function(){var btns=document.querySelectorAll('.rel-pbtn');if(btns[2])relPeriod(btns[2],'mes');},120);loadSavingsReais();}
   if(id==='s1')setTimeout(renderDashSegBar,100);
   if(id==='sOfertas')setTimeout(renderOfertasFeed,80);
   if(id==='sOfertasTemas')setTimeout(renderTemasGrid,80);
@@ -3947,8 +3947,17 @@ function renderScan(){
       h+='<div id="scan-date-pick" style="display:none;margin-top:10px"><input type="date" id="scan-date-val" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--t1);outline:none;box-sizing:border-box;margin-bottom:10px"><button class="btn" style="width:100%;padding:12px;font-size:14px;background:var(--ac);color:#000" onclick="scanConfirmDate()">Confirmar data →</button></div>';
     }
   }
-  document.getElementById('scan-box').innerHTML=h;
-  document.getElementById('scan-box').style.overflowX='hidden';
+  var scanBox=document.getElementById('scan-box');
+  scanBox.innerHTML=h;
+  scanBox.style.overflowX='hidden';
+  // Allow vertical scroll for resumo and preco steps
+  if(step.type==='resumo'||step.type==='input'||step.type==='modelo'){
+    scanBox.style.overflowY='auto';
+    scanBox.style.paddingBottom='80px';
+  } else {
+    scanBox.style.overflowY='hidden';
+    scanBox.style.paddingBottom='0';
+  }
   document.querySelector('#sScan').style.overflowX='hidden';
 }
 
@@ -4215,6 +4224,24 @@ async function negRender(){
     html+='</div>';
   });
   html+='</div>';
+  // Fetch contra-propostas pendentes
+  var { data: cps } = await _sb.from('contra_propostas').select('*, negociacoes(demanda_id, fornecedor_id, propostas:proposta_id(preco_ofertado)), propostas:proposta_id(preco_ofertado)').eq('user_id',_currentUser.id);
+  if(cps&&cps.length&&(f==='todos'||f==='negociando')){
+    html+='<div class="sh" style="margin-top:14px"><h3>Contra-propostas</h3></div>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px">';
+    cps.forEach(function(cp){
+      html+='<div class="card" style="padding:12px 14px;cursor:pointer" onclick="go(\'sNeg\')">';
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+      html+='<span style="font-size:9px;background:rgba(155,122,255,.1);border:1px solid rgba(155,122,255,.2);color:var(--pu);padding:2px 7px;border-radius:4px;font-weight:700">📨 Contra-proposta</span>';
+      html+='<span style="font-size:12px;color:var(--ac);font-weight:600">🔵 Aguardando resposta</span>';
+      html+='</div>';
+      html+='<div style="display:flex;gap:12px;font-size:12px;color:var(--t2)">';
+      html+='<span>Preço original: <strong style="color:var(--t1)">R$'+Number(cp.preco_original).toFixed(2)+'</strong></span>';
+      html+='<span>Sua contra: <strong style="color:var(--gn)">R$'+Number(cp.preco_contra).toFixed(2)+'</strong></span>';
+      html+='</div></div>';
+    });
+    html+='</div>';
+  }
   lista.innerHTML=html;
 }
 
@@ -5029,6 +5056,54 @@ var REL_PERIODS = {
   acumulado: { label:'Acumulado total',        saving:1240000, neg:'198', pct:'5.6%', bar:100, meta:'Meta superada!',      vol:'R$31M'  }
 };
 
+async function loadSavingsReais(){
+  if(!_currentUser) return;
+  // Fetch accepted propostas for this user's demandas
+  var { data: dems } = await _sb.from('demandas').select('id, preco_alvo, produto_nome').eq('user_id',_currentUser.id);
+  if(!dems||!dems.length) return;
+  var demIds=dems.map(function(d){return d.id;});
+  var demMap={};dems.forEach(function(d){demMap[d.id]=d;});
+  var { data: aceitas } = await _sb.from('propostas').select('demanda_id, preco_ofertado, volume_ofertado').eq('status','aceita').in('demanda_id',demIds);
+  if(!aceitas||!aceitas.length) return;
+  // Saving vs preço-alvo
+  var savingAlvo=0;var negCount=aceitas.length;
+  aceitas.forEach(function(p){
+    var dem=demMap[p.demanda_id];
+    if(dem&&dem.preco_alvo&&p.volume_ofertado){
+      var diff=(Number(dem.preco_alvo)-Number(p.preco_ofertado))*Number(p.volume_ofertado);
+      if(diff>0) savingAlvo+=diff;
+    }
+  });
+  // Update hero saving
+  var el=document.getElementById('rel-saving-total');
+  if(el&&savingAlvo>0) el.textContent='R$ '+Math.round(savingAlvo).toLocaleString('pt-BR');
+  var elN=document.getElementById('rel-saving-negocios');
+  if(elN) elN.textContent=negCount;
+  // Saving vs mercado: fetch all propostas for same products to get avg
+  var { data: todas } = await _sb.from('propostas').select('demanda_id, preco_ofertado').in('demanda_id',demIds);
+  if(todas&&todas.length){
+    var avgMap={};var cntMap={};
+    todas.forEach(function(p){
+      if(!avgMap[p.demanda_id]){avgMap[p.demanda_id]=0;cntMap[p.demanda_id]=0;}
+      avgMap[p.demanda_id]+=Number(p.preco_ofertado);cntMap[p.demanda_id]++;
+    });
+    Object.keys(avgMap).forEach(function(k){avgMap[k]=avgMap[k]/cntMap[k];});
+    var savingMerc=0;
+    aceitas.forEach(function(p){
+      var avg=avgMap[p.demanda_id];
+      if(avg&&p.volume_ofertado){
+        var diff=(avg-Number(p.preco_ofertado))*Number(p.volume_ofertado);
+        if(diff>0) savingMerc+=diff;
+      }
+    });
+    var elPct=document.getElementById('rel-saving-pct');
+    if(elPct&&savingMerc>0){
+      var totalVol=0;aceitas.forEach(function(p){totalVol+=Number(p.preco_ofertado)*(Number(p.volume_ofertado)||1);});
+      var pct=totalVol>0?((savingMerc/totalVol)*100).toFixed(1):'0';
+      elPct.textContent=pct+'% abaixo do mercado';
+    }
+  }
+}
 function relPeriod(btn, period) {
   document.querySelectorAll('.rel-pbtn').forEach(function(b){
     b.style.background='var(--bg3)';
