@@ -4301,25 +4301,69 @@ function propRow(p,i,mini){
   return '<tr class="'+hlCls+'" onclick="openModal('+i+')"><td><div class="rk '+rkCls+'">'+p.rank+'</div></td><td><div style="font-weight:600;font-size:12px">'+p.sup+'</div><div style="font-size:10px;color:var(--t3)">'+p.sif+'</div></td><td><span class="badge '+p.tCls+'">'+p.tipo+'</span></td><td><span style="font-family:var(--mono);font-size:13px;'+pColor+'">'+p.price+'</span>'+hit+'</td><td style="font-size:11px;color:var(--t2);max-width:140px">'+p.note+'</td><td style="'+(i===0?'color:var(--gn);font-weight:500':'')+'">'+p.prazo+'</td><td style="font-family:var(--mono)">'+p.vol+'</td><td><div style="background:'+sBg+';border-radius:16px;padding:3px 8px;font-family:var(--mono);font-weight:700;font-size:11px;color:'+sColor+';display:inline-block">'+p.score+'</div></td><td><div style="display:flex;gap:4px"><button class="btn-out sm" onclick="event.stopPropagation();openModal('+i+')">Ver</button><button class="btn btn-g sm" onclick="event.stopPropagation();go(\'sNeg\')">Fechar</button></div></td></tr>';
 }
 
+function calcScoreProposta(p, dem){
+  var f=p.fornecedores||{};
+  // 1. PREÇO (35%)
+  var sPreco=70;
+  if(dem&&dem.preco_alvo&&p.preco_ofertado){
+    sPreco=Math.min(100,Math.round((Number(dem.preco_alvo)/Number(p.preco_ofertado))*100));
+  }
+  // 2. PRAZO (25%)
+  var sP=60;
+  if(p.prazo_entrega_dias!=null){
+    var d=p.prazo_entrega_dias;
+    sP=d<=2?100:d<=5?85:d<=10?70:d<=15?55:40;
+  }
+  // 3. VOLUME (20%)
+  var sV=60;
+  if(p.volume_ofertado&&dem&&dem.volume){
+    var ratio=Number(p.volume_ofertado)/Number(dem.volume);
+    sV=ratio>=1?100:ratio>=0.8?80:ratio>=0.5?60:40;
+  }
+  // 4. PAGAMENTO (10%)
+  var sPag=60;
+  var pag=(p.condicao_pagamento||'').toLowerCase();
+  if(pag.indexOf('vista')>=0||pag.indexOf('pix')>=0) sPag=100;
+  else if(pag.indexOf('14')>=0) sPag=85;
+  else if(pag.indexOf('28')>=0) sPag=70;
+  else if(pag.indexOf('30')>=0||pag.indexOf('45')>=0) sPag=55;
+  // 5. SCORE FORNECEDOR (10%)
+  var sForn=f.score_foodhub||70;
+  // FINAL
+  var total=Math.round(sPreco*0.35+sP*0.25+sV*0.20+sPag*0.10+sForn*0.10);
+  return {total:total,preco:sPreco,prazo:sP,volume:sV,pagamento:sPag,fornecedor:sForn};
+}
 async function loadPropostas(){
   if(!_currentUser)return;
-  var { data: demandas } = await _sb.from('demandas').select('id').eq('user_id',_currentUser.id).eq('status','ativa');
+  var { data: demandas } = await _sb.from('demandas').select('id, preco_alvo, volume').eq('user_id',_currentUser.id).eq('status','ativa');
   if(!demandas||demandas.length===0){PROPS=[];return;}
   var demIds=demandas.map(function(d){return d.id;});
-  var { data, error } = await _sb.from('propostas').select('*, fornecedores(nome, sif, cidade, estado, score_foodhub)').in('demanda_id',demIds).order('score_total',{ascending:false});
+  var demMap={};demandas.forEach(function(d){demMap[d.id]=d;});
+  var { data, error } = await _sb.from('propostas').select('*, fornecedores(nome, sif, cidade, estado, score_foodhub)').in('demanda_id',demIds);
   if(error||!data){PROPS=[];return;}
+  // Calculate scores
+  data.forEach(function(p){
+    var sc=calcScoreProposta(p,demMap[p.demanda_id]);
+    p._score=sc.total;p._scores=sc;
+  });
+  // Sort by score desc
+  data.sort(function(a,b){return b._score-a._score;});
+  // Save scores back to Supabase (fire and forget)
+  data.forEach(function(p){
+    if(p._score!==p.score_total){
+      _sb.from('propostas').update({score_total:p._score,score_detalhes:{preco:p._scores.preco,prazo:p._scores.prazo,volume:p._scores.volume,pagamento:p._scores.pagamento,fornecedor:p._scores.fornecedor}}).eq('id',p.id).then(function(){});
+    }
+  });
   PROPS=data.map(function(p,i){
     var f=p.fornecedores||{};
     var sifTxt=(f.sif||'')+(f.cidade?' · '+f.cidade:'')+(f.estado?' – '+f.estado:'');
-    var sc=p.score_total||f.score_foodhub||0;
-    var sd=p.score_detalhes||{};
-    var scores=[sd.preco||0,sd.prazo||0,sd.pagamento||0,sd.logistica||0,sd.confiabilidade||0];
+    var abaixo=demMap[p.demanda_id]&&demMap[p.demanda_id].preco_alvo&&Number(p.preco_ofertado)<=Number(demMap[p.demanda_id].preco_alvo);
     return {
-      rank:i+1,sup:f.nome||'Fornecedor',sif:sifTxt,tipo:p.abaixo_alvo?'Exata':'Aprox.',tCls:p.abaixo_alvo?'bg':'ba',
+      rank:i+1,sup:f.nome||'Fornecedor',sif:sifTxt,tipo:abaixo?'Exata':'Aprox.',tCls:abaixo?'bg':'ba',
       price:'R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg'),
       prazo:(p.prazo_entrega_dias||'–')+' dias',pag:p.condicao_pagamento||'–',
       vol:p.volume_ofertado?Number(p.volume_ofertado).toLocaleString('pt-BR')+' kg':'–',
-      score:sc,note:p.nota_fornecedor||'',scores:scores,hit:p.abaixo_alvo||false
+      score:p._score,note:p.nota_fornecedor||'',scores:[p._scores.preco,p._scores.prazo,p._scores.volume,p._scores.pagamento,p._scores.fornecedor],hit:abaixo||false
     };
   });
 }
@@ -4561,33 +4605,55 @@ async function loadDetalhesDemanda(){
   // Load propostas
   if(!listEl) return;
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando propostas...</div>';
-  var { data: props, error } = await _sb.from('propostas').select('*, fornecedores(nome, cidade, estado, score_foodhub, sif)').eq('demanda_id',_demandaAtual).order('preco_ofertado',{ascending:true});
+  var { data: props, error } = await _sb.from('propostas').select('*, fornecedores(nome, cidade, estado, score_foodhub, sif)').eq('demanda_id',_demandaAtual);
   if(error){console.log('Erro propostas detalhe:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar propostas.</div>';return;}
   if(countEl) countEl.textContent=(props?props.length:0)+' proposta'+(props&&props.length!==1?'s':'');
   if(!props||props.length===0){
     listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">⏳ Aguardando propostas dos fornecedores...</div>';
     return;
   }
+  // Calculate scores and sort
+  props.forEach(function(p){var sc=calcScoreProposta(p,dem);p._score=sc.total;p._scores=sc;});
+  props.sort(function(a,b){return b._score-a._score;});
+  // Find lowest price
+  var minPreco=Infinity;var minPrecoIdx=-1;
+  props.forEach(function(p,i){if(Number(p.preco_ofertado)<minPreco){minPreco=Number(p.preco_ofertado);minPrecoIdx=i;}});
+  // Save scores (fire and forget)
+  props.forEach(function(p){
+    if(p._score!==p.score_total){
+      _sb.from('propostas').update({score_total:p._score,score_detalhes:{preco:p._scores.preco,prazo:p._scores.prazo,volume:p._scores.volume,pagamento:p._scores.pagamento,fornecedor:p._scores.fornecedor}}).eq('id',p.id).then(function(){});
+    }
+  });
   var html='<div style="display:flex;flex-direction:column;gap:6px">';
   props.forEach(function(p,i){
     var f=p.fornecedores||{};
-    var sc=p.score_total||f.score_foodhub||0;
-    var scColor=sc>=85?'var(--gn)':sc>=75?'var(--ac)':'var(--am)';
+    var sc=p._score;
+    var scColor=sc>=85?'var(--gn)':sc>=70?'var(--am)':'var(--rd)';
     var loc=(f.cidade||'')+(f.cidade&&f.estado?' – ':'')+(f.estado||'');
+    var badges='';
+    if(i===0) badges+=' <span class="badge bg" style="font-size:9px">🥇 Melhor oferta</span>';
+    if(i===minPrecoIdx&&i!==0) badges+=' <span class="badge bb" style="font-size:9px">💰 Menor preço</span>';
+    // Score breakdown mini-bars
+    var sb=p._scores;
+    var barHTML='<div style="display:flex;gap:4px;margin-bottom:8px">';
+    var bars=[{l:'Preço',v:sb.preco,c:'var(--gn)'},{l:'Prazo',v:sb.prazo,c:'var(--ac)'},{l:'Volume',v:sb.volume,c:'var(--am)'},{l:'Pgto',v:sb.pagamento,c:'var(--pu)'},{l:'Forn',v:sb.fornecedor,c:'var(--t2)'}];
+    bars.forEach(function(b){
+      barHTML+='<div style="flex:1;text-align:center"><div style="font-size:8px;color:var(--t3);margin-bottom:2px">'+b.l+'</div><div style="height:4px;background:var(--bg4);border-radius:2px"><div style="height:100%;width:'+b.v+'%;background:'+b.c+';border-radius:2px"></div></div><div style="font-size:8px;color:var(--t3);margin-top:1px">'+b.v+'</div></div>';
+    });
+    barHTML+='</div>';
     html+='<div class="card" style="padding:13px 15px">'+
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
         '<div style="width:36px;height:36px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">'+(f.nome||'Fornecedor')+
-            (i===0?' <span class="badge bg" style="font-size:9px">Melhor preço</span>':'')+
-          '</div>'+
+          '<div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">'+(f.nome||'Fornecedor')+badges+'</div>'+
           '<div style="font-size:11px;color:var(--t2)">'+loc+(f.sif?' · '+f.sif:'')+'</div>'+
         '</div>'+
         '<div style="text-align:right">'+
           '<div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gn)">R$'+Number(p.preco_ofertado).toFixed(2)+'<span style="font-size:11px;font-weight:500;color:var(--t2)">'+(p.unidade_preco||'/kg')+'</span></div>'+
-          (sc?'<div style="font-size:10px;color:'+scColor+';font-family:var(--mono)">Score '+sc+'</div>':'')+
+          '<div style="width:34px;height:34px;border-radius:50%;background:'+scColor+'18;border:2px solid '+scColor+';display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:800;color:'+scColor+';margin-top:3px">'+sc+'</div>'+
         '</div>'+
       '</div>'+
+      barHTML+
       '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--t2);margin-bottom:8px">'+
         (p.volume_ofertado?'<span>📦 '+Number(p.volume_ofertado).toLocaleString('pt-BR')+' '+(dem&&dem.unidade_volume||'kg')+'</span>':'')+
         (p.prazo_entrega_dias?'<span>🚚 '+p.prazo_entrega_dias+' dias</span>':'')+
