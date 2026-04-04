@@ -1034,9 +1034,9 @@ window.go = window.go || function(id) {
   </div>
 
   <!-- FORMULÁRIO PASSO A PASSO — visível por padrão -->
-  <div style="flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;padding:16px 16px 20px">
-    <div style="width:100%;max-width:460px;overflow-x:hidden">
-      <div id="scan-box" style="overflow-x:hidden;width:100%"></div>
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:16px 16px 0">
+    <div style="width:100%;max-width:460px;overflow:hidden;display:flex;flex-direction:column;flex:1;min-height:0">
+      <div id="scan-box" style="overflow:hidden;width:100%;display:flex;flex-direction:column;flex:1;min-height:0"></div>
       <p style="text-align:center;font-size:10px;color:var(--t3);margin-top:10px">Toque em uma opção para avançar · <strong style="color:var(--ac)">menos de 60 segundos</strong></p>
     </div>
   </div>
@@ -3892,6 +3892,28 @@ function renderScan(){
   }
   // Mini resumo no topo
   h+=_miniResumoHTML();
+  // Histórico de demandas recentes no passo 1
+  if(step.id==='cat'){
+    var hist=[];
+    for(var k=0;k<localStorage.length;k++){
+      var key=localStorage.key(k);
+      if(key&&key.indexOf('fh_modelo_')===0){
+        try{var m=JSON.parse(localStorage.getItem(key));if(m&&m.cat)hist.push(m);}catch(e){}
+      }
+    }
+    if(hist.length){
+      h+='<div style="margin-bottom:12px">';
+      h+='<div style="font-size:10px;color:var(--t3);margin-bottom:6px">↩️ Repetir demanda anterior</div>';
+      h+='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch">';
+      hist.forEach(function(m){
+        var catIcon='';SCAN_CAT.forEach(function(c){if(c.l===m.cat)catIcon=c.i;});
+        var label=catIcon+' '+(m.cat||'')+(m.corte?' · '+m.corte:'')+(m.volume?' · '+m.volume:'');
+        h+='<div onclick="scanLoadHistorico(\''+m.cat.replace(/'/g,"\\'")+'\')" style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--b1);border-radius:20px;padding:6px 12px;font-size:11px;color:var(--t1);cursor:pointer;white-space:nowrap;transition:border-color .12s" onmouseover="this.style.borderColor=\'var(--ac)\'" onmouseout="this.style.borderColor=\'var(--b1)\'">';
+        h+=label+'</div>';
+      });
+      h+='</div></div>';
+    }
+  }
   if(step.badge){
     h+='<div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,64,96,.1);border:1px solid rgba(255,64,96,.25);border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:var(--rd);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">'+step.badge+'</div>';
   } else {
@@ -3939,7 +3961,7 @@ function renderScan(){
     h+='<div style="text-align:center;font-size:11px;color:var(--ac);cursor:pointer" onclick="advanceScan()">Sem observações — continuar</div>';
   } else {
     var opts = _getScanOpts(step.id);
-    h+='<div style="display:flex;flex-direction:column;gap:7px;max-height:60vh;overflow-y:auto;overflow-x:hidden">';
+    h+='<div style="display:flex;flex-direction:column;gap:7px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:12px">';
     opts.forEach(function(o,i){
       h+='<div class="opt" onclick="clickOpt(this,'+i+')"><span style="font-size:18px;flex-shrink:0">'+o.i+'</span><div style="flex:1"><div class="opt-lbl">'+o.l+'</div>'+(o.s?'<div class="opt-sub">'+o.s+'</div>':'')+'</div><span class="arr">›</span></div>';
     });
@@ -3996,6 +4018,16 @@ function scanConfirmObs(){
   advanceScan();
 }
 
+function scanLoadHistorico(cat){
+  var saved=JSON.parse(localStorage.getItem('fh_modelo_'+cat)||'{}');
+  if(!saved.cat) return;
+  _scanChoices={};
+  Object.keys(saved).forEach(function(k){if(k!=='_modeloShown'&&k!=='preco')_scanChoices[k]=saved[k];});
+  _scanChoices._modeloShown=true;
+  _buildScanSeq();
+  for(var i=0;i<_scanStepSeq.length;i++){if(_scanStepSeq[i]==='resumo'){_scanStepIdx=i;break;}}
+  renderScan();
+}
 function scanUsarModelo(){
   var saved=JSON.parse(localStorage.getItem('fh_modelo_'+_scanChoices.cat)||'{}');
   var cat=_scanChoices.cat;
