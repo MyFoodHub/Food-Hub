@@ -297,10 +297,10 @@ body{background:#050810;color:#ECF0FF;font-family:sans-serif;font-size:14px}
 <body>
 <script>
 // ── SUPABASE CLIENT ──
-const SUPABASE_URL = 'https://jqbuckofiaopxwllghac.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let _currentUser = null;
+var SUPABASE_URL = 'https://jqbuckofiaopxwllghac.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
+var _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var _currentUser = null;
 
 // ── AUTH FUNCTIONS ──
 async function authLogin() {
@@ -407,6 +407,7 @@ async function checkSession() {
     await loadUserProfile();
     go('s1');
     setTimeout(renderDashSegBar, 150);
+    setTimeout(atualizarBadgeNotif, 500);
   }
 }
 
@@ -881,11 +882,11 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="ni">📊</span>Relatórios · Saving <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios · Saving</div>
       <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;border:1px solid rgba(155,122,255,.15);color:var(--pu)"><span class="ni">🎯</span>Canal de Ofertas <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;border:1px solid rgba(37,211,102,.15);color:#25D366"><span class="ni">💬</span>WhatsApp Pushs <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
       <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil · KYC</div>
-      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações <span class="badge" style="font-size:8px;background:var(--rd);color:#fff;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">0</span></div>
       <div class="nav-sec" style="margin-top:auto"></div>
       <div class="nav-item" onclick="authLogout()" style="color:var(--rd);opacity:.7"><span class="ni">🚪</span>Sair</div>
     </div>
@@ -1071,7 +1072,7 @@ window.go = window.go || function(id) {
       <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:11px;padding:13px 16px;margin-bottom:16px;text-align:left" id="launch-summary"></div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn-ghost" onclick="go('s1')">← Dashboard</button>
-        <button class="btn" onclick="go('sScanPanel')">Acompanhar demanda →</button>
+        <button class="btn" onclick="go('sDemandas')">Acompanhar demanda →</button>
       </div>
       <button class="btn-ghost" onclick="gerarPdfDemanda()" style="margin-top:10px;font-size:12px;width:100%">📄 Baixar comprovante PDF</button>
     </div>
@@ -3525,7 +3526,7 @@ function go(id){
   if(id==='sVoz')setTimeout(vozBriefing,400);
   if(id==='sScan'){_scanVozOn=false;_scanVozData=null;var v=document.getElementById('scan-voz-validacao');if(v)v.style.display='none';scanVozStop();}
   if(id==='sPerfil')setTimeout(populatePerfil,50);
-  if(id==='s1')setTimeout(renderDashSegBar,100);
+  if(id==='s1'){setTimeout(renderDashSegBar,100);loadDashboardKPIs();}
   if(id==='sOfertas')setTimeout(renderOfertasFeed,80);
   if(id==='sOfertasTemas')setTimeout(renderTemasGrid,80);
   if(id==='sRelatorios'){setTimeout(function(){var btns=document.querySelectorAll('.rel-pbtn');if(btns[2])relPeriod(btns[2],'mes');},120);loadSavingsReais();}
@@ -3536,6 +3537,50 @@ function go(id){
 
 
 function atuPostRender(){}
+
+async function loadDashboardKPIs(){
+  if(!_currentUser) return;
+  var { data: dems } = await _sb.from('demandas').select('id',{count:'exact'}).eq('user_id',_currentUser.id).eq('status','ativa');
+  var demCount = dems ? dems.length : 0;
+  var { count: fornCount } = await _sb.from('fornecedores').select('id',{count:'exact',head:true}).in('status_homologacao',['homologado','qualificado']);
+  var { data: aceitas } = await _sb.from('propostas').select('preco_ofertado,volume_ofertado,demanda_id').eq('status','aceita');
+  var volTotal=0; var savingTotal=0;
+  if(aceitas&&aceitas.length){
+    var demIds2=aceitas.map(function(a){return a.demanda_id;});
+    var { data: dems2 } = await _sb.from('demandas').select('id,preco_alvo').in('id',demIds2);
+    var alvoMap={};
+    if(dems2) dems2.forEach(function(d){alvoMap[d.id]=d.preco_alvo;});
+    aceitas.forEach(function(a){
+      var vol=Number(a.volume_ofertado)||0;
+      var preco=Number(a.preco_ofertado)||0;
+      volTotal+=preco*vol;
+      var alvo=alvoMap[a.demanda_id];
+      if(alvo) savingTotal+=(Number(alvo)-preco)*vol;
+    });
+  }
+  var dash = document.getElementById('s1');
+  if(!dash) return;
+  var mvs = dash.querySelectorAll('.mv');
+  if(mvs[0]) mvs[0].textContent = demCount;
+  if(mvs[1]) mvs[1].textContent = (fornCount||0)+'+';
+  if(mvs[2]) mvs[2].textContent = volTotal>0?'R$'+(volTotal/1000000).toFixed(1)+'M':'R$0';
+  if(mvs[3]) mvs[3].textContent = savingTotal>0?'R$'+Math.round(savingTotal/1000)+'k':'R$0';
+  atualizarBadgeNotif();
+}
+
+async function atualizarBadgeNotif(){
+  if(!_currentUser) return;
+  var { data: dems } = await _sb.from('demandas').select('id').eq('user_id',_currentUser.id);
+  if(!dems||!dems.length) return;
+  var demIds=dems.map(function(d){return d.id;});
+  var { data: props } = await _sb.from('propostas').select('id').eq('status','recebida').in('demanda_id',demIds);
+  var count=props?props.length:0;
+  document.querySelectorAll('[onclick*="sNotif"] .badge, [onclick*="sNotif"] span[style*="background"]').forEach(function(el){
+    if(count>0){el.textContent=count;el.style.display='';}
+    else{el.style.display='none';}
+  });
+}
+
 /* ── TICKER ── */
 (function(){
   var wrap=document.getElementById('ticker-scroll'),pos=0,paused=false;

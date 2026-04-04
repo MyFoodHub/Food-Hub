@@ -2270,6 +2270,7 @@ async function initIndApp(){
   if(_currentUser){
     var { data: forn } = await _sb.from('fornecedores').select('id, nome').eq('contato_email', _currentUser.email).limit(1);
     if(forn && forn.length) _fornecedorId = forn[0].id;
+    console.log('[FoodHub] Fornecedor vinculado:', _fornecedorId ? 'SIM ('+forn[0].nome+')' : 'NÃO — cadastre contato_email na tabela fornecedores');
   }
 }
 // Auto-login if session exists
@@ -2392,7 +2393,7 @@ async function loadMinhasOfertas(){
 async function loadPipeline(){
   var el=document.getElementById('pipeline-lista');
   if(!el)return;
-  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum fornecedor vinculado.</div>';return;}
+  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Para ver suas negociações, seu email de login precisa estar cadastrado no campo contato_email da tabela fornecedores no Supabase.</div>';return;}
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando...</div>';
   var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
   if(error){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro.</div>';return;}
@@ -2427,6 +2428,30 @@ async function loadPipeline(){
   el.innerHTML=html;
 }
 
+// ── DASHBOARD KPIs ──
+async function loadDashboardIndustria(){
+  if(!_fornecedorId) return;
+  var { data: props } = await _sb.from('propostas').select('preco_ofertado,volume_ofertado,status').eq('fornecedor_id',_fornecedorId);
+  if(!props) return;
+  var aceitas=props.filter(function(p){return p.status==='aceita';});
+  var receita=0;var volTotal=0;
+  aceitas.forEach(function(p){
+    var v=Number(p.volume_ofertado)||0;var pr=Number(p.preco_ofertado)||0;
+    receita+=pr*v;volTotal+=v;
+  });
+  var matchRate=props.length>0?Math.round((aceitas.length/props.length)*100):0;
+  // Update KPIs in dashboard - find the metric value elements
+  var dash=document.getElementById('s-main');
+  if(!dash) return;
+  var mvs=dash.querySelectorAll('.mval');
+  if(mvs.length>=4){
+    mvs[0].textContent=receita>1000000?'R$'+(receita/1000000).toFixed(1)+'M':'R$'+(receita/1000).toFixed(0)+'k';
+    mvs[1].textContent=volTotal>1000?(volTotal/1000).toFixed(0)+'t':volTotal+'kg';
+    mvs[2].textContent=aceitas.length;
+    mvs[3].textContent=matchRate+'%';
+  }
+}
+
 // ── NAVIGATION ──
 function go(id){
   document.querySelectorAll('.screen,.xs,.xscreen').forEach(function(s){s.classList.remove('on')});
@@ -2437,6 +2462,7 @@ function go(id){
     var oc=n.getAttribute('onclick')||'';
     if(oc.indexOf("'"+id+"'")>-1) n.classList.add('on');
   });
+  if(id==='s-main') loadDashboardIndustria();
   if(id==='s-demandas') loadDemandasMercado();
   if(id==='s-minhas-ofertas') loadMinhasOfertas();
   if(id==='s-pipeline') loadPipeline();
