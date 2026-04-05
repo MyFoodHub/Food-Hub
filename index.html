@@ -968,6 +968,10 @@ window.go = window.go || function(id) {
         </div>
         <span style="font-size:9px;background:#25D366;color:#000;padding:2px 8px;border-radius:10px;font-weight:700;flex-shrink:0">4 novos</span>
       </div>
+      <div class="sh" style="margin-top:14px"><h3>⭐ Seus itens frequentes</h3></div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:8px">Clique em Recomprar para ajustar e lançar nova demanda</div>
+      <div id="dash-itens-freq"></div>
+
       <!-- RECENTES -->
       <div class="sh"><h3>Demandas recentes</h3><span style="font-size:11px;color:var(--ac);cursor:pointer" onclick="go('sDemandas')">Ver todas →</span></div>
       <div style="display:flex;flex-direction:column;gap:5px">
@@ -1630,6 +1634,8 @@ window.go = window.go || function(id) {
           </div>
         </div>
       </div>
+
+      <div id="rel-deals-table"></div>
 
     </div>
   </div>
@@ -3566,6 +3572,37 @@ async function loadDashboardKPIs(){
   if(mvs[2]) mvs[2].textContent = volTotal>0?'R$'+(volTotal/1000000).toFixed(1)+'M':'R$0';
   if(mvs[3]) mvs[3].textContent = savingTotal>0?'R$'+Math.round(savingTotal/1000)+'k':'R$0';
   atualizarBadgeNotif();
+  // Itens frequentes from localStorage
+  var freqEl=document.getElementById('dash-itens-freq');
+  if(freqEl){
+    var hist=[];
+    for(var k2=0;k2<localStorage.length;k2++){
+      var key2=localStorage.key(k2);
+      if(key2&&key2.indexOf('fh_modelo_')===0){
+        try{var m2=JSON.parse(localStorage.getItem(key2));if(m2&&m2.cat)hist.push(m2);}catch(e2){}
+      }
+    }
+    if(hist.length){
+      var fhtml='';
+      hist.forEach(function(m){
+        var catIcon='';
+        var cats=[{i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},{i:'🧀',l:'Muçarela'},{i:'🌶️',l:'Calabresa'},{i:'🌭',l:'Salsicha'},{i:'🍟',l:'Batata Frita'},{i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'}];
+        cats.forEach(function(c){if(c.l===m.cat)catIcon=c.i;});
+        var label=(m.corte||m.cat||'')+(m.embtipo?' · '+m.embtipo:'')+(m.volume?' · '+m.volume:'');
+        var precoAlvo=m.preco?'R$'+m.preco:'';
+        fhtml+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)">';
+        fhtml+='<span style="font-size:16px;flex-shrink:0">'+(catIcon||'📦')+'</span>';
+        fhtml+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>';
+        if(precoAlvo) fhtml+='<div style="font-size:10px;color:var(--t3)">Último alvo: '+precoAlvo+'</div>';
+        fhtml+='</div>';
+        fhtml+='<button class="btn sm" onclick="scanRecomprar(\''+m.cat.replace(/'/g,"\\'")+'\') " style="font-size:11px;flex-shrink:0">Recomprar →</button>';
+        fhtml+='</div>';
+      });
+      freqEl.innerHTML=fhtml;
+    } else {
+      freqEl.innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px 0">Nenhum item frequente ainda. Crie sua primeira demanda pelo Scan.</div>';
+    }
+  }
 }
 
 async function atualizarBadgeNotif(){
@@ -3908,6 +3945,18 @@ function scanLoadHistorico(cat){
   _scanChoices._modeloShown=true;
   _buildScanSeq();
   for(var i=0;i<_scanStepSeq.length;i++){if(_scanStepSeq[i]==='resumo'){_scanStepIdx=i;break;}}
+  renderScan();
+}
+function scanRecomprar(cat){
+  var saved=JSON.parse(localStorage.getItem('fh_modelo_'+cat)||'{}');
+  if(!saved.cat) return;
+  _scanChoices={};
+  Object.keys(saved).forEach(function(k){if(k!=='_modeloShown'&&k!=='preco')_scanChoices[k]=saved[k];});
+  _scanChoices._modeloShown=true;
+  _buildScanSeq();
+  // Jump to resumo step
+  for(var i=0;i<_scanStepSeq.length;i++){if(_scanStepSeq[i]==='resumo'){_scanStepIdx=i;break;}}
+  go('sScan');
   renderScan();
 }
 function scanUsarModelo(){
@@ -5078,12 +5127,11 @@ var REL_PERIODS = {
 
 async function loadSavingsReais(){
   if(!_currentUser) return;
-  // Fetch accepted propostas for this user's demandas
   var { data: dems } = await _sb.from('demandas').select('id, preco_alvo, produto_nome').eq('user_id',_currentUser.id);
   if(!dems||!dems.length) return;
   var demIds=dems.map(function(d){return d.id;});
   var demMap={};dems.forEach(function(d){demMap[d.id]=d;});
-  var { data: aceitas } = await _sb.from('propostas').select('demanda_id, preco_ofertado, volume_ofertado').eq('status','aceita').in('demanda_id',demIds);
+  var { data: aceitas } = await _sb.from('propostas').select('demanda_id, preco_ofertado, volume_ofertado, fornecedores(nome)').eq('status','aceita').in('demanda_id',demIds);
   if(!aceitas||!aceitas.length) return;
   // Saving vs preço-alvo
   var savingAlvo=0;var negCount=aceitas.length;
@@ -5094,34 +5142,53 @@ async function loadSavingsReais(){
       if(diff>0) savingAlvo+=diff;
     }
   });
-  // Update hero saving
   var el=document.getElementById('rel-saving-total');
   if(el&&savingAlvo>0) el.textContent='R$ '+Math.round(savingAlvo).toLocaleString('pt-BR');
   var elN=document.getElementById('rel-saving-negocios');
   if(elN) elN.textContent=negCount;
-  // Saving vs mercado: fetch all propostas for same products to get avg
+  // Saving vs mercado
   var { data: todas } = await _sb.from('propostas').select('demanda_id, preco_ofertado').in('demanda_id',demIds);
-  if(todas&&todas.length){
-    var avgMap={};var cntMap={};
-    todas.forEach(function(p){
-      if(!avgMap[p.demanda_id]){avgMap[p.demanda_id]=0;cntMap[p.demanda_id]=0;}
-      avgMap[p.demanda_id]+=Number(p.preco_ofertado);cntMap[p.demanda_id]++;
-    });
-    Object.keys(avgMap).forEach(function(k){avgMap[k]=avgMap[k]/cntMap[k];});
-    var savingMerc=0;
-    aceitas.forEach(function(p){
-      var avg=avgMap[p.demanda_id];
-      if(avg&&p.volume_ofertado){
-        var diff=(avg-Number(p.preco_ofertado))*Number(p.volume_ofertado);
-        if(diff>0) savingMerc+=diff;
-      }
-    });
-    var elPct=document.getElementById('rel-saving-pct');
-    if(elPct&&savingMerc>0){
-      var totalVol=0;aceitas.forEach(function(p){totalVol+=Number(p.preco_ofertado)*(Number(p.volume_ofertado)||1);});
-      var pct=totalVol>0?((savingMerc/totalVol)*100).toFixed(1):'0';
-      elPct.textContent=pct+'% abaixo do mercado';
+  var avgMap={};var cntMap={};
+  if(todas) todas.forEach(function(p){
+    if(!avgMap[p.demanda_id]){avgMap[p.demanda_id]=0;cntMap[p.demanda_id]=0;}
+    avgMap[p.demanda_id]+=Number(p.preco_ofertado);cntMap[p.demanda_id]++;
+  });
+  Object.keys(avgMap).forEach(function(k){avgMap[k]=avgMap[k]/cntMap[k];});
+  var savingMerc=0;
+  aceitas.forEach(function(p){
+    var avg=avgMap[p.demanda_id];
+    if(avg&&p.volume_ofertado){
+      var diff=(avg-Number(p.preco_ofertado))*Number(p.volume_ofertado);
+      if(diff>0) savingMerc+=diff;
     }
+  });
+  var elPct=document.getElementById('rel-saving-pct');
+  if(elPct&&savingMerc>0){
+    var totalVol=0;aceitas.forEach(function(p){totalVol+=Number(p.preco_ofertado)*(Number(p.volume_ofertado)||1);});
+    var pct=totalVol>0?((savingMerc/totalVol)*100).toFixed(1):'0';
+    elPct.textContent=pct+'% abaixo do mercado';
+  }
+  // Render deals table
+  var tblEl=document.getElementById('rel-deals-table');
+  if(tblEl&&aceitas.length){
+    var th='<table class="tbl" style="margin-top:14px"><thead><tr><th>Produto</th><th>Fornecedor</th><th>Fechado</th><th>Meta</th><th>Mercado</th><th>Saving</th></tr></thead><tbody>';
+    aceitas.forEach(function(p){
+      var dem=demMap[p.demanda_id]||{};
+      var forn=(p.fornecedores&&p.fornecedores.nome)||'—';
+      var preco=Number(p.preco_ofertado);
+      var meta=dem.preco_alvo?Number(dem.preco_alvo):null;
+      var merc=avgMap[p.demanda_id]||null;
+      var savPct=meta?((meta-preco)/meta*100).toFixed(1)+'%':'—';
+      var savMercPct=merc?((merc-preco)/merc*100).toFixed(1)+'%':'—';
+      var savColor=meta&&preco<=meta?'var(--gn)':'var(--rd)';
+      th+='<tr><td>'+(dem.produto_nome||'—')+'</td><td>'+forn+'</td>';
+      th+='<td style="font-family:var(--mono)">R$'+preco.toFixed(2)+'</td>';
+      th+='<td style="font-family:var(--mono)">'+(meta?'R$'+meta.toFixed(2):'—')+'</td>';
+      th+='<td style="font-family:var(--mono)">'+(merc?'R$'+merc.toFixed(2):'—')+'</td>';
+      th+='<td style="color:'+savColor+';font-weight:700;font-family:var(--mono)">'+savPct+'</td></tr>';
+    });
+    th+='</tbody></table>';
+    tblEl.innerHTML=th;
   }
 }
 function relPeriod(btn, period) {

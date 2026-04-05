@@ -508,6 +508,10 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
         <div class="metric" style="border-left:3px solid var(--gold)"><div class="mlbl">ROI campanhas</div><div class="mval" style="color:var(--gold)">4,2×</div><div class="msub">vs R$20k investido</div></div>
       </div>
 
+      <div style="font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;font-family:var(--mono)">⭐ Meus produtos cadastrados</div>
+      <div style="font-size:11px;color:var(--w3);margin-bottom:8px">Clique em Nova oferta para ajustar e publicar</div>
+      <div id="dash-meus-produtos"></div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <!-- OPORTUNIDADES -->
         <div class="card card-am clink" onclick="go('s-demandas')">
@@ -2450,6 +2454,36 @@ async function loadDashboardIndustria(){
     mvs[2].textContent=aceitas.length;
     mvs[3].textContent=matchRate+'%';
   }
+  // Meus produtos from localStorage
+  var prodEl=document.getElementById('dash-meus-produtos');
+  if(prodEl){
+    var prods=[];
+    for(var k=0;k<localStorage.length;k++){
+      var key=localStorage.key(k);
+      if(key&&key.indexOf('fh_of_modelo_')===0){
+        try{var m=JSON.parse(localStorage.getItem(key));if(m&&m.cat)prods.push(m);}catch(e){}
+      }
+    }
+    if(prods.length){
+      var ph='';
+      prods.forEach(function(m){
+        var catIcon='';
+        [{i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},{i:'🧀',l:'Muçarela'},{i:'🌶️',l:'Calabresa'},{i:'🌭',l:'Salsicha'},{i:'🍟',l:'Batata Frita'},{i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'}].forEach(function(c){if(c.l===m.cat)catIcon=c.i;});
+        var label=(m.corte||m.cat||'')+(m.embmaster?' · '+m.embmaster:'')+(m.volume?' · '+m.volume:'');
+        var preco=m.preco?'R$'+m.preco+(m.precoUn||'/kg'):'';
+        ph+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)">';
+        ph+='<span style="font-size:16px;flex-shrink:0">'+(catIcon||'📦')+'</span>';
+        ph+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>';
+        if(preco) ph+='<div style="font-size:10px;color:var(--w3)">Último preço: '+preco+'</div>';
+        ph+='</div>';
+        ph+='<button style="font-size:10px;padding:5px 12px;border-radius:6px;border:1px solid rgba(245,184,0,.3);background:rgba(245,184,0,.08);color:var(--am);cursor:pointer;flex-shrink:0;font-family:sans-serif;font-weight:600" onclick="ofRecomprar(\''+m.cat.replace(/'/g,"\\'")+'\',\''+(m.corte||'').replace(/'/g,"\\'")+'\')">Nova oferta →</button>';
+        ph+='</div>';
+      });
+      prodEl.innerHTML=ph;
+    } else {
+      prodEl.innerHTML='<div style="font-size:12px;color:var(--w3);padding:10px 0">Nenhum produto cadastrado ainda. Publique sua primeira oferta.</div>';
+    }
+  }
 }
 
 // ── NAVIGATION ──
@@ -2829,6 +2863,19 @@ function _buildOfSeq(){
   }
   _ofSeq=seq;
 }
+function ofRecomprar(cat,corte){
+  var key='fh_of_modelo_'+cat+'_'+corte;
+  var saved=JSON.parse(localStorage.getItem(key)||'{}');
+  if(!saved.cat){openOfertaFlow();return;}
+  _ofChoices={};
+  Object.keys(saved).forEach(function(k){if(k!=='preco'&&k!=='precoUn')_ofChoices[k]=saved[k];});
+  _ofChoices._modeloShown=true;
+  _buildOfSeq();
+  // Jump to resumo step
+  for(var i=0;i<_ofSeq.length;i++){if(_ofSeq[i]==='resumo'){_ofStepIdx=i;break;}}
+  document.getElementById('modal-nova-oferta').style.display='flex';
+  renderOfStep();
+}
 function openOfertaFlow(){
   _ofChoices={};_ofStepIdx=0;_buildOfSeq();
   document.getElementById('modal-nova-oferta').style.display='flex';
@@ -2978,6 +3025,7 @@ async function ofPublish(){
   });
   if(error){console.log('Erro oferta:',JSON.stringify(error));fireToast('Erro: '+error.message);return;}
   closeOfertaFlow();
+  try{localStorage.setItem('fh_of_modelo_'+(c.cat||'')+'_'+(c.corte||''),JSON.stringify(c));}catch(e){}
   fireToast('Oferta publicada! Compradores serão notificados. 🚀');
   if(document.getElementById('s-minhas-ofertas').classList.contains('on'))loadMinhasOfertas();
   // Save last published offer data for PDF
