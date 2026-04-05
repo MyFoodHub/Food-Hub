@@ -481,36 +481,22 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   <!-- back + header -->
   <div style="display:flex;align-items:center;padding:8px 0 14px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:14px;flex-wrap:wrap;gap:10px">
     <button onclick="go('s-main')" style="background:transparent;border:none;color:var(--w3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px">← Dashboard</button>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--am);margin-left:12px">MINHAS OFERTAS</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:var(--am);margin-left:12px">📊 MEU CRM DE VENDAS</div>
     <div style="margin-left:auto;display:flex;gap:8px">
       <button onclick="openOfertaFlow()" style="border:none;border-radius:9px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000">+ Criar oferta proativa</button>
     </div>
   </div>
 
-  <!-- KPIs -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
-    <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
-      <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Ofertas ativas</div>
-      <div id="mo-kpi-ativas" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--am)">0</div></div>
-    <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
-      <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Volume ofertado</div>
-      <div id="mo-kpi-volume" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--w)">0</div></div>
-    <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
-      <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Match rate</div>
-      <div id="mo-kpi-match" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--gn)">0%</div></div>
-    <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
-      <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Receita gerada</div>
-      <div id="mo-kpi-receita" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--am)">R$0</div></div>
-  </div>
-
-  <!-- FEED — PROPOSTAS DO FORNECEDOR -->
-  <div style="font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:11px;display:flex;align-items:center;gap:8px">
-    <div style="width:5px;height:5px;border-radius:50%;background:var(--am);animation:blink 1.4s infinite"></div>
-    MEU PIPELINE
-    <span style="margin-left:auto;font-size:10px;cursor:pointer;color:var(--am)" onclick="openOfertaFlow()">+ Nova oferta</span>
+  <div style="display:flex;gap:12px;font-size:11px;color:var(--w2);margin-bottom:12px;flex-wrap:wrap" id="crm-v-totais"></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="btn btn-am sm" onclick="crmVSetFilt(this,'todos')" style="font-size:10px">Todos</button>
+    <button class="btn-gh sm" onclick="crmVSetFilt(this,'oferta')" style="font-size:10px">Ofertas</button>
+    <button class="btn-gh sm" onclick="crmVSetFilt(this,'proposta')" style="font-size:10px">Propostas</button>
+    <button class="btn-gh sm" onclick="crmVSetFilt(this,'negociando')" style="font-size:10px">Negociando</button>
+    <button class="btn-gh sm" onclick="crmVSetFilt(this,'fechado')" style="font-size:10px">Fechados</button>
   </div>
   <div id="minhas-ofertas-list">
-    <div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando suas propostas...</div>
+    <div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando CRM...</div>
   </div>
 </div>
 
@@ -2212,83 +2198,71 @@ async function loadDemandasMercado(){
 }
 
 // ── MINHAS OFERTAS/PROPOSTAS ──
-async function loadKpisMinhasOfertas(){
-  if(!_fornecedorId) return;
-  var { data: ofertas } = await _sb.from('ofertas').select('quantidade,status').eq('fornecedor_id',_fornecedorId);
-  var { data: props } = await _sb.from('propostas').select('preco_ofertado,volume_ofertado,status').eq('fornecedor_id',_fornecedorId);
-  var ativas=ofertas?ofertas.filter(function(o){return o.status==='ativa';}):[];
-  var volOf=0;ativas.forEach(function(o){volOf+=Number(o.quantidade)||0;});
-  var aceitas=props?props.filter(function(p){return p.status==='aceita';}):[];
-  var matchRate=props&&props.length?Math.round((aceitas.length/props.length)*100):0;
-  var receita=0;aceitas.forEach(function(p){receita+=(Number(p.preco_ofertado)||0)*(Number(p.volume_ofertado)||0);});
-  var e1=document.getElementById('mo-kpi-ativas');if(e1)e1.textContent=ativas.length;
-  var e2=document.getElementById('mo-kpi-volume');if(e2)e2.textContent=volOf>1000?(volOf/1000).toFixed(0)+'t':volOf>0?volOf.toLocaleString('pt-BR')+'kg':'0';
-  var e3=document.getElementById('mo-kpi-match');if(e3)e3.textContent=matchRate+'%';
-  var e4=document.getElementById('mo-kpi-receita');if(e4)e4.textContent=receita>1000000?'R$'+(receita/1000000).toFixed(1)+'M':receita>0?'R$'+(receita/1000).toFixed(0)+'k':'R$0';
-}
+var _crmVFilt='todos';
+var _crmVData=[];
+async function loadKpisMinhasOfertas(){}
 async function loadMinhasOfertas(){
-  var el = document.getElementById('minhas-ofertas-list');
-  if(!el) return;
-  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando propostas...</div>';
+  var el=document.getElementById('minhas-ofertas-list');
+  var totEl=document.getElementById('crm-v-totais');
+  if(!el)return;
   if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum fornecedor vinculado.</div>';return;}
-  var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
-  var { data: ofertas } = await _sb.from('ofertas').select('*').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
-  if(error){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
-  if((!data||!data.length)&&(!ofertas||!ofertas.length)){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta enviada ainda.</div>';return;}
-  var receb=[],negoc=[],aceita=[],recus=[];
-  data.forEach(function(p){
-    if(p.status==='aceita') aceita.push(p);
-    else if(p.status==='recusada') recus.push(p);
-    else if(p.status==='negociada') negoc.push(p);
-    else receb.push(p);
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando CRM...</div>';
+  var { data: props }=await _sb.from('propostas').select('*, demandas(produto_nome,volume,unidade_volume,profiles(nome,empresa)), fornecedores(nome)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  var { data: ofertas }=await _sb.from('ofertas').select('*').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  _crmVData=[];
+  if(props) props.forEach(function(p){
+    var dem=p.demandas||{};var prof=dem.profiles||{};
+    var valTotal=(Number(p.preco_ofertado)||0)*(Number(p.volume_ofertado)||0);
+    var st=p.status==='aceita'?'fechado':p.status==='recusada'?'recusada':p.status==='negociada'?'negociando':'proposta';
+    _crmVData.push({tipo:'proposta',comprador:prof.nome||prof.empresa||'Comprador',produto:dem.produto_nome||'',vol:p.volume_ofertado,preco:p.preco_ofertado,unPreco:p.unidade_preco||'/kg',valTotal:valTotal,st:st,dt:p.criado_em,id:p.id});
   });
-  function lineRow(p,btn){
-    var dem=p.demandas||{};
-    var produto=dem.produto_nome||'Proposta';
-    var preco='R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg');
-    var dt=p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+produto+'</div><div style="font-size:10px;color:var(--w3)">'+preco+(dt?' · '+dt:'')+'</div></div>'+btn+'</div>';
-  }
-  function secHeader(icon,label,count,id){
-    return '<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="var s=document.getElementById(\''+id+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);color:var(--w3)">'+icon+' '+label+' ('+count+')</span><span style="margin-left:auto;font-size:10px;color:var(--w4)">▾</span></div>';
-  }
-  var html='';
-  if(receb.length){
-    html+=secHeader('📨','RECEBIDAS',receb.length,'of-sec-receb');
-    html+='<div id="of-sec-receb">';
-    receb.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--am);flex-shrink:0">Aguardando...</span>');});
-    html+='</div>';
-  }
-  if(negoc.length){
-    html+=secHeader('🔵','EM NEGOCIAÇÃO',negoc.length,'of-sec-negoc');
-    html+='<div id="of-sec-negoc">';
-    negoc.forEach(function(p){html+=lineRow(p,'<button style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--b2);background:var(--s3);color:var(--w2);cursor:pointer;flex-shrink:0;font-family:sans-serif">Continuar →</button>');});
-    html+='</div>';
-  }
-  if(aceita.length){
-    html+=secHeader('✅','ACEITAS',aceita.length,'of-sec-aceita');
-    html+='<div id="of-sec-aceita">';
-    aceita.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--go);flex-shrink:0">Aceita ✓</span>');});
-    html+='</div>';
-  }
-  if(recus.length){
-    html+=secHeader('❌','RECUSADAS',recus.length,'of-sec-recus');
-    html+='<div id="of-sec-recus">';
-    recus.forEach(function(p){html+=lineRow(p,'<span style="font-size:11px;color:var(--rd);flex-shrink:0">Recusada</span>');});
-    html+='</div>';
-  }
-  if(ofertas&&ofertas.length){
-    html+=secHeader('📢','OFERTAS PUBLICADAS',ofertas.length,'of-sec-ofertas');
-    html+='<div id="of-sec-ofertas">';
-    ofertas.forEach(function(o){
-      var preco=o.preco?'R$'+Number(o.preco).toFixed(2)+(o.unidade_preco||'/kg'):'';
-      var dt=o.criado_em?new Date(o.criado_em).toLocaleDateString('pt-BR'):'';
-      html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(o.nome||'Oferta')+'</div><div style="font-size:10px;color:var(--w3)">'+preco+(dt?' · '+dt:'')+(o.descricao?' · '+o.descricao:'')+'</div></div><span style="font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(245,184,0,.1);color:var(--am);font-weight:700;flex-shrink:0">'+(o.status||'ativa')+'</span></div>';
-    });
-    html+='</div>';
-  }
-  if(!html) html='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma proposta ainda.</div>';
-  el.innerHTML=html;
+  if(ofertas) ofertas.forEach(function(o){
+    var valTotal=(Number(o.preco)||0)*(Number(o.quantidade)||0);
+    _crmVData.push({tipo:'oferta',comprador:'Mercado aberto',produto:o.nome||'',vol:o.quantidade,preco:o.preco,unPreco:o.unidade_preco||'/kg',valTotal:valTotal,st:o.status==='ativa'?'publicada':'expirada',dt:o.criado_em,id:o.id});
+  });
+  _crmVData.sort(function(a,b){return(b.dt||'')>(a.dt||'')?1:-1;});
+  // Totals
+  var totalOps=_crmVData.length;
+  var totalNeg=0;var totalReceita=0;var totalProps=props?props.length:0;
+  var aceitas=props?props.filter(function(p){return p.status==='aceita';}):[];
+  aceitas.forEach(function(p){totalReceita+=(Number(p.preco_ofertado)||0)*(Number(p.volume_ofertado)||0);});
+  _crmVData.forEach(function(r){if(r.st!=='fechado'&&r.st!=='recusada'&&r.st!=='expirada')totalNeg+=r.valTotal;});
+  var matchRate=totalProps>0?Math.round((aceitas.length/totalProps)*100):0;
+  if(totEl) totEl.innerHTML='<span><strong>'+totalOps+'</strong> operações</span><span>R$'+(totalNeg/1000).toFixed(0)+'k em negociação</span><span style="color:var(--go)">R$'+(totalReceita/1000).toFixed(0)+'k receita</span><span>Match: '+matchRate+'%</span>';
+  renderCRMV();
+}
+function renderCRMV(){
+  var el=document.getElementById('minhas-ofertas-list');
+  if(!el)return;
+  var f=_crmVFilt;
+  var filtered=_crmVData.filter(function(r){
+    if(f==='todos')return true;
+    if(f==='oferta')return r.tipo==='oferta';
+    if(f==='proposta')return r.tipo==='proposta'&&r.st!=='fechado'&&r.st!=='negociando';
+    if(f==='negociando')return r.st==='negociando';
+    if(f==='fechado')return r.st==='fechado';
+    return true;
+  });
+  if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma operação.</div>';return;}
+  var h='<div style="overflow-x:auto"><table class="tbl" style="min-width:700px"><thead><tr><th>Tipo</th><th>Comprador</th><th>Produto</th><th>Volume</th><th>Preço</th><th>Total</th><th>Status</th><th>Data</th></tr></thead><tbody>';
+  filtered.forEach(function(r){
+    var tipoBadge=r.tipo==='oferta'?'<span style="font-size:8px;padding:2px 6px;border-radius:3px;background:var(--am2);color:var(--am);font-weight:700">📢 Oferta</span>':'<span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(0,212,255,.1);color:#00D4FF;font-weight:700">📤 Proposta</span>';
+    var stIcon=r.st==='publicada'?'🟡':r.st==='proposta'?'🟡':r.st==='negociando'?'🔵':r.st==='fechado'?'✅':r.st==='recusada'?'❌':'⚫';
+    var stLbl=r.st==='publicada'?'Publicada':r.st==='proposta'?'Enviada':r.st==='negociando'?'Negociando':r.st==='fechado'?'Aceita':r.st==='recusada'?'Recusada':'Expirada';
+    var vol=r.vol?Number(r.vol).toLocaleString('pt-BR'):'—';
+    var preco=r.preco?'R$'+Number(r.preco).toFixed(2)+(r.unPreco||''):'—';
+    var total=r.valTotal>0?'R$'+(r.valTotal/1000).toFixed(1)+'k':'—';
+    var dt=r.dt?new Date(r.dt).toLocaleDateString('pt-BR'):'';
+    h+='<tr><td>'+tipoBadge+'</td><td>'+r.comprador+'</td><td style="color:#fff;font-weight:600">'+r.produto+'</td><td style="font-family:var(--mono)">'+vol+'</td><td style="font-family:var(--mono);color:var(--am)">'+preco+'</td><td style="font-family:var(--mono)">'+total+'</td><td>'+stIcon+' <span style="font-size:10px">'+stLbl+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--w3)">'+dt+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+function crmVSetFilt(btn,filt){
+  _crmVFilt=filt;
+  btn.parentNode.querySelectorAll('button').forEach(function(b){b.className='btn-gh sm';b.style.fontSize='10px';});
+  btn.className='btn btn-am sm';btn.style.fontSize='10px';
+  renderCRMV();
 }
 
 // ── PIPELINE ──

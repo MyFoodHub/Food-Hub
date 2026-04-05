@@ -1306,9 +1306,20 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
-      <div class="sh"><h3>Pipeline de Negócios</h3></div>
-      <div id="neg-lista">
-        <div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Carregando negócios...</div>
+      <div class="sh" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h3>🛒 Meu CRM de Compras</h3>
+        <div id="crm-totais" style="display:flex;gap:12px;font-size:11px;color:var(--t2)"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="crm-filtros">
+        <button class="neg-filt active" onclick="crmSetFilt(this,'todos')">Todos</button>
+        <button class="neg-filt" onclick="crmSetFilt(this,'aberto')">Em aberto</button>
+        <button class="neg-filt" onclick="crmSetFilt(this,'propostas')">Propostas recebidas</button>
+        <button class="neg-filt" onclick="crmSetFilt(this,'negociando')">Em negociação</button>
+        <button class="neg-filt" onclick="crmSetFilt(this,'fechado')">Fechados</button>
+        <button class="neg-filt" onclick="crmSetFilt(this,'expirado')">Expirados</button>
+      </div>
+      <div id="crm-lista" style="overflow-x:auto">
+        <div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Carregando CRM...</div>
       </div>
     </div>
   </div>
@@ -4109,114 +4120,80 @@ async function launchScan(){
 
 
 
-/* ── NEGÓCIOS PIPELINE ── */
-var _negDemandas = [];
-var _negSections = {};
-
+/* ── CRM DE COMPRAS ── */
+var _crmFilt='todos';
+var _crmData=[];
 async function negRender(){
-  var lista = document.getElementById('neg-lista');
-  if(!lista) return;
-  if(!_currentUser){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Faça login para ver seus negócios.</div>';return;}
-  lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando pipeline...</div>';
-  // Fetch demandas with propostas
-  var { data, error } = await _sb.from('demandas').select('*, propostas(id, fornecedor_id, preco_ofertado, score_total, fornecedores(nome))').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  var lista=document.getElementById('crm-lista');
+  var totais=document.getElementById('crm-totais');
+  if(!lista)return;
+  if(!_currentUser){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Faça login.</div>';return;}
+  lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando...</div>';
+  var { data, error }=await _sb.from('demandas').select('*, propostas(id,preco_ofertado,volume_ofertado,status,fornecedor_id,fornecedores(nome))').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
   if(error){lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
-  _negDemandas = data||[];
-  // Fetch negociacoes
-  var demIds=_negDemandas.map(function(d){return d.id;});
+  var demIds=(data||[]).map(function(d){return d.id;});
   var negMap={};
   if(demIds.length){
-    var { data: negs } = await _sb.from('negociacoes').select('demanda_id,status,fornecedor_id').in('demanda_id',demIds);
-    if(negs) negs.forEach(function(n){negMap[n.demanda_id]=n;});
+    var { data: negs }=await _sb.from('negociacoes').select('demanda_id,status').in('demanda_id',demIds);
+    if(negs) negs.forEach(function(n){negMap[n.demanda_id]=n.status;});
   }
-  // Fetch contra-propostas
-  var { data: cps } = await _sb.from('contra_propostas').select('*, propostas:proposta_id(preco_ofertado, fornecedores:fornecedor_id(nome))').eq('user_id',_currentUser.id);
-  // Classify demandas
-  var secProp=[],secNeg=[],secFech=[],secAguard=[];
-  _negDemandas.forEach(function(d){
-    var props=(d.propostas&&d.propostas.length)?d.propostas:[];
+  _crmData=[];
+  (data||[]).forEach(function(d){
+    var props=d.propostas||[];
     var neg=negMap[d.id]||null;
-    if(d.status==='fechada'){secFech.push(d);d._sec='fechado';}
-    else if(neg&&(neg.status==='em_andamento'||neg.status==='aceita')){secNeg.push(d);d._sec='neg';d._neg=neg;}
-    else if(props.length>0){secProp.push(d);d._sec='prop';}
-    else if(d.status==='ativa'){secAguard.push(d);d._sec='aguard';}
+    var bestProp=null;var minPreco=Infinity;
+    props.forEach(function(p){if(Number(p.preco_ofertado)<minPreco){minPreco=Number(p.preco_ofertado);bestProp=p;}});
+    var st='aberto';
+    if(d.status==='fechada') st='fechado';
+    else if(d.status==='expirada'||d.status==='cancelada') st='expirado';
+    else if(neg==='em_andamento'||neg==='aceita') st='negociando';
+    else if(props.length>0) st='propostas';
+    var saving=0;
+    if(d.preco_alvo&&bestProp) saving=(Number(d.preco_alvo)-minPreco)*(Number(bestProp.volume_ofertado)||Number(d.volume)||0);
+    _crmData.push({d:d,st:st,props:props,bestProp:bestProp,minPreco:minPreco<Infinity?minPreco:null,saving:saving>0?saving:0});
   });
-  var html='';
-  // Helper for line row
-  function lineRow(produto,detail,right,btn,onclick){
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="'+onclick+'">'
-      +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+produto+'</div>'
-      +'<div style="font-size:10px;color:var(--t3)">'+detail+'</div></div>'
-      +'<div style="text-align:right;flex-shrink:0;font-size:12px">'+right+'</div>'
-      +btn+'</div>';
-  }
-  // 📨 PROPOSTAS RECEBIDAS
-  if(secProp.length){
-    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2)" onclick="document.getElementById(\'neg-sec-prop\').style.display=document.getElementById(\'neg-sec-prop\').style.display===\'none\'?\'block\':\'none\'">';
-    html+='<span style="font-size:10px;color:var(--gn);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">📨 PROPOSTAS RECEBIDAS ('+secProp.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
-    html+='<div id="neg-sec-prop">';
-    secProp.forEach(function(d){
-      var bestProp=d.propostas[0]||{};
-      var fornNome=(bestProp.fornecedores&&bestProp.fornecedores.nome)||'';
-      var preco=bestProp.preco_ofertado?'R$'+Number(bestProp.preco_ofertado).toFixed(2):'';
-      var sc=bestProp.score_total||'';
-      html+=lineRow(d.produto_nome||'Demanda',fornNome+(sc?' · Score '+sc:''),preco+(d.propostas.length>1?' <span style="color:var(--t3);font-size:10px">+'+( d.propostas.length-1)+'</span>':''),
-        '<button class="btn sm btn-g" onclick="event.stopPropagation();abrirDemanda(\''+d.id+'\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Ver →</button>',
-        "abrirDemanda('"+d.id+"')");
-    });
-    html+='</div>';
-  }
-  // 🔵 EM NEGOCIAÇÃO
-  if(secNeg.length){
-    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-neg\').style.display=document.getElementById(\'neg-sec-neg\').style.display===\'none\'?\'block\':\'none\'">';
-    html+='<span style="font-size:10px;color:var(--ac);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">🔵 EM NEGOCIAÇÃO ('+secNeg.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
-    html+='<div id="neg-sec-neg">';
-    secNeg.forEach(function(d){
-      html+=lineRow(d.produto_nome||'Demanda','Negociação em andamento','',
-        '<button class="btn sm" onclick="event.stopPropagation();go(\'sNeg\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Continuar →</button>',
-        "go('sNeg')");
-    });
-    html+='</div>';
-  }
-  // ↩️ CONTRA-PROPOSTAS
-  if(cps&&cps.length){
-    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-cp\').style.display=document.getElementById(\'neg-sec-cp\').style.display===\'none\'?\'block\':\'none\'">';
-    html+='<span style="font-size:10px;color:var(--pu);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">↩️ CONTRA-PROPOSTAS ('+cps.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
-    html+='<div id="neg-sec-cp">';
-    cps.forEach(function(cp){
-      var fornNome=(cp.propostas&&cp.propostas.fornecedores&&cp.propostas.fornecedores.nome)||'';
-      html+=lineRow('Contra-proposta',fornNome+' · Original R$'+Number(cp.preco_original).toFixed(2),'<span style="color:var(--gn);font-weight:700">R$'+Number(cp.preco_contra).toFixed(2)+'</span>',
-        '<button class="btn-ghost sm" onclick="event.stopPropagation();go(\'sNeg\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Ver →</button>',
-        "go('sNeg')");
-    });
-    html+='</div>';
-  }
-  // ✅ FECHADOS
-  if(secFech.length){
-    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-fech\').style.display=document.getElementById(\'neg-sec-fech\').style.display===\'none\'?\'block\':\'none\'">';
-    html+='<span style="font-size:10px;color:var(--gn);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">✅ FECHADOS ('+secFech.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
-    html+='<div id="neg-sec-fech">';
-    secFech.forEach(function(d){
-      html+=lineRow(d.produto_nome||'Demanda',d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'','',
-        '<button class="btn-ghost sm" onclick="event.stopPropagation();go(\'sContract\')" style="font-size:10px;flex-shrink:0;margin-left:8px">Contrato →</button>',
-        "go('sContract')");
-    });
-    html+='</div>';
-  }
-  // 🟡 AGUARDANDO
-  if(secAguard.length){
-    html+='<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="document.getElementById(\'neg-sec-aguard\').style.display=document.getElementById(\'neg-sec-aguard\').style.display===\'none\'?\'block\':\'none\'">';
-    html+='<span style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)">🟡 AGUARDANDO PROPOSTAS ('+secAguard.length+')</span><span style="margin-left:auto;font-size:10px;color:var(--t3)">▾</span></div>';
-    html+='<div id="neg-sec-aguard">';
-    secAguard.forEach(function(d){
-      var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'';
-      html+=lineRow(d.produto_nome||'Demanda',(d.local_entrega||'')+(vol?' · '+vol:''),'<span style="color:var(--t3)">Aguardando...</span>','',
-        "abrirDemanda('"+d.id+"')");
-    });
-    html+='</div>';
-  }
-  if(!html) html='<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">Nenhum negócio ainda. Crie sua primeira demanda!</div>';
-  lista.innerHTML=html;
+  renderCRM();
+}
+function renderCRM(){
+  var lista=document.getElementById('crm-lista');
+  var totais=document.getElementById('crm-totais');
+  if(!lista)return;
+  var f=_crmFilt;
+  var filtered=_crmData.filter(function(r){return f==='todos'||r.st===f;});
+  var totalOps=_crmData.length;
+  var totalNeg=0;var totalSaving=0;
+  _crmData.forEach(function(r){if(r.minPreco&&r.d.volume)totalNeg+=r.minPreco*Number(r.d.volume);totalSaving+=r.saving;});
+  if(totais) totais.innerHTML='<span><strong>'+totalOps+'</strong> operações</span><span>R$'+(totalNeg/1000).toFixed(0)+'k em negociação</span><span style="color:var(--gn)">R$'+(totalSaving/1000).toFixed(0)+'k economizado</span>';
+  if(!filtered.length){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma operação encontrada.</div>';return;}
+  var h='<table class="tbl" style="min-width:800px"><thead><tr><th>Produto</th><th>Fornecedor</th><th>Volume</th><th>Alvo</th><th>Melhor</th><th>Saving</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody>';
+  filtered.forEach(function(r){
+    var d=r.d;var bp=r.bestProp;
+    var produto=(d.produto_nome||'Demanda');
+    var espec=d.especificacao?'<br><span style="font-size:10px;color:var(--t3)">'+d.especificacao.split('|')[0].trim()+'</span>':'';
+    var fornNome=bp&&bp.fornecedores?bp.fornecedores.nome:'<span style="color:var(--t3)">Aguardando</span>';
+    var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'—';
+    var alvo=d.preco_alvo?'R$'+Number(d.preco_alvo).toFixed(2):'—';
+    var melhor=r.minPreco?'R$'+r.minPreco.toFixed(2):'—';
+    var melhorColor=d.preco_alvo&&r.minPreco?(r.minPreco<=Number(d.preco_alvo)?'var(--gn)':'var(--rd)'):'var(--t1)';
+    var savingTxt=r.saving>0?'R$'+(r.saving/1000).toFixed(1)+'k':'—';
+    var savingColor=r.saving>0?'var(--gn)':'var(--t3)';
+    var stIcon=r.st==='aberto'?'🟡':r.st==='propostas'?'🟢':r.st==='negociando'?'🔵':r.st==='fechado'?'✅':'⚫';
+    var stLbl=r.st==='aberto'?'Aguardando':r.st==='propostas'?r.props.length+' proposta'+(r.props.length>1?'s':''):r.st==='negociando'?'Negociando':r.st==='fechado'?'Fechado':'Expirado';
+    var dt=d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'';
+    var btn='';
+    if(r.st==='propostas') btn='<button class="btn sm btn-g" onclick="abrirDemanda(\''+d.id+'\')" style="font-size:10px">Ver →</button>';
+    else if(r.st==='negociando') btn='<button class="btn sm" onclick="go(\'sNeg\')" style="font-size:10px">Continuar →</button>';
+    else if(r.st==='fechado') btn='<button class="btn-ghost sm" onclick="go(\'sContract\')" style="font-size:10px">Contrato →</button>';
+    h+='<tr><td style="color:#fff;font-weight:600">'+produto+espec+'</td><td>'+fornNome+'</td><td style="font-family:var(--mono)">'+vol+'</td><td style="font-family:var(--mono)">'+alvo+'</td><td style="font-family:var(--mono);color:'+melhorColor+'">'+melhor+'</td><td style="font-family:var(--mono);color:'+savingColor+';font-weight:700">'+savingTxt+'</td><td>'+stIcon+' <span style="font-size:10px">'+stLbl+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--t3)">'+dt+'</td><td>'+btn+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  lista.innerHTML=h;
+}
+function crmSetFilt(btn,filt){
+  _crmFilt=filt;
+  document.querySelectorAll('#crm-filtros .neg-filt').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderCRM();
 }
 
 /* ── LAUNCH COUNTER ── */

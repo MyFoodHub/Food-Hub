@@ -63,14 +63,16 @@ body{background:#0a0a1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-siz
     <div class="kpi-grid" id="admin-kpis"></div>
     <!-- Tabs -->
     <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
-      <button class="btn btn-ac" onclick="showTab('feed')">Feed ao vivo</button>
+      <button class="btn btn-ac" onclick="showTab('pipeline')">Pipeline CRM</button>
+      <button class="btn-gh" onclick="showTab('feed')">Feed ao vivo</button>
       <button class="btn-gh" onclick="showTab('demandas')">Demandas</button>
       <button class="btn-gh" onclick="showTab('fornecedores')">Fornecedores</button>
       <button class="btn-gh" onclick="showTab('compradores')">Compradores</button>
       <button class="btn-gh" onclick="showTab('negocios')">Negociações</button>
       <button class="btn-gh" onclick="showTab('receita')">Receita FH</button>
     </div>
-    <div id="tab-feed" class="section"></div>
+    <div id="tab-pipeline" class="section"></div>
+    <div id="tab-feed" class="section" style="display:none"></div>
     <div id="tab-demandas" class="section" style="display:none"></div>
     <div id="tab-fornecedores" class="section" style="display:none"></div>
     <div id="tab-compradores" class="section" style="display:none"></div>
@@ -119,12 +121,79 @@ function adminLogin(){
   }
 }
 function showTab(id){
-  ['feed','demandas','fornecedores','compradores','negocios','receita'].forEach(function(t){
+  ['pipeline','feed','demandas','fornecedores','compradores','negocios','receita'].forEach(function(t){
     var el=document.getElementById('tab-'+t);if(el)el.style.display=t===id?'block':'none';
   });
 }
 async function loadAll(){
-  await Promise.all([loadKPIs(),loadFeed(),loadDemandas(),loadFornecedores(),loadCompradores(),loadNegocios(),loadReceita()]);
+  await Promise.all([loadKPIs(),loadPipelineCRM(),loadFeed(),loadDemandas(),loadFornecedores(),loadCompradores(),loadNegocios(),loadReceita()]);
+}
+var _pipeSearch='';var _pipeFilt='todos';
+async function loadPipelineCRM(){
+  var el=document.getElementById('tab-pipeline');if(!el)return;
+  var { data: dems }=await _sb.from('demandas').select('*, profiles(nome,empresa), propostas(id,preco_ofertado)').order('criado_em',{ascending:false}).limit(100);
+  var { data: ofertas }=await _sb.from('ofertas').select('*, fornecedores(nome)').order('criado_em',{ascending:false}).limit(100);
+  var { data: props }=await _sb.from('propostas').select('*, fornecedores(nome, comissao_config), demandas(produto_nome, profiles(nome))').order('criado_em',{ascending:false}).limit(100);
+  var rows=[];
+  if(dems) dems.forEach(function(d){
+    var prof=d.profiles||{};var pc=(d.propostas||[]).length;
+    var minP=Infinity;(d.propostas||[]).forEach(function(p){var v=Number(p.preco_ofertado);if(v<minP)minP=v;});
+    var val=minP<Infinity?minP*(Number(d.volume)||0):0;
+    rows.push({tipo:'demanda',icon:'📡',comprador:prof.nome||prof.empresa||'—',fornecedor:'—',produto:d.produto_nome||'—',vol:(d.volume||'')+ ' '+(d.unidade_volume||''),preco:minP<Infinity?minP:null,valTotal:val,comPct:1,comVal:val*0.01,status:d.status,dt:d.criado_em,props:pc});
+  });
+  if(ofertas) ofertas.forEach(function(o){
+    var fn=(o.fornecedores&&o.fornecedores.nome)||'—';
+    var val=(Number(o.preco)||0)*(Number(o.quantidade)||0);
+    rows.push({tipo:'oferta',icon:'📢',comprador:'Mercado',fornecedor:fn,produto:o.nome||'—',vol:o.quantidade||'',preco:o.preco,valTotal:val,comPct:1,comVal:val*0.01,status:o.status||'ativa',dt:o.criado_em,props:0});
+  });
+  if(props) props.forEach(function(p){
+    var fn=(p.fornecedores&&p.fornecedores.nome)||'—';
+    var dem=p.demandas||{};var prof=dem.profiles||{};
+    var val=(Number(p.preco_ofertado)||0)*(Number(p.volume_ofertado)||0);
+    var comPct=1;try{var cc=JSON.parse((p.fornecedores&&p.fornecedores.comissao_config)||'{}');comPct=cc.default||1;}catch(e){}
+    var st=p.status==='aceita'?'fechado':p.status;
+    rows.push({tipo:st==='fechado'?'fechado':'proposta',icon:st==='fechado'?'✅':'📤',comprador:prof.nome||'—',fornecedor:fn,produto:dem.produto_nome||'—',vol:p.volume_ofertado||'',preco:p.preco_ofertado,valTotal:val,comPct:comPct,comVal:val*comPct/100,status:st,dt:p.criado_em,props:0});
+  });
+  rows.sort(function(a,b){return(b.dt||'')>(a.dt||'')?1:-1;});
+  // Totals
+  var totalOps=rows.length;var totalVal=0;var totalCom=0;var totalComPot=0;
+  rows.forEach(function(r){totalVal+=r.valTotal;if(r.tipo==='fechado')totalCom+=r.comVal;else totalComPot+=r.comVal;});
+  var h='<div class="sec-title">📊 Pipeline CRM</div>';
+  h+='<div style="display:flex;gap:12px;font-size:11px;color:#ccc;margin-bottom:12px;flex-wrap:wrap"><span><strong>'+totalOps+'</strong> operações</span><span>R$'+(totalVal/1e3).toFixed(0)+'k em mesa</span><span style="color:var(--gn)">R$'+Math.round(totalCom).toLocaleString('pt-BR')+' comissão gerada</span><span style="color:var(--ac)">R$'+Math.round(totalComPot).toLocaleString('pt-BR')+' potencial</span></div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center"><input id="pipe-search" placeholder="Buscar fornecedor, comprador ou produto..." oninput="_pipeSearch=this.value;renderPipe()" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;padding:7px 10px;font-size:12px;color:#fff;outline:none"><button class="btn-gh" onclick="exportCSV()" style="font-size:10px">📥 CSV</button></div>';
+  h+='<div id="pipe-table"></div>';
+  el.innerHTML=h;
+  window._pipeRows=rows;
+  renderPipe();
+}
+function renderPipe(){
+  var el=document.getElementById('pipe-table');if(!el)return;
+  var rows=window._pipeRows||[];
+  var q=(_pipeSearch||'').toLowerCase();
+  var filtered=rows.filter(function(r){
+    if(q&&(r.comprador+r.fornecedor+r.produto).toLowerCase().indexOf(q)<0)return false;
+    return true;
+  });
+  var h='<div style="overflow-x:auto"><table class="tbl" style="min-width:900px"><thead><tr><th>#</th><th>Tipo</th><th>Comprador</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Preço</th><th>Total</th><th>Com%</th><th>ComR$</th><th>Status</th><th>Data</th></tr></thead><tbody>';
+  filtered.slice(0,100).forEach(function(r,i){
+    var preco=r.preco?'R$'+Number(r.preco).toFixed(2):'—';
+    var total=r.valTotal>0?'R$'+(r.valTotal/1e3).toFixed(1)+'k':'—';
+    var stColor=r.status==='ativa'||r.status==='recebida'?'var(--am)':r.status==='fechado'||r.status==='aceita'?'var(--gn)':r.status==='expirada'||r.status==='recusada'?'var(--rd)':'#999';
+    var dt=r.dt?new Date(r.dt).toLocaleDateString('pt-BR'):'';
+    h+='<tr><td style="color:#666;font-size:10px">'+(i+1)+'</td><td>'+r.icon+'</td><td>'+r.comprador+'</td><td>'+r.fornecedor+'</td><td style="color:#fff;font-weight:600">'+r.produto+'</td><td style="font-family:var(--mono);font-size:11px">'+r.vol+'</td><td style="font-family:var(--mono)">'+preco+'</td><td style="font-family:var(--mono)">'+total+'</td><td style="font-family:var(--mono);color:var(--ac)">'+r.comPct+'%</td><td style="font-family:var(--mono);color:var(--gn)">R$'+Math.round(r.comVal)+'</td><td style="color:'+stColor+'">'+r.status+'</td><td style="font-family:var(--mono);font-size:10px;color:#666">'+dt+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+function exportCSV(){
+  var rows=window._pipeRows||[];
+  var csv='Tipo,Comprador,Fornecedor,Produto,Volume,Preco,Total,Comissao%,ComissaoR$,Status,Data\n';
+  rows.forEach(function(r){
+    csv+=r.tipo+','+r.comprador+','+r.fornecedor+','+r.produto+','+r.vol+','+(r.preco||'')+','+(r.valTotal||'')+','+r.comPct+','+Math.round(r.comVal)+','+r.status+','+(r.dt?new Date(r.dt).toLocaleDateString('pt-BR'):'')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='foodhub_pipeline_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
 }
 
 async function loadKPIs(){
