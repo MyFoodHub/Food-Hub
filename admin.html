@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FoodHub — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#0a0a1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-size:14px}
+:root{--bg:#0a0a1a;--bg2:#12122a;--bg3:#1a1a3a;--b1:rgba(255,255,255,.08);--b2:rgba(255,255,255,.15);--ac:#7c5cfc;--ac2:rgba(124,92,252,.12);--gn:#00e09a;--rd:#ff4d6a;--am:#f5b800;--mono:'Consolas',monospace}
+#admin-app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:#0e0e24;border-bottom:1px solid var(--b1);flex-shrink:0}
+.logo{font-size:16px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+.badge-admin{background:var(--ac);color:#fff;font-size:9px;padding:2px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.main{flex:1;overflow-y:auto;padding:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.kpi{background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:14px}
+.kpi-lbl{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-family:var(--mono)}
+.kpi-val{font-size:24px;font-weight:800;color:#fff}
+.kpi-sub{font-size:10px;color:#666;margin-top:2px}
+.section{margin-bottom:20px}
+.sec-title{font-size:11px;color:var(--ac);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:10px;font-family:var(--mono);display:flex;align-items:center;gap:6px}
+.tbl{width:100%;border-collapse:separate;border-spacing:0 3px}
+.tbl th{padding:6px 10px;font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.07em;font-weight:600;text-align:left;font-family:var(--mono)}
+.tbl td{padding:9px 10px;font-size:12px;background:var(--bg2);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);color:#ccc}
+.tbl td:first-child{border-left:1px solid var(--b1);border-radius:6px 0 0 6px}
+.tbl td:last-child{border-right:1px solid var(--b1);border-radius:0 6px 6px 0}
+.tbl tbody tr:hover td{background:var(--bg3)}
+.btn{border:none;border-radius:7px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:sans-serif}
+.btn-ac{background:var(--ac);color:#fff}.btn-gn{background:var(--gn);color:#000}.btn-rd{background:var(--rd);color:#fff}
+.btn-gh{background:transparent;color:#999;border:1px solid var(--b2);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer}
+.feed-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--b1);font-size:12px}
+.feed-time{font-size:10px;color:#666;font-family:var(--mono);flex-shrink:0;width:50px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal{background:var(--bg2);border:1px solid var(--ac);border-radius:14px;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:#999;margin-bottom:4px}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;padding:8px 10px;font-size:13px;color:#fff;outline:none;box-sizing:border-box}
+#login-gate{display:flex;align-items:center;justify-content:center;height:100vh}
+</style>
+</head>
+<body>
+<div id="login-gate">
+  <div style="text-align:center;max-width:340px;padding:24px">
+    <div class="logo" style="justify-content:center;margin-bottom:16px">Food<span style="color:var(--ac)">Hub</span> <span class="badge-admin" style="margin-left:6px">ADMIN</span></div>
+    <input id="admin-pass" type="password" placeholder="Senha de administrador" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:10px;font-size:14px;color:#fff;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center">
+    <button onclick="adminLogin()" class="btn btn-ac" style="width:100%;padding:11px;font-size:14px">Entrar</button>
+    <div id="login-err" style="color:var(--rd);font-size:12px;margin-top:8px;display:none">Senha incorreta</div>
+  </div>
+</div>
+<div id="admin-app" style="display:none">
+  <div class="topbar">
+    <div class="logo">Food<span style="color:var(--ac)">Hub</span> <span class="badge-admin">ADMIN</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="auto-refresh" style="font-size:10px;color:#666;font-family:var(--mono)">Auto-refresh: 30s</span>
+      <button class="btn-gh" onclick="loadAll()">Atualizar</button>
+    </div>
+  </div>
+  <div class="main">
+    <!-- KPIs -->
+    <div class="kpi-grid" id="admin-kpis"></div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-ac" onclick="showTab('feed')">Feed ao vivo</button>
+      <button class="btn-gh" onclick="showTab('demandas')">Demandas</button>
+      <button class="btn-gh" onclick="showTab('fornecedores')">Fornecedores</button>
+      <button class="btn-gh" onclick="showTab('compradores')">Compradores</button>
+      <button class="btn-gh" onclick="showTab('negocios')">Negociações</button>
+      <button class="btn-gh" onclick="showTab('receita')">Receita FH</button>
+    </div>
+    <div id="tab-feed" class="section"></div>
+    <div id="tab-demandas" class="section" style="display:none"></div>
+    <div id="tab-fornecedores" class="section" style="display:none"></div>
+    <div id="tab-compradores" class="section" style="display:none"></div>
+    <div id="tab-negocios" class="section" style="display:none"></div>
+    <div id="tab-receita" class="section" style="display:none"></div>
+  </div>
+</div>
+<!-- Modal editar fornecedor -->
+<div id="modal-edit-forn" class="modal-bg" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:14px">Editar Fornecedor</div>
+    <input type="hidden" id="ef-id">
+    <div class="field"><label>Nome</label><input id="ef-nome"></div>
+    <div class="field"><label>Cidade</label><input id="ef-cidade"></div>
+    <div class="field"><label>Estado</label><input id="ef-estado" maxlength="2" style="width:60px"></div>
+    <div class="field"><label>Score (0-100)</label><input id="ef-score" type="number" min="0" max="100"></div>
+    <div class="field"><label>Categorias (JSON array)</label><input id="ef-categoria" placeholder='["frango","ovos"]'></div>
+    <div style="font-size:11px;color:var(--ac);margin-bottom:8px;font-weight:700">Comissão por canal (%)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="field"><label>Padrão %</label><input id="ef-com-default" type="number" step="0.1" value="1.0"></div>
+      <div class="field"><label>Food Service %</label><input id="ef-com-fs" type="number" step="0.1" value="1.2"></div>
+      <div class="field"><label>Revenda %</label><input id="ef-com-rev" type="number" step="0.1" value="0.8"></div>
+      <div class="field"><label>Atacado %</label><input id="ef-com-atac" type="number" step="0.1" value="0.9"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ac" onclick="salvarFornecedorAdmin()" style="flex:1">Salvar</button>
+      <button class="btn-gh" onclick="document.getElementById('modal-edit-forn').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+<script>
+var SUPABASE_URL='https://jqbuckofiaopxwllghac.supabase.co';
+var SUPABASE_ANON_KEY='sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
+var _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+var ADMIN_PASS='FOODHUB_ADMIN_2026';
+
+function adminLogin(){
+  var p=document.getElementById('admin-pass').value;
+  if(p===ADMIN_PASS){
+    document.getElementById('login-gate').style.display='none';
+    document.getElementById('admin-app').style.display='flex';
+    loadAll();
+    setInterval(loadAll,30000);
+  } else {
+    document.getElementById('login-err').style.display='block';
+  }
+}
+function showTab(id){
+  ['feed','demandas','fornecedores','compradores','negocios','receita'].forEach(function(t){
+    var el=document.getElementById('tab-'+t);if(el)el.style.display=t===id?'block':'none';
+  });
+}
+async function loadAll(){
+  await Promise.all([loadKPIs(),loadFeed(),loadDemandas(),loadFornecedores(),loadCompradores(),loadNegocios(),loadReceita()]);
+}
+
+async function loadKPIs(){
+  var el=document.getElementById('admin-kpis');if(!el)return;
+  var { data: dems } = await _sb.from('demandas').select('id').eq('status','ativa');
+  var { data: ofertas } = await _sb.from('ofertas').select('id').eq('status','ativa');
+  var { data: props } = await _sb.from('propostas').select('id,preco_ofertado,volume_ofertado,status,criado_em');
+  var { data: negs } = await _sb.from('negociacoes').select('id').eq('status','em_andamento');
+  var { data: forns } = await _sb.from('fornecedores').select('id');
+  var { data: profs } = await _sb.from('profiles').select('id');
+  var hoje=new Date().toISOString().split('T')[0];
+  var propsHoje=props?props.filter(function(p){return p.criado_em&&p.criado_em.indexOf(hoje)===0;}):[];
+  var aceitas=props?props.filter(function(p){return p.status==='aceita';}):[];
+  var volTotal=0;var receitaFH=0;
+  aceitas.forEach(function(p){
+    var v=Number(p.volume_ofertado)||0;var pr=Number(p.preco_ofertado)||0;
+    volTotal+=pr*v;receitaFH+=pr*v*0.01;
+  });
+  el.innerHTML='<div class="kpi"><div class="kpi-lbl">Demandas ativas</div><div class="kpi-val" style="color:var(--ac)">'+(dems?dems.length:0)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Ofertas ativas</div><div class="kpi-val" style="color:var(--am)">'+(ofertas?ofertas.length:0)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Propostas hoje</div><div class="kpi-val" style="color:var(--gn)">'+propsHoje.length+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Negociações</div><div class="kpi-val">'+(negs?negs.length:0)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Fornecedores</div><div class="kpi-val">'+(forns?forns.length:0)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Compradores</div><div class="kpi-val">'+(profs?profs.length:0)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Volume negociado</div><div class="kpi-val" style="font-size:18px">'+(volTotal>1e6?'R$'+(volTotal/1e6).toFixed(1)+'M':'R$'+(volTotal/1e3).toFixed(0)+'k')+'</div></div>'
+    +'<div class="kpi"><div class="kpi-lbl">Receita FoodHub</div><div class="kpi-val" style="color:var(--gn);font-size:18px">R$'+Math.round(receitaFH).toLocaleString('pt-BR')+'</div></div>';
+}
+
+async function loadFeed(){
+  var el=document.getElementById('tab-feed');if(!el)return;
+  var { data: dems } = await _sb.from('demandas').select('produto_nome,criado_em,profiles(nome)').order('criado_em',{ascending:false}).limit(10);
+  var { data: props } = await _sb.from('propostas').select('preco_ofertado,unidade_preco,criado_em,fornecedores(nome),demandas(codigo)').order('criado_em',{ascending:false}).limit(10);
+  var feed=[];
+  if(dems)dems.forEach(function(d){feed.push({t:d.criado_em,icon:'📡',msg:(d.profiles&&d.profiles.nome||'Comprador')+' criou demanda de '+(d.produto_nome||'')});});
+  if(props)props.forEach(function(p){feed.push({t:p.criado_em,icon:'📤',msg:(p.fornecedores&&p.fornecedores.nome||'Fornecedor')+' respondeu '+(p.demandas&&p.demandas.codigo||'demanda')+' com R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg')});});
+  feed.sort(function(a,b){return b.t>a.t?1:-1;});
+  var h='<div class="sec-title">📡 Feed ao vivo</div>';
+  feed.slice(0,20).forEach(function(f){
+    var hora=f.t?new Date(f.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    h+='<div class="feed-item"><span class="feed-time">'+hora+'</span><span>'+f.icon+' '+f.msg+'</span></div>';
+  });
+  if(!feed.length)h+='<div style="color:#666;padding:20px;text-align:center">Nenhuma atividade ainda.</div>';
+  el.innerHTML=h;
+}
+
+async function loadDemandas(){
+  var el=document.getElementById('tab-demandas');if(!el)return;
+  var { data } = await _sb.from('demandas').select('*, profiles(nome,empresa), propostas(id)').order('criado_em',{ascending:false}).limit(50);
+  var h='<div class="sec-title">📋 Demandas</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Código</th><th>Produto</th><th>Volume</th><th>Local</th><th>Comprador</th><th>Propostas</th><th>Status</th><th>Data</th></tr></thead><tbody>';
+  if(data)data.forEach(function(d){
+    var prof=d.profiles||{};var pc=(d.propostas&&d.propostas.length)||0;
+    h+='<tr><td style="font-family:var(--mono);font-size:11px">'+(d.codigo||'—')+'</td><td style="color:#fff;font-weight:600">'+(d.produto_nome||'—')+'</td><td style="font-family:var(--mono)">'+(d.volume||'—')+' '+(d.unidade_volume||'')+'</td><td>'+(d.local_entrega||'—')+'</td><td>'+(prof.nome||prof.empresa||'—')+'</td><td style="text-align:center;color:var(--gn)">'+pc+'</td><td>'+d.status+'</td><td style="font-family:var(--mono);font-size:11px">'+(d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'')+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+
+async function loadFornecedores(){
+  var el=document.getElementById('tab-fornecedores');if(!el)return;
+  var { data } = await _sb.from('fornecedores').select('*').order('nome');
+  var h='<div class="sec-title">🏭 Fornecedores</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Nome</th><th>Categorias</th><th>Cidade/UF</th><th>Score</th><th>Comissão</th><th>Status</th><th></th></tr></thead><tbody>';
+  if(data)data.forEach(function(f){
+    var cats=f.categoria||'—';
+    var com='1%';try{var cc=JSON.parse(f.comissao_config||'{}');com=(cc.default||1)+'%';}catch(e){}
+    h+='<tr><td style="color:#fff;font-weight:600">'+f.nome+'</td><td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis">'+cats+'</td><td>'+(f.cidade||'')+' '+(f.estado||'')+'</td><td style="font-family:var(--mono)">'+(f.score_foodhub||0)+'</td><td style="font-family:var(--mono)">'+com+'</td><td>'+(f.status_homologacao||'—')+'</td><td><button class="btn btn-ac" onclick="editForn(\''+f.id+'\')">Editar</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+  window._fornsList=data;
+}
+
+function editForn(id){
+  var f=null;if(window._fornsList)window._fornsList.forEach(function(x){if(x.id===id)f=x;});
+  if(!f)return;
+  document.getElementById('ef-id').value=f.id;
+  document.getElementById('ef-nome').value=f.nome||'';
+  document.getElementById('ef-cidade').value=f.cidade||'';
+  document.getElementById('ef-estado').value=f.estado||'';
+  document.getElementById('ef-score').value=f.score_foodhub||70;
+  document.getElementById('ef-categoria').value=f.categoria||'';
+  var cc={default:1,food_service:1.2,revenda:0.8,atacado:0.9};
+  try{cc=JSON.parse(f.comissao_config||'{}');}catch(e){}
+  document.getElementById('ef-com-default').value=cc.default||1;
+  document.getElementById('ef-com-fs').value=cc.food_service||1.2;
+  document.getElementById('ef-com-rev').value=cc.revenda||0.8;
+  document.getElementById('ef-com-atac').value=cc.atacado||0.9;
+  document.getElementById('modal-edit-forn').style.display='flex';
+}
+
+async function salvarFornecedorAdmin(){
+  var id=document.getElementById('ef-id').value;
+  var comConfig=JSON.stringify({
+    default:parseFloat(document.getElementById('ef-com-default').value)||1,
+    food_service:parseFloat(document.getElementById('ef-com-fs').value)||1.2,
+    revenda:parseFloat(document.getElementById('ef-com-rev').value)||0.8,
+    atacado:parseFloat(document.getElementById('ef-com-atac').value)||0.9
+  });
+  var { error }=await _sb.from('fornecedores').update({
+    nome:document.getElementById('ef-nome').value,
+    cidade:document.getElementById('ef-cidade').value,
+    estado:document.getElementById('ef-estado').value,
+    score_foodhub:parseInt(document.getElementById('ef-score').value)||70,
+    categoria:document.getElementById('ef-categoria').value||null,
+    comissao_config:comConfig
+  }).eq('id',id);
+  if(error){alert('Erro: '+error.message);return;}
+  document.getElementById('modal-edit-forn').style.display='none';
+  loadFornecedores();
+}
+
+async function loadCompradores(){
+  var el=document.getElementById('tab-compradores');if(!el)return;
+  var { data } = await _sb.from('profiles').select('*').order('criado_em',{ascending:false});
+  var h='<div class="sec-title">👤 Compradores</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Email</th><th>Nome</th><th>Empresa</th><th>Aprovado</th><th>Data</th><th></th></tr></thead><tbody>';
+  if(data)data.forEach(function(p){
+    var apBadge=p.aprovado?'<span style="color:var(--gn)">✅ Sim</span>':'<span style="color:var(--rd)">❌ Não</span>';
+    var btn=p.aprovado?'<button class="btn btn-rd" onclick="toggleAprovacao(\''+p.id+'\',false)" style="font-size:10px">Bloquear</button>':'<button class="btn btn-gn" onclick="toggleAprovacao(\''+p.id+'\',true)" style="font-size:10px">Aprovar</button>';
+    h+='<tr><td style="font-family:var(--mono);font-size:11px">'+p.email+'</td><td style="color:#fff">'+p.nome+'</td><td>'+(p.empresa||'—')+'</td><td>'+apBadge+'</td><td style="font-family:var(--mono);font-size:11px">'+(p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'')+'</td><td>'+btn+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+
+async function toggleAprovacao(id,val){
+  await _sb.from('profiles').update({aprovado:val}).eq('id',id);
+  loadCompradores();
+}
+
+async function loadNegocios(){
+  var el=document.getElementById('tab-negocios');if(!el)return;
+  var { data } = await _sb.from('propostas').select('*, fornecedores(nome), demandas(produto_nome, profiles(nome))').eq('status','aceita').order('criado_em',{ascending:false}).limit(50);
+  var h='<div class="sec-title">🤝 Negociações fechadas</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Produto</th><th>Comprador</th><th>Fornecedor</th><th>Preço</th><th>Volume</th><th>Comissão FH</th><th>Data</th></tr></thead><tbody>';
+  if(data)data.forEach(function(p){
+    var dem=p.demandas||{};var forn=p.fornecedores||{};var prof=dem.profiles||{};
+    var val=Number(p.preco_ofertado)*Number(p.volume_ofertado||0);
+    var com=val*(Number(p.comissao_aplicada)||1)/100;
+    h+='<tr><td style="color:#fff;font-weight:600">'+(dem.produto_nome||'—')+'</td><td>'+(prof.nome||'—')+'</td><td>'+(forn.nome||'—')+'</td><td style="font-family:var(--mono);color:var(--gn)">R$'+Number(p.preco_ofertado).toFixed(2)+'</td><td style="font-family:var(--mono)">'+(p.volume_ofertado||'—')+'</td><td style="font-family:var(--mono);color:var(--ac)">R$'+com.toFixed(0)+'</td><td style="font-family:var(--mono);font-size:11px">'+(p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'')+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+
+async function loadReceita(){
+  var el=document.getElementById('tab-receita');if(!el)return;
+  var { data } = await _sb.from('propostas').select('preco_ofertado,volume_ofertado,comissao_aplicada,fornecedores(nome)').eq('status','aceita');
+  var total=0;var byForn={};
+  if(data)data.forEach(function(p){
+    var val=Number(p.preco_ofertado)*Number(p.volume_ofertado||0);
+    var com=val*(Number(p.comissao_aplicada)||1)/100;
+    total+=com;
+    var fn=(p.fornecedores&&p.fornecedores.nome)||'Outros';
+    if(!byForn[fn])byForn[fn]=0;byForn[fn]+=com;
+  });
+  var h='<div class="sec-title">💰 Receita FoodHub</div>';
+  h+='<div style="background:linear-gradient(135deg,rgba(124,92,252,.12),rgba(124,92,252,.04));border:1px solid rgba(124,92,252,.25);border-radius:12px;padding:18px;margin-bottom:16px">';
+  h+='<div style="font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Receita total de comissões</div>';
+  h+='<div style="font-size:32px;font-weight:800;color:#fff;font-family:var(--mono)">R$ '+Math.round(total).toLocaleString('pt-BR')+'</div>';
+  h+='<div style="font-size:11px;color:#999;margin-top:4px">'+(data?data.length:0)+' negócios fechados</div></div>';
+  h+='<div class="sec-title">Por fornecedor</div>';
+  var sorted=Object.keys(byForn).sort(function(a,b){return byForn[b]-byForn[a];});
+  sorted.forEach(function(fn){
+    var pct=total>0?((byForn[fn]/total)*100).toFixed(0):'0';
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;color:#fff;font-weight:600;font-size:13px">'+fn+'</div><div style="font-family:var(--mono);color:var(--ac);font-size:13px">R$'+Math.round(byForn[fn]).toLocaleString('pt-BR')+'</div><div style="font-size:11px;color:#666;width:40px;text-align:right">'+pct+'%</div></div>';
+  });
+  el.innerHTML=h;
+}
+</script>
+</body>
+</html>
