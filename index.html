@@ -875,20 +875,14 @@ window.go = window.go || function(id) {
   <div class="layout">
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
-      <div class="nav-item active" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sMarket')" style="background:linear-gradient(90deg,rgba(0,200,255,.08),transparent);border:1px solid rgba(0,200,255,.12);color:var(--ac)"><span class="ni">✨</span>Ofertas de hoje <span style="font-size:8px;background:var(--gn);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">LIVE</span></div>
-      <div class="nav-item" onclick="go('sScan')" style="border:1px solid rgba(0,200,255,.15);color:var(--ac)"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item active"><span class="ni">⚡</span>Dashboard</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios · Saving</div>
-      <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;border:1px solid rgba(155,122,255,.15);color:var(--pu)"><span class="ni">🎯</span>Canal de Ofertas <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="nav-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;border:1px solid rgba(37,211,102,.15);color:#25D366"><span class="ni">💬</span>WhatsApp Pushs <span style="font-size:8px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil · KYC</div>
-      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações <span class="badge" style="font-size:8px;background:var(--rd);color:#fff;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">0</span></div>
-      <div class="nav-sec" style="margin-top:auto"></div>
-      <div class="nav-item" onclick="authLogout()" style="color:var(--rd);opacity:.7"><span class="ni">🚪</span>Sair</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <!-- HERO -->
@@ -911,64 +905,6 @@ window.go = window.go || function(id) {
         <div class="metric"><div class="ml">Volume negociado</div><div class="mv" style="font-size:15px">R$2,1M</div><div class="md">mês corrente</div></div>
         <div class="metric"><div class="ml">Economia gerada</div><div class="mv" style="color:var(--gn);font-size:15px">R$87k</div><div class="md" style="color:var(--gn)">↑ vs. preço médio</div></div>
       </div>
-      <!-- 2 MODES — destaque -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-
-        <div onclick="go('sMarket')" style="background:linear-gradient(135deg,rgba(0,224,154,.12),rgba(0,200,255,.06));border:1.5px solid rgba(0,224,154,.35);border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .18s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-          <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,rgba(0,224,154,.25),rgba(0,200,255,.15));display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:10px">🏷️</div>
-          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;line-height:1.3">Ofertas de hoje</div>
-          <div style="font-size:10px;color:var(--gn);font-weight:600;margin-bottom:7px">Disponível agora · live</div>
-          <div style="font-size:11px;color:var(--t2);line-height:1.5">Fornecedores já ofertaram pra você. Compare e feche agora.</div>
-          <div style="margin-top:10px;display:flex;gap:4px;flex-wrap:wrap">
-            <span style="background:rgba(0,224,154,.15);color:var(--gn);border-radius:8px;padding:2px 8px;font-size:9px;font-weight:700">Nervosos</span>
-            <span style="background:rgba(155,122,255,.15);color:var(--pu);border-radius:8px;padding:2px 8px;font-size:9px;font-weight:700">Interesses</span>
-          </div>
-        </div>
-
-        <div onclick="go('sScan')" style="background:linear-gradient(135deg,rgba(0,200,255,.1),rgba(155,122,255,.06));border:1.5px solid rgba(0,200,255,.3);border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .18s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-          <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,rgba(0,200,255,.25),rgba(155,122,255,.15));display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:10px">📡</div>
-          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;line-height:1.3">Criar demanda</div>
-          <div style="font-size:10px;color:var(--ac);font-weight:600;margin-bottom:7px">Fale ou preencha · 60s</div>
-          <div style="font-size:11px;color:var(--t2);line-height:1.5">500+ fornecedores recebem e competem pelo seu pedido.</div>
-          <div style="margin-top:10px;display:flex;gap:4px;flex-wrap:wrap">
-            <span style="background:rgba(0,200,255,.12);color:var(--ac);border-radius:8px;padding:2px 8px;font-size:9px;font-weight:700">🎙️ Por voz</span>
-            <span style="background:rgba(0,200,255,.08);color:var(--ac);border-radius:8px;padding:2px 8px;font-size:9px;font-weight:700">Propostas em 24h</span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- LOOP DIÁRIO IA -->
-      <div style="margin-bottom:11px">
-        <div class="sh" style="margin-bottom:7px"><h3>🔍 Loop diário · Oportunidades para você</h3><span style="font-size:10px;color:var(--t3)">baseado no seu KYC</span></div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="background:linear-gradient(135deg,rgba(0,224,154,.08),rgba(0,224,154,.02));border:1px solid rgba(0,224,154,.2);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="go('sMarket')">
-            <span style="font-size:18px;flex-shrink:0">📉</span>
-            <div style="flex:1"><div style="font-weight:600;font-size:13px;color:var(--t1)">Frango caiu 8% no Sul hoje</div><div style="font-size:11px;color:var(--t2);margin-top:1px">Avícola Três Coroas · estoque disponível · sua Curva A</div></div>
-            <button onclick="event.stopPropagation();go('sIA')" class="btn btn-g sm" style="font-size:11px;flex-shrink:0">Cotar agora</button>
-          </div>
-          <div style="background:linear-gradient(135deg,rgba(0,200,255,.06),rgba(0,200,255,.01));border:1px solid rgba(0,200,255,.15);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="go('sMarket')">
-            <span style="font-size:18px;flex-shrink:0">⚡</span>
-            <div style="flex:1"><div style="font-weight:600;font-size:13px;color:var(--t1)">Muçarela: 3 fornecedores com estoque urgente</div><div style="font-size:11px;color:var(--t2);margin-top:1px">Abaixo do preço médio de mercado · vence em 6h</div></div>
-            <span style="font-size:10px;color:var(--ac);font-weight:700;flex-shrink:0">Ver →</span>
-          </div>
-          <div style="background:linear-gradient(135deg,rgba(155,122,255,.06),rgba(155,122,255,.01));border:1px solid rgba(155,122,255,.15);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="go('sMarket')">
-            <span style="font-size:18px;flex-shrink:0">🎯</span>
-            <div style="flex:1"><div style="font-weight:600;font-size:13px;color:var(--t1)">Hora de recomprar: Óleo de Soja</div><div style="font-size:11px;color:var(--t2);margin-top:1px">Seu estoque estimado: ~10 dias · IA recomenda cotar agora</div></div>
-            <span style="font-size:10px;color:var(--pu);font-weight:700;flex-shrink:0">Pedir IA →</span>
-          </div>
-        </div>
-      </div>
-      <!-- WHATSAPP PUSH TEASER -->
-      <div style="background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(37,211,102,.02));border:1px solid rgba(37,211,102,.2);border-radius:10px;padding:11px 13px;margin-bottom:11px;cursor:pointer;display:flex;align-items:center;gap:11px" onclick="go('sWhats')">
-        <div style="width:36px;height:36px;border-radius:10px;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">💬</div>
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:13px;color:var(--t1)">4 notificações no WhatsApp</div>
-          <div style="font-size:11px;color:var(--t2);margin-top:1px">Propostas, alertas e oportunidades aguardando sua resposta</div>
-        </div>
-        <span style="font-size:9px;background:#25D366;color:#000;padding:2px 8px;border-radius:10px;font-weight:700;flex-shrink:0">4 novos</span>
-      </div>
-
       <!-- RECENTES -->
       <div class="sh"><h3>Demandas recentes</h3><span style="font-size:11px;color:var(--ac);cursor:pointer" onclick="go('sDemandas')">Ver todas →</span></div>
       <div style="display:flex;flex-direction:column;gap:5px">
@@ -986,6 +922,18 @@ window.go = window.go || function(id) {
           <div style="width:7px;height:7px;border-radius:50%;background:var(--am);flex-shrink:0"></div>
           <div style="flex:1"><span style="font-weight:600;font-size:13px">Óleo de Soja 900ml</span><span style="color:var(--t2);font-size:11px"> · 500 cx · Campinas</span></div>
           <span class="badge ba">aguardando</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <div class="card click" style="flex:1;padding:16px;text-align:center;cursor:pointer" onclick="go('sScan')">
+          <div style="font-size:24px;margin-bottom:6px">📡</div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1)">Criar demanda em 60s</div>
+          <div style="font-size:11px;color:var(--ac);margin-top:4px">Iniciar →</div>
+        </div>
+        <div class="card click" style="flex:1;padding:16px;text-align:center;cursor:pointer" onclick="go('sMarket')">
+          <div style="font-size:24px;margin-bottom:6px">🏷️</div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1)">Ver ofertas do mercado</div>
+          <div style="font-size:11px;color:var(--ac);margin-top:4px">Explorar →</div>
         </div>
       </div>
     </div>
@@ -1087,13 +1035,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas na mesa</div>
-      <div class="nav-item active"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item active"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div style="background:linear-gradient(135deg,rgba(0,200,255,.05),rgba(0,224,154,.02));border:1px solid rgba(0,200,255,.12);border-radius:12px;padding:14px 18px;margin-bottom:12px">
@@ -1139,14 +1087,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item active"><span class="ni">🏷️</span>Mesa ao Vivo</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item active"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh"><h3>⚡ Mesa ao Vivo</h3><span id="mkt-count" class="badge bb"></span></div>
@@ -1245,13 +1192,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas na mesa</div>
-      <div class="nav-item active"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item active"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh" style="display:flex;align-items:center;justify-content:space-between">
@@ -1273,14 +1220,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Mesa ao Vivo</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item active"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh"><h3>⭐ Itens Frequentes</h3></div>
@@ -1297,14 +1243,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item active"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div id="detalhe-dem-header"></div>
@@ -1323,13 +1268,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item active"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh"><h3>Pipeline de Negócios</h3></div>
@@ -1347,15 +1292,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item active"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sCadFornecedor')"><span class="ni">🏭</span>Cadastrar Fornecedor</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh" style="display:flex;align-items:center;justify-content:space-between"><h3>Fornecedores homologados</h3><button class="btn sm" onclick="go('sCadFornecedor')" style="font-size:12px">+ Cadastrar</button></div>
@@ -1373,15 +1316,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item active"><span class="ni">📩</span>Enviar Proposta</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh"><h3>Enviar Proposta</h3></div>
@@ -1445,15 +1386,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item active"><span class="ni">🏭</span>Cadastrar Fornecedor</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
       <div class="sh"><h3>Cadastrar Fornecedor</h3></div>
@@ -1522,14 +1461,13 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item active"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item active"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
+      <div class="nav-item" onclick="go('sNotif')"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">
 
@@ -1698,14 +1636,12 @@ window.go = window.go || function(id) {
     <div class="sidebar">
       <div class="nav-sec">Mesa</div>
       <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
-      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
-      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
-      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
-      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Criar demanda</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Minhas demandas</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas do mercado</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
-      <div class="nav-sec">Gestão</div>
-      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
-      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">💰</span>Saving</div>
+      <div class="nav-item" onclick="go('sPerfil')"><span class="ni">👤</span>Meu perfil</div>
       <div class="nav-item active"><span class="ni">🔔</span>Notificações</div>
     </div>
     <div class="main">

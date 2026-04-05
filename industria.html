@@ -419,86 +419,23 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 <!-- ════════════ MAIN SCREEN ════════════ -->
 <div id="s-main" class="screen on">
 
-  <!-- BLOOMBERG BAR -->
-  <div class="bloomberg">
-    <div class="bb-brand">
-      <div class="bb-dot"></div>
-      <div class="bb-logo">Food<span style="color:var(--am)">Hub</span> <span style="font-size:11px;font-weight:400;opacity:.5;font-family:'DM Sans',sans-serif">Indústria</span></div>
-    </div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Receita via FH · mês</div><div class="bb-val" style="color:var(--am)">R$ 2,4M <span class="bb-delta bb-up">↑18%</span></div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Volume vendido</div><div class="bb-val" style="color:var(--w)">847 ton <span class="bb-delta bb-up">↑12%</span></div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Compradores ativos</div><div class="bb-val" style="color:var(--go)">134 <span class="bb-delta bb-up">+17</span></div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Novas regiões</div><div class="bb-val" style="color:var(--ic)">6 <span class="bb-delta bb-up">+2</span></div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">ROI campanhas</div><div class="bb-val" style="color:var(--gold)">4,2x <span class="bb-delta bb-up">↑0,3</span></div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Conversão ofertas</div><div class="bb-val" style="color:var(--w)">38% <span class="bb-delta bb-up">↑5pp</span></div></div></div>
-    <div class="bb-right">
-      <div class="bb-insight" onclick="go('s-insights')">
-        <div style="width:5px;height:5px;border-radius:50%;background:var(--am);animation:blink 1.3s infinite"></div>
-        <span>3 insights novos</span>
-      </div>
-    </div>
-  </div>
-
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am);box-shadow:0 0 8px var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span><span style="font-size:11px;font-weight:400;opacity:.5;margin-left:5px;font-family:'DM Sans',sans-serif">Mesa Fundadora</span></div>
-    <div class="ind-chip"><div class="ind-av">AU</div><span style="font-size:13px;font-weight:600">Fernanda R.</span><span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(245,184,0,.15);color:var(--am);font-weight:700;margin-left:4px">Gerente Comercial</span></div>
+    <div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Food<span style="color:var(--am)">Hub</span> <span style="font-weight:400;font-size:13px;color:var(--w3)">Indústria</span></div>
+    <div class="ind-chip"><div class="ind-av" id="ind-avatar">FH</div><div style="font-size:12px"><div style="font-weight:700;color:var(--w)" id="ind-nome">Fornecedor</div><div style="font-size:10px;color:var(--w3)" id="ind-email"></div></div></div>
   </div>
 
   <!-- LAYOUT -->
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
-      <div class="ni on" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
-      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
-      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni on"><span class="nicon">📊</span>Dashboard</div>
+      <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
+      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
-      <div class="nsec">Crescimento</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🗺️</span>Expansão de Mercado <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="nsec">Produto</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🚀</span>Lançamentos <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">💎</span>FoodHub Prime <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🔍</span>Inteligência de Mercado <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" onclick="go('s-insights')"><span class="nicon">💡</span>Insights<span class="nbadge">3</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📈</span>Relatórios <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-
-      <!-- EXPORT SECTION -->
-      <div class="nsec-export">Export Global</div>
-      <div class="ni-export" onclick="goX('sx-dash')"><span class="nicon">🌍</span>Radar de Exportação<span class="export-badge export-new">NEW</span></div>
-      <div class="ni-export" onclick="goX('sx-demandas')"><span class="nicon">📡</span>Demandas Globais<span class="export-badge">12</span></div>
-      <div class="ni-export" onclick="goX('sx-hab')"><span class="nicon">✅</span>Habilitações</div>
-      <div class="ni-export" onclick="goX('sx-ops')"><span class="nicon">🚢</span>Operações</div>
-      <div class="ni-export" onclick="goX('sx-pricing')"><span class="nicon">💹</span>Pricing CIF</div>
-      <div style="font-size:7px;color:rgba(0,212,255,.22);text-transform:uppercase;letter-spacing:.1em;padding:10px 12px 3px;font-family:var(--mono)">Gestão Avançada</div>
-      <div class="ni-export" onclick="goX('sx-docs')"><span class="nicon">📋</span>Documentação<span class="xbadge xbadge-new" style="font-size:7px">T2</span></div>
-      <div class="ni-export" onclick="goX('sx-compliance')"><span class="nicon">🛡️</span>Compliance Flow<span class="xbadge" style="font-size:7px">T3</span></div>
-      <!-- REPUTAÇÃO -->
-      <div style="margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.05)">
-        <div style="font-size:8px;color:var(--w3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:8px">Sua reputação FoodHub</div>
-        <div style="background:rgba(245,184,0,.07);border:1px solid rgba(245,184,0,.16);border-radius:9px;padding:10px 12px">
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
-            <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,184,0,.15);border:2px solid var(--am);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:var(--am);flex-shrink:0">A+</div>
-            <div><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--am);line-height:1">9.4</div><div style="font-size:9px;color:var(--w3)">47 ops confirmadas</div></div>
-            <div style="margin-left:auto;font-size:16px">🏆</div>
-          </div>
-          <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-bottom:6px"><div style="width:94%;height:100%;background:linear-gradient(90deg,var(--am),#FFD700);border-radius:2px"></div></div>
-          <div style="font-size:9px;color:var(--w3);line-height:1.5">Quanto maior sua reputação, mais <strong style="color:var(--am)">melhores oportunidades</strong> chegam primeiro para você.</div>
-        </div>
-      </div>
-        </div>
+      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
+    </div>
     <div class="main">
-
-      <!-- INSIGHT BANNER -->
-      <div style="background:linear-gradient(90deg,rgba(245,184,0,.1),rgba(245,184,0,.03));border:1px solid var(--am3);border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><div style="width:5px;height:5px;border-radius:50%;background:var(--am);animation:blink 1.3s infinite"></div><span style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono)">Insights automáticos</span></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1">
-          <span style="font-size:12px;color:var(--w2);background:rgba(255,77,106,.07);border:1px solid rgba(255,77,106,.14);padding:4px 10px;border-radius:6px">⚠️ Você está 8% acima do preço médio do mercado em Frango IQF</span>
-          <span style="font-size:12px;color:var(--w2);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.14);padding:4px 10px;border-radius:6px">🎯 Alta demanda em MG onde você não atua — 340 ton/mês perdidas</span>
-          <span style="font-size:12px;color:var(--w2);background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.14);padding:4px 10px;border-radius:6px">💰 3 demandas não respondidas nas últimas 24h</span>
-        </div>
-      </div>
 
       <!-- KPI GRID -->
       <div class="metrics m4" style="margin-bottom:14px">
@@ -512,88 +449,16 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div style="font-size:11px;color:var(--w3);margin-bottom:8px">Clique em Nova oferta para ajustar e publicar</div>
       <div id="dash-meus-produtos"></div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-        <!-- OPORTUNIDADES -->
-        <div class="card card-am clink" onclick="go('s-demandas')">
-          <div class="sh"><h3>Demandas abertas agora</h3><span style="font-size:11px;color:var(--am)">Ver todas →</span></div>
-          <div style="font-family:var(--disp);font-size:42px;font-weight:900;color:var(--am);line-height:1;margin-bottom:5px">23</div>
-          <div style="font-size:12px;color:var(--w2);margin-bottom:12px">demandas ativas que você pode responder agora</div>
-          <div style="display:flex;flex-direction:column;gap:5px">
-            <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--w2)">Frango IQF — SP/RJ</span><span style="color:var(--am);font-family:var(--mono)">12t · R$8,20/kg</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--w2)">Sassami — Sul</span><span style="color:var(--am);font-family:var(--mono)">8t · R$7,90/kg</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--w2)">Peito CX — Nordeste</span><span style="color:var(--am);font-family:var(--mono)">20t · R$9,10/kg</span></div>
-          </div>
-          <button class="btn btn-am sm" style="width:100%;margin-top:12px">Responder demandas →</button>
+      <div style="font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;font-family:var(--mono)">🔍 Demandas abertas agora</div>
+      <div id="dash-demandas-abertas"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <div style="flex:1;padding:14px;text-align:center;background:var(--am2);border:1px solid var(--am3);border-radius:10px;cursor:pointer" onclick="openOfertaFlow()">
+          <div style="font-size:20px;margin-bottom:4px">📢</div>
+          <div style="font-size:12px;font-weight:700;color:var(--am)">Publicar oferta</div>
         </div>
-
-        <!-- PREÇO DE MERCADO -->
-        <div class="card clink" onclick="go('s-relatorios')">
-          <div class="sh"><h3>Preço × mercado</h3><span class="badge b-rd">Atenção</span></div>
-          <div style="display:flex;flex-direction:column;gap:9px">
-            <div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--w2)">Frango IQF (sua oferta)</span><span style="color:var(--rd);font-family:var(--mono);font-weight:700">R$8,45/kg +8%</span></div>
-              <div class="prog"><div class="pf" style="width:78%;background:var(--rd)"></div></div>
-              <div style="font-size:10px;color:var(--w3);margin-top:2px">Média mercado: R$7,82/kg</div>
-            </div>
-            <div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--w2)">Sassami IQF</span><span style="color:var(--go);font-family:var(--mono);font-weight:700">R$7,90/kg ✓</span></div>
-              <div class="prog"><div class="pf" style="width:52%;background:var(--go)"></div></div>
-              <div style="font-size:10px;color:var(--w3);margin-top:2px">Competitivo · R$7,88/kg mercado</div>
-            </div>
-            <div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--w2)">Peito CX congelado</span><span style="color:var(--am);font-family:var(--mono);font-weight:700">R$9,10/kg -2%</span></div>
-              <div class="prog"><div class="pf" style="width:40%;background:var(--am)"></div></div>
-              <div style="font-size:10px;color:var(--w3);margin-top:2px">Ligeiramente abaixo · oportunidade</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- FINDERS ATIVOS -->
-        <div class="card clink" onclick="go('s-incentivos')">
-          <div class="sh"><h3>Finders ativos · Aurora</h3><span style="font-size:11px;color:var(--am)">Gerenciar →</span></div>
-          <div style="font-family:var(--disp);font-size:42px;font-weight:900;color:var(--go);line-height:1;margin-bottom:5px">14</div>
-          <div style="font-size:12px;color:var(--w2);margin-bottom:12px">finders conectados gerando negócios pela Aurora</div>
-          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--w2)">Negócios este mês</span><span style="color:var(--go);font-family:var(--mono)">23 fechamentos</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--w2)">Volume gerado</span><span style="color:var(--go);font-family:var(--mono)">R$1,89M</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--w2)">Incentivo pago</span><span style="color:var(--am);font-family:var(--mono)">R$9.400</span></div>
-          </div>
-          <div style="font-size:11px;color:var(--w2);padding:7px 10px;background:rgba(0,229,160,.05);border-radius:6px;border-left:2px solid var(--go)">ROI do incentivo: <strong style="color:var(--go)">201×</strong> — R$9.400 gerou R$1,89M em receita</div>
-        </div>
-      </div>
-
-      <!-- RECEITA POR CANAL + GTM -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-        <div class="card">
-          <div class="sh"><h3>Receita por canal</h3></div>
-          <div style="display:flex;align-items:flex-end;gap:6px;height:90px;margin-bottom:8px">
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;background:var(--am);opacity:.25;border-radius:3px 3px 0 0;height:22%"></div><div style="font-size:9px;color:var(--w3);font-family:var(--mono)">out</div></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;background:var(--am);opacity:.35;border-radius:3px 3px 0 0;height:35%"></div><div style="font-size:9px;color:var(--w3);font-family:var(--mono)">nov</div></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;background:var(--am);opacity:.45;border-radius:3px 3px 0 0;height:48%"></div><div style="font-size:9px;color:var(--w3);font-family:var(--mono)">dez</div></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;background:var(--am);opacity:.55;border-radius:3px 3px 0 0;height:62%"></div><div style="font-size:9px;color:var(--w3);font-family:var(--mono)">jan</div></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;background:var(--am);opacity:.7;border-radius:3px 3px 0 0;height:78%"></div><div style="font-size:9px;color:var(--w3);font-family:var(--mono)">fev</div></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;background:linear-gradient(180deg,var(--gold),var(--am));border-radius:3px 3px 0 0;height:100%"></div><div style="font-size:9px;color:var(--gold);font-family:var(--mono)">mar★</div></div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div style="text-align:center;padding:6px;background:var(--s3);border-radius:7px"><div style="font-size:10px;color:var(--w3);margin-bottom:2px">FoodHub</div><div style="font-family:var(--mono);font-size:13px;color:var(--am);font-weight:600">R$2,4M</div></div>
-            <div style="text-align:center;padding:6px;background:var(--s3);border-radius:7px"><div style="font-size:10px;color:var(--w3);margin-bottom:2px">Distribuidores</div><div style="font-family:var(--mono);font-size:13px;color:var(--w2)">R$4,1M</div></div>
-            <div style="text-align:center;padding:6px;background:var(--s3);border-radius:7px"><div style="font-size:10px;color:var(--w3);margin-bottom:2px">Direto</div><div style="font-family:var(--mono);font-size:13px;color:var(--w2)">R$1,2M</div></div>
-          </div>
-        </div>
-        <div class="card card-am clink" onclick="go('s-gtm')">
-          <div class="sh"><h3>Expansão de mercado · GTM</h3><span class="badge b-am">Oportunidade</span></div>
-          <div style="font-size:12px;color:var(--w2);margin-bottom:10px;line-height:1.6">Alta demanda em regiões onde você <strong style="color:var(--w)">não atua ainda</strong>.</div>
-          <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:rgba(255,77,106,.06);border:1px solid rgba(255,77,106,.12);border-radius:8px">
-              <div><div style="font-size:12px;font-weight:600;color:var(--w)">Minas Gerais</div><div style="font-size:11px;color:var(--w2)">sem cobertura ativa</div></div>
-              <div style="text-align:right"><div style="font-family:var(--mono);font-size:13px;color:var(--rd);font-weight:700">340t/mês</div><div style="font-size:10px;color:var(--w3)">demanda ativa</div></div>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.12);border-radius:8px">
-              <div><div style="font-size:12px;font-weight:600;color:var(--w)">Nordeste</div><div style="font-size:11px;color:var(--w2)">cobertura parcial</div></div>
-              <div style="text-align:right"><div style="font-family:var(--mono);font-size:13px;color:var(--am);font-weight:700">+120t/mês</div><div style="font-size:10px;color:var(--w3)">potencial adicional</div></div>
-            </div>
-          </div>
-          <button class="btn btn-am sm" style="width:100%" onclick="go('s-gtm')">Ativar expansão com FoodHub →</button>
+        <div style="flex:1;padding:14px;text-align:center;background:var(--s3);border:1px solid var(--b1);border-radius:10px;cursor:pointer" onclick="go('s-demandas')">
+          <div style="font-size:20px;margin-bottom:4px">🔍</div>
+          <div style="font-size:12px;font-weight:700;color:var(--w2)">Ver demandas</div>
         </div>
       </div>
     </div>
@@ -639,29 +504,15 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 </div>
 
 <div id="s-demandas" class="screen">
-  <div class="bloomberg">
-    <div class="bb-brand"><div class="bb-dot"></div><div class="bb-logo">Food<span style="color:var(--am)">Hub</span></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Demandas abertas</div><div class="bb-val" style="color:var(--am)">23</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Volume total</div><div class="bb-val">1.240t</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Potencial de receita</div><div class="bb-val" style="color:var(--go)">R$11,2M</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Expirando em 24h</div><div class="bb-val" style="color:var(--rd)">7</div></div></div>
-    <div class="bb-right"><button class="btn btn-am sm" onclick="go('s-main')">← Dashboard</button></div>
-  </div>
   <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span></div><div style="font-size:12px;color:var(--w2)">Regra: preços e concorrentes são ocultos — você vê apenas a demanda real.</div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
-      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
-      <div class="ni on"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
+      <div class="ni on"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
-      <div class="nsec">Crescimento</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🗺️</span>Expansão de Mercado <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="nsec">Produto</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🚀</span>Lançamentos <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">💎</span>FoodHub Prime <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
       <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.14);border-radius:10px;padding:11px 15px;margin-bottom:14px;font-size:13px;color:var(--w2);line-height:1.65">
@@ -679,29 +530,15 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
 <!-- ════════════ CAMPANHAS ADS ════════════ -->
 <div id="s-campanhas" class="screen">
-  <div class="bloomberg">
-    <div class="bb-brand"><div class="bb-dot"></div><div class="bb-logo">Food<span style="color:var(--am)">Hub</span></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Investimento ativo</div><div class="bb-val" style="color:var(--am)">R$20k/mês</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Impressões</div><div class="bb-val">284k</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Negócios gerados</div><div class="bb-val" style="color:var(--go)">18</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">ROI</div><div class="bb-val" style="color:var(--gold)">4,2×</div></div></div>
-    <div class="bb-right"><button class="btn-gh sm" onclick="go('s-main')">← Dashboard</button></div>
-  </div>
   <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span></div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
-      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
-      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
+      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
-      <div class="nsec">Crescimento</div>
-      <div class="ni on" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🗺️</span>Expansão de Mercado <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="nsec">Produto</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🚀</span>Lançamentos <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">💎</span>FoodHub Prime <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
@@ -773,29 +610,15 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
 <!-- ════════════ INCENTIVOS FINDERS ════════════ -->
 <div id="s-incentivos" class="screen">
-  <div class="bloomberg">
-    <div class="bb-brand"><div class="bb-dot"></div><div class="bb-logo">Food<span style="color:var(--am)">Hub</span></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Finders ativos · Aurora</div><div class="bb-val" style="color:var(--go)">14</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Receita gerada pelos Finders</div><div class="bb-val" style="color:var(--am)">R$1,89M</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">Incentivo pago</div><div class="bb-val">R$9.400</div></div></div>
-    <div class="bb-kpi"><div><div class="bb-lbl">ROI do incentivo</div><div class="bb-val" style="color:var(--gold)">201×</div></div></div>
-    <div class="bb-right"><button class="btn-gh sm" onclick="go('s-main')">← Dashboard</button></div>
-  </div>
   <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span></div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
-      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Minhas Ofertas</div>
-      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas do Mercado</div>
+      <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
+      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
-      <div class="nsec">Crescimento</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">📢</span>Campanhas · Ads <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni on" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🤝</span>Incentivos · Finders <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🗺️</span>Expansão de Mercado <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="nsec">Produto</div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">🚀</span>Lançamentos <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
-      <div class="ni" style="opacity:.5;cursor:not-allowed;pointer-events:none"><span class="nicon">💎</span>FoodHub Prime <span style="font-size:7px;background:var(--am);color:#000;padding:1px 5px;border-radius:3px;margin-left:auto;font-weight:700">EM BREVE</span></div>
+      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
       <div style="background:var(--go2);border:1px solid rgba(0,229,160,.18);border-radius:10px;padding:13px 16px;margin-bottom:14px;font-size:13px;color:var(--w);line-height:1.7">
@@ -1862,18 +1685,15 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
 
 <div id="s-pipeline" class="screen">
-  <div class="bloomberg">
-    <div class="bb-brand"><div class="bb-dot"></div><div class="bb-logo">Food<span style="color:var(--am)">Hub</span></div></div>
-    <div class="bb-right"><button class="btn btn-am sm" onclick="go('s-main')">← Dashboard</button></div>
-  </div>
   <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Pipeline de Negociações</div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
-      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📦</span>Meu Pipeline</div>
-      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🎯</span>Demandas</div>
+      <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
+      <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni on"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
       <div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:var(--mono)">🤝 PIPELINE DE NEGOCIAÇÕES</div>
@@ -2275,6 +2095,12 @@ async function initIndApp(){
     var { data: forn } = await _sb.from('fornecedores').select('id, nome').eq('contato_email', _currentUser.email).limit(1);
     if(forn && forn.length) _fornecedorId = forn[0].id;
     console.log('[FoodHub] Fornecedor vinculado:', _fornecedorId ? 'SIM ('+forn[0].nome+')' : 'NÃO — cadastre contato_email na tabela fornecedores');
+    var nomeEl=document.getElementById('ind-nome');
+    var emailEl=document.getElementById('ind-email');
+    var avEl=document.getElementById('ind-avatar');
+    if(nomeEl&&forn&&forn.length) nomeEl.textContent=forn[0].nome;
+    if(emailEl&&_currentUser) emailEl.textContent=_currentUser.email;
+    if(avEl&&_currentUser) avEl.textContent=_currentUser.email.substring(0,2).toUpperCase();
   }
 }
 // Auto-login if session exists
@@ -2482,6 +2308,20 @@ async function loadDashboardIndustria(){
       prodEl.innerHTML=ph;
     } else {
       prodEl.innerHTML='<div style="font-size:12px;color:var(--w3);padding:10px 0">Nenhum produto cadastrado ainda. Publique sua primeira oferta.</div>';
+    }
+  }
+  var dabEl=document.getElementById('dash-demandas-abertas');
+  if(dabEl){
+    var { data: demAb } = await _sb.from('demandas').select('produto_nome, volume, unidade_volume, local_entrega').eq('status','ativa').order('criado_em',{ascending:false}).limit(3);
+    if(demAb&&demAb.length){
+      var dh='';
+      demAb.forEach(function(d){
+        var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'';
+        dh+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--b1)"><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--w)">'+(d.produto_nome||'Demanda')+'</div><div style="font-size:10px;color:var(--w3)">'+(vol||'')+(d.local_entrega?' · '+d.local_entrega:'')+'</div></div><button style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--am3);background:var(--am2);color:var(--am);cursor:pointer;flex-shrink:0;font-family:sans-serif;font-weight:600" onclick="go(\'s-demandas\')">Responder →</button></div>';
+      });
+      dabEl.innerHTML=dh;
+    } else {
+      dabEl.innerHTML='<div style="font-size:12px;color:var(--w3);padding:10px 0">Nenhuma demanda aberta no momento.</div>';
     }
   }
 }
