@@ -128,18 +128,18 @@ function showTab(id){
 async function loadAll(){
   await Promise.all([loadKPIs(),loadPipelineCRM(),loadFeed(),loadDemandas(),loadFornecedores(),loadCompradores(),loadNegocios(),loadReceita()]);
 }
-var _pipeSearch='';var _pipeFilt='todos';
+var _pipeSearch='';var _pipeFilt='todos';var _pipeSortCol='dt';var _pipeSortAsc=false;var _pipePage=0;var _pipePerPage=20;
 async function loadPipelineCRM(){
   var el=document.getElementById('tab-pipeline');if(!el)return;
-  var { data: dems }=await _sb.from('demandas').select('*, profiles(nome,empresa), propostas(id,preco_ofertado)').order('criado_em',{ascending:false}).limit(100);
-  var { data: ofertas }=await _sb.from('ofertas').select('*, fornecedores(nome)').order('criado_em',{ascending:false}).limit(100);
-  var { data: props }=await _sb.from('propostas').select('*, fornecedores(nome, comissao_config), demandas(produto_nome, profiles(nome))').order('criado_em',{ascending:false}).limit(100);
+  var { data: dems }=await _sb.from('demandas').select('*, profiles(nome,empresa), propostas(id,preco_ofertado)').order('criado_em',{ascending:false}).limit(200);
+  var { data: ofertas }=await _sb.from('ofertas').select('*, fornecedores(nome)').order('criado_em',{ascending:false}).limit(200);
+  var { data: props }=await _sb.from('propostas').select('*, fornecedores(nome, comissao_config), demandas(produto_nome, profiles(nome))').order('criado_em',{ascending:false}).limit(200);
   var rows=[];
   if(dems) dems.forEach(function(d){
     var prof=d.profiles||{};var pc=(d.propostas||[]).length;
     var minP=Infinity;(d.propostas||[]).forEach(function(p){var v=Number(p.preco_ofertado);if(v<minP)minP=v;});
     var val=minP<Infinity?minP*(Number(d.volume)||0):0;
-    rows.push({tipo:'demanda',icon:'📡',comprador:prof.nome||prof.empresa||'—',fornecedor:'—',produto:d.produto_nome||'—',vol:(d.volume||'')+ ' '+(d.unidade_volume||''),preco:minP<Infinity?minP:null,valTotal:val,comPct:1,comVal:val*0.01,status:d.status,dt:d.criado_em,props:pc});
+    rows.push({tipo:'demanda',icon:'📡',comprador:prof.nome||prof.empresa||'—',fornecedor:'—',produto:d.produto_nome||'—',vol:(d.volume||'')+' '+(d.unidade_volume||''),preco:minP<Infinity?minP:null,valTotal:val,comPct:1,comVal:val*0.01,status:d.status,dt:d.criado_em,props:pc});
   });
   if(ofertas) ofertas.forEach(function(o){
     var fn=(o.fornecedores&&o.fornecedores.nome)||'—';
@@ -155,35 +155,101 @@ async function loadPipelineCRM(){
     rows.push({tipo:st==='fechado'?'fechado':'proposta',icon:st==='fechado'?'✅':'📤',comprador:prof.nome||'—',fornecedor:fn,produto:dem.produto_nome||'—',vol:p.volume_ofertado||'',preco:p.preco_ofertado,valTotal:val,comPct:comPct,comVal:val*comPct/100,status:st,dt:p.criado_em,props:0});
   });
   rows.sort(function(a,b){return(b.dt||'')>(a.dt||'')?1:-1;});
-  // Totals
-  var totalOps=rows.length;var totalVal=0;var totalCom=0;var totalComPot=0;
-  rows.forEach(function(r){totalVal+=r.valTotal;if(r.tipo==='fechado')totalCom+=r.comVal;else totalComPot+=r.comVal;});
-  var h='<div class="sec-title">📊 Pipeline CRM</div>';
-  h+='<div style="display:flex;gap:12px;font-size:11px;color:#ccc;margin-bottom:12px;flex-wrap:wrap"><span><strong>'+totalOps+'</strong> operações</span><span>R$'+(totalVal/1e3).toFixed(0)+'k em mesa</span><span style="color:var(--gn)">R$'+Math.round(totalCom).toLocaleString('pt-BR')+' comissão gerada</span><span style="color:var(--ac)">R$'+Math.round(totalComPot).toLocaleString('pt-BR')+' potencial</span></div>';
-  h+='<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center"><input id="pipe-search" placeholder="Buscar fornecedor, comprador ou produto..." oninput="_pipeSearch=this.value;renderPipe()" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;padding:7px 10px;font-size:12px;color:#fff;outline:none"><button class="btn-gh" onclick="exportCSV()" style="font-size:10px">📥 CSV</button></div>';
-  h+='<div id="pipe-table"></div>';
-  el.innerHTML=h;
   window._pipeRows=rows;
+  var el2=document.getElementById('tab-pipeline');
+  var h='<div class="sec-title">📊 Pipeline CRM</div>';
+  h+='<div id="pipe-kpis" class="kpi-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px"></div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="pipe-filtros">';
+  h+='<button class="btn btn-ac" onclick="pipeSetFilt(this,\'todos\')" style="font-size:10px">Todos</button>';
+  h+='<button class="btn-gh" onclick="pipeSetFilt(this,\'demanda\')" style="font-size:10px">Demandas</button>';
+  h+='<button class="btn-gh" onclick="pipeSetFilt(this,\'oferta\')" style="font-size:10px">Ofertas</button>';
+  h+='<button class="btn-gh" onclick="pipeSetFilt(this,\'proposta\')" style="font-size:10px">Propostas</button>';
+  h+='<button class="btn-gh" onclick="pipeSetFilt(this,\'negociando\')" style="font-size:10px">Negociando</button>';
+  h+='<button class="btn-gh" onclick="pipeSetFilt(this,\'fechado\')" style="font-size:10px">Fechados</button>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center"><input id="pipe-search" placeholder="Buscar fornecedor, comprador ou produto..." oninput="_pipeSearch=this.value;_pipePage=0;renderPipe()" style="flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;padding:7px 10px;font-size:12px;color:#fff;outline:none"><button class="btn-gh" onclick="exportCSV()" style="font-size:10px">📥 CSV</button></div>';
+  h+='<div id="pipe-table"></div>';
+  h+='<div id="pipe-pag" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:10px;font-size:11px;color:#999"></div>';
+  el2.innerHTML=h;
+  _pipePage=0;_pipeFilt='todos';_pipeSearch='';
   renderPipe();
+}
+function _getFilteredPipe(){
+  var rows=window._pipeRows||[];
+  var q=(_pipeSearch||'').toLowerCase();
+  var f=_pipeFilt;
+  return rows.filter(function(r){
+    if(q&&(r.comprador+r.fornecedor+r.produto).toLowerCase().indexOf(q)<0)return false;
+    if(f==='todos')return true;
+    if(f==='negociando')return r.status==='negociada'||r.status==='em_andamento';
+    return r.tipo===f;
+  });
 }
 function renderPipe(){
   var el=document.getElementById('pipe-table');if(!el)return;
-  var rows=window._pipeRows||[];
-  var q=(_pipeSearch||'').toLowerCase();
-  var filtered=rows.filter(function(r){
-    if(q&&(r.comprador+r.fornecedor+r.produto).toLowerCase().indexOf(q)<0)return false;
-    return true;
+  var filtered=_getFilteredPipe();
+  // Sort
+  var col=_pipeSortCol;var asc=_pipeSortAsc;
+  filtered.sort(function(a,b){
+    var va=a[col]||'';var vb=b[col]||'';
+    if(typeof va==='number'&&typeof vb==='number')return asc?va-vb:vb-va;
+    va=String(va);vb=String(vb);
+    return asc?va.localeCompare(vb):vb.localeCompare(va);
   });
-  var h='<div style="overflow-x:auto"><table class="tbl" style="min-width:900px"><thead><tr><th>#</th><th>Tipo</th><th>Comprador</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Preço</th><th>Total</th><th>Com%</th><th>ComR$</th><th>Status</th><th>Data</th></tr></thead><tbody>';
-  filtered.slice(0,100).forEach(function(r,i){
+  // KPIs
+  var kEl=document.getElementById('pipe-kpis');
+  if(kEl){
+    var ops=filtered.length;var valMesa=0;var comGerada=0;var comPot=0;var totalVal=0;var diasAberto=0;var diasCount=0;
+    var now=new Date();
+    filtered.forEach(function(r){
+      totalVal+=r.valTotal;
+      if(r.tipo==='fechado')comGerada+=r.comVal;else{valMesa+=r.valTotal;comPot+=r.comVal;}
+      if(r.dt&&r.tipo!=='fechado'){var d=new Date(r.dt);var diff=(now-d)/(1e3*3600*24);diasAberto+=diff;diasCount++;}
+    });
+    var ticketMedio=ops>0?totalVal/ops:0;
+    var diasMedio=diasCount>0?(diasAberto/diasCount).toFixed(1):'0';
+    kEl.innerHTML='<div class="kpi"><div class="kpi-lbl">📊 Operações</div><div class="kpi-val">'+ops+'</div></div>'
+      +'<div class="kpi"><div class="kpi-lbl">💰 Em mesa</div><div class="kpi-val" style="font-size:16px">R$'+(valMesa/1e3).toFixed(0)+'k</div></div>'
+      +'<div class="kpi"><div class="kpi-lbl">✅ Gerado</div><div class="kpi-val" style="color:var(--gn);font-size:16px">R$'+Math.round(comGerada).toLocaleString('pt-BR')+'</div></div>'
+      +'<div class="kpi"><div class="kpi-lbl">🎯 Potencial</div><div class="kpi-val" style="color:var(--ac);font-size:16px">R$'+Math.round(comPot).toLocaleString('pt-BR')+'</div></div>'
+      +'<div class="kpi"><div class="kpi-lbl">📈 Ticket médio</div><div class="kpi-val" style="font-size:16px">R$'+(ticketMedio/1e3).toFixed(0)+'k</div></div>'
+      +'<div class="kpi"><div class="kpi-lbl">⏱ Dias aberto</div><div class="kpi-val">'+diasMedio+'</div></div>';
+  }
+  // Pagination
+  var totalPages=Math.ceil(filtered.length/_pipePerPage)||1;
+  if(_pipePage>=totalPages)_pipePage=totalPages-1;
+  var start=_pipePage*_pipePerPage;
+  var pageRows=filtered.slice(start,start+_pipePerPage);
+  // Table
+  var arrow=function(c){return c===_pipeSortCol?(_pipeSortAsc?' ↑':' ↓'):'';};
+  var h='<div style="overflow-x:auto"><table class="tbl" style="min-width:900px"><thead><tr>';
+  h+='<th>#</th>';
+  var cols=[{k:'tipo',l:'Tipo'},{k:'comprador',l:'Comprador'},{k:'fornecedor',l:'Fornecedor'},{k:'produto',l:'Produto'},{k:'vol',l:'Volume'},{k:'preco',l:'Preço'},{k:'valTotal',l:'Total'},{k:'comPct',l:'Com%'},{k:'comVal',l:'ComR$'},{k:'status',l:'Status'},{k:'dt',l:'Data'}];
+  cols.forEach(function(c){h+='<th style="cursor:pointer" onclick="pipeSort(\''+c.k+'\')">'+c.l+arrow(c.k)+'</th>';});
+  h+='</tr></thead><tbody>';
+  pageRows.forEach(function(r,i){
     var preco=r.preco?'R$'+Number(r.preco).toFixed(2):'—';
     var total=r.valTotal>0?'R$'+(r.valTotal/1e3).toFixed(1)+'k':'—';
     var stColor=r.status==='ativa'||r.status==='recebida'?'var(--am)':r.status==='fechado'||r.status==='aceita'?'var(--gn)':r.status==='expirada'||r.status==='recusada'?'var(--rd)':'#999';
     var dt=r.dt?new Date(r.dt).toLocaleDateString('pt-BR'):'';
-    h+='<tr><td style="color:#666;font-size:10px">'+(i+1)+'</td><td>'+r.icon+'</td><td>'+r.comprador+'</td><td>'+r.fornecedor+'</td><td style="color:#fff;font-weight:600">'+r.produto+'</td><td style="font-family:var(--mono);font-size:11px">'+r.vol+'</td><td style="font-family:var(--mono)">'+preco+'</td><td style="font-family:var(--mono)">'+total+'</td><td style="font-family:var(--mono);color:var(--ac)">'+r.comPct+'%</td><td style="font-family:var(--mono);color:var(--gn)">R$'+Math.round(r.comVal)+'</td><td style="color:'+stColor+'">'+r.status+'</td><td style="font-family:var(--mono);font-size:10px;color:#666">'+dt+'</td></tr>';
+    h+='<tr><td style="color:#666;font-size:10px">'+(start+i+1)+'</td><td>'+r.icon+'</td><td>'+r.comprador+'</td><td>'+r.fornecedor+'</td><td style="color:#fff;font-weight:600">'+r.produto+'</td><td style="font-family:var(--mono);font-size:11px">'+r.vol+'</td><td style="font-family:var(--mono)">'+preco+'</td><td style="font-family:var(--mono)">'+total+'</td><td style="font-family:var(--mono);color:var(--ac)">'+r.comPct+'%</td><td style="font-family:var(--mono);color:var(--gn)">R$'+Math.round(r.comVal)+'</td><td style="color:'+stColor+'">'+r.status+'</td><td style="font-family:var(--mono);font-size:10px;color:#666">'+dt+'</td></tr>';
   });
   h+='</tbody></table></div>';
   el.innerHTML=h;
+  // Pagination controls
+  var pagEl=document.getElementById('pipe-pag');
+  if(pagEl) pagEl.innerHTML='<button class="btn-gh" onclick="_pipePage=Math.max(0,_pipePage-1);renderPipe()" style="font-size:10px"'+(  _pipePage===0?' disabled':'')+'>← Anterior</button><span>Página '+(_pipePage+1)+' de '+totalPages+'</span><button class="btn-gh" onclick="_pipePage=Math.min('+( totalPages-1)+',_pipePage+1);renderPipe()" style="font-size:10px"'+(_pipePage>=totalPages-1?' disabled':'')+'>Próxima →</button>';
+}
+function pipeSetFilt(btn,filt){
+  _pipeFilt=filt;_pipePage=0;
+  document.querySelectorAll('#pipe-filtros button').forEach(function(b){b.className='btn-gh';});
+  btn.className='btn btn-ac';
+  renderPipe();
+}
+function pipeSort(col){
+  if(_pipeSortCol===col)_pipeSortAsc=!_pipeSortAsc;
+  else{_pipeSortCol=col;_pipeSortAsc=true;}
+  _pipePage=0;renderPipe();
 }
 function exportCSV(){
   var rows=window._pipeRows||[];
