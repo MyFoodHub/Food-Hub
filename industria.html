@@ -491,16 +491,16 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
     <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
       <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Ofertas ativas</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--am)">14</div></div>
+      <div id="mo-kpi-ativas" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--am)">0</div></div>
     <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
       <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Volume ofertado</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--w)">2.800t</div></div>
+      <div id="mo-kpi-volume" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--w)">0</div></div>
     <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
       <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Match rate</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--gn)">71%</div></div>
+      <div id="mo-kpi-match" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--gn)">0%</div></div>
     <div style="background:var(--s3);border-radius:9px;padding:10px 13px">
       <div style="font-size:7.5px;color:var(--w3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);margin-bottom:3px">Receita gerada</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--am)">R$4,1M</div></div>
+      <div id="mo-kpi-receita" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--am)">R$0</div></div>
   </div>
 
   <!-- FEED — PROPOSTAS DO FORNECEDOR -->
@@ -1755,6 +1755,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <span style="font-family:var(--disp);font-size:14px;font-weight:800;color:var(--am);text-transform:uppercase">Publicar Oferta</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:5px;background:var(--s3);border:1px solid var(--b1);border-radius:12px;padding:2px 8px"><div style="width:4px;height:4px;border-radius:50%;background:var(--am);animation:blink 1s infinite"></div><span id="of-timer" style="font-family:var(--mono);font-size:10px;color:var(--w3)">00:00</span></div>
       <span id="of-step-lbl" style="font-size:10px;color:var(--w3);font-family:var(--mono)">1/15</span>
       <button onclick="closeOfertaFlow()" style="background:transparent;border:none;color:var(--w3);font-size:16px;cursor:pointer;line-height:1">✕</button>
     </div>
@@ -2211,6 +2212,20 @@ async function loadDemandasMercado(){
 }
 
 // ── MINHAS OFERTAS/PROPOSTAS ──
+async function loadKpisMinhasOfertas(){
+  if(!_fornecedorId) return;
+  var { data: ofertas } = await _sb.from('ofertas').select('quantidade,status').eq('fornecedor_id',_fornecedorId);
+  var { data: props } = await _sb.from('propostas').select('preco_ofertado,volume_ofertado,status').eq('fornecedor_id',_fornecedorId);
+  var ativas=ofertas?ofertas.filter(function(o){return o.status==='ativa';}):[];
+  var volOf=0;ativas.forEach(function(o){volOf+=Number(o.quantidade)||0;});
+  var aceitas=props?props.filter(function(p){return p.status==='aceita';}):[];
+  var matchRate=props&&props.length?Math.round((aceitas.length/props.length)*100):0;
+  var receita=0;aceitas.forEach(function(p){receita+=(Number(p.preco_ofertado)||0)*(Number(p.volume_ofertado)||0);});
+  var e1=document.getElementById('mo-kpi-ativas');if(e1)e1.textContent=ativas.length;
+  var e2=document.getElementById('mo-kpi-volume');if(e2)e2.textContent=volOf>1000?(volOf/1000).toFixed(0)+'t':volOf>0?volOf.toLocaleString('pt-BR')+'kg':'0';
+  var e3=document.getElementById('mo-kpi-match');if(e3)e3.textContent=matchRate+'%';
+  var e4=document.getElementById('mo-kpi-receita');if(e4)e4.textContent=receita>1000000?'R$'+(receita/1000000).toFixed(1)+'M':receita>0?'R$'+(receita/1000).toFixed(0)+'k':'R$0';
+}
 async function loadMinhasOfertas(){
   var el = document.getElementById('minhas-ofertas-list');
   if(!el) return;
@@ -2394,7 +2409,7 @@ function go(id){
   });
   if(id==='s-main') loadDashboardIndustria();
   if(id==='s-demandas') loadDemandasMercado();
-  if(id==='s-minhas-ofertas') loadMinhasOfertas();
+  if(id==='s-minhas-ofertas'){loadMinhasOfertas();loadKpisMinhasOfertas();}
   if(id==='s-pipeline') loadPipeline();
 }
 function goX(id){
@@ -2772,12 +2787,15 @@ function ofRecomprar(cat,corte){
   document.getElementById('modal-nova-oferta').style.display='flex';
   renderOfStep();
 }
+var _ofTimerInt=null,_ofTimerSec=0;
 function openOfertaFlow(){
   _ofChoices={};_ofStepIdx=0;_buildOfSeq();
   document.getElementById('modal-nova-oferta').style.display='flex';
+  _ofTimerSec=0;clearInterval(_ofTimerInt);
+  _ofTimerInt=setInterval(function(){_ofTimerSec++;var m=String(Math.floor(_ofTimerSec/60)).padStart(2,'0');var s=String(_ofTimerSec%60).padStart(2,'0');var el=document.getElementById('of-timer');if(el)el.textContent=m+':'+s;},1000);
   renderOfStep();
 }
-function closeOfertaFlow(){document.getElementById('modal-nova-oferta').style.display='none';}
+function closeOfertaFlow(){clearInterval(_ofTimerInt);document.getElementById('modal-nova-oferta').style.display='none';}
 function ofBack(){
   if(_ofStepIdx>0){_ofStepIdx--;renderOfStep();}
   else closeOfertaFlow();
@@ -2879,6 +2897,7 @@ function renderOfStep(){
     });
     h+='</div>';
   }
+  h+='<p style="text-align:center;font-size:10px;color:var(--w4);margin-top:10px">Toque em uma opção para avançar · <strong style="color:var(--am)">menos de 60 segundos</strong></p>';
   document.getElementById('of-box').innerHTML=h;
 }
 function _buildOfResumo(){
