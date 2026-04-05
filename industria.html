@@ -2068,6 +2068,7 @@ var SUPABASE_ANON_KEY = 'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
 var _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var _currentUser = null;
 var _fornecedorId = null;
+var _fornecedorCategorias = [];
 
 // ── AUTH ──
 async function indLogin(){
@@ -2094,8 +2095,15 @@ async function initIndApp(){
   document.getElementById('app').style.display='flex';
   // Try to find fornecedor linked to this user (by email)
   if(_currentUser){
-    var { data: forn } = await _sb.from('fornecedores').select('id, nome').eq('contato_email', _currentUser.email).limit(1);
-    if(forn && forn.length) _fornecedorId = forn[0].id;
+    var { data: forn } = await _sb.from('fornecedores').select('id, nome, categoria').eq('contato_email', _currentUser.email).limit(1);
+    if(forn && forn.length){
+      _fornecedorId = forn[0].id;
+      var catRaw = forn[0].categoria||'';
+      try{_fornecedorCategorias=JSON.parse(catRaw);if(!Array.isArray(_fornecedorCategorias))_fornecedorCategorias=[catRaw];}
+      catch(e){_fornecedorCategorias=catRaw?[catRaw]:[];}
+      _fornecedorCategorias=_fornecedorCategorias.filter(function(c){return c;}).map(function(c){return c.toLowerCase();});
+      console.log('[FoodHub] Categorias do fornecedor:', _fornecedorCategorias);
+    }
     console.log('[FoodHub] Fornecedor vinculado:', _fornecedorId ? 'SIM ('+forn[0].nome+')' : 'NÃO — cadastre contato_email na tabela fornecedores');
     var nomeEl=document.getElementById('ind-nome');
     var emailEl=document.getElementById('ind-email');
@@ -2123,6 +2131,14 @@ async function loadDemandasMercado(){
   var { data, error } = await _sb.from('demandas').select('*, profiles(nome, empresa)').eq('status','ativa').order('criado_em',{ascending:false});
   if(error){console.log('Erro demandas mercado:', JSON.stringify(error));el.innerHTML='<div style="text-align:center;padding:30px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
   if(!data||data.length===0){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma demanda ativa no momento.</div>';return;}
+  // Filtrar por portfólio do fornecedor
+  if(_fornecedorCategorias.length>0){
+    data=data.filter(function(d){
+      var txt=((d.produto_nome||'')+(d.especificacao||'')).toLowerCase();
+      return _fornecedorCategorias.some(function(cat){return txt.indexOf(cat)>=0;});
+    });
+    if(!data.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma demanda compatível com seu portfólio.</div>';return;}
+  }
   _demandasMercado = data;
   var html='<table class="tbl"><thead><tr><th>Produto</th><th>Volume</th><th>Preço-alvo</th><th>Região</th><th>Prazo</th><th>Frete</th><th>Status</th><th></th></tr></thead><tbody>';
   data.forEach(function(d, idx){
@@ -2735,7 +2751,12 @@ function _getOfStepDef(){
 function _getOfOpts(sid){
   var cat=_ofChoices.cat||'';var catIcon='';
   OF_CAT.forEach(function(c){if(c.l===cat)catIcon=c.i;});
-  if(sid==='cat')return OF_CAT;
+  if(sid==='cat'){
+    if(_fornecedorCategorias.length>0){
+      return OF_CAT.filter(function(c){return c.l==='Outro item'||_fornecedorCategorias.some(function(fc){return c.l.toLowerCase().indexOf(fc)>=0||fc.indexOf(c.l.toLowerCase())>=0;});});
+    }
+    return OF_CAT;
+  }
   if(sid==='corte')return(OF_CORTES[cat]||[]).map(function(c){return{i:catIcon||'📦',l:c};});
   if(sid==='conserv')return OF_CONSERV;
   if(sid==='embmaster')return OF_EMBM;

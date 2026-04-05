@@ -1422,10 +1422,10 @@ window.go = window.go || function(id) {
           </div>
           <div style="display:flex;gap:10px">
             <div style="flex:1">
-              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Categoria *</label>
-              <select id="cad-categoria" style="width:100%;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--t1);font-family:sans-serif;outline:none;box-sizing:border-box">
-                <option value="">Carregando categorias...</option>
-              </select>
+              <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Categorias * (marque todas que se aplicam)</label>
+              <div id="cad-categoria" style="background:var(--bg3);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;max-height:200px;overflow-y:auto">
+                <div style="font-size:11px;color:var(--t3)">Carregando categorias...</div>
+              </div>
             </div>
             <div style="flex:1">
               <label style="font-size:11px;color:var(--t2);margin-bottom:3px;display:block">Score (0–100)</label>
@@ -4727,43 +4727,41 @@ function showPropMsg(txt,type){
 
 /* ── CADASTRO FORNECEDOR ── */
 async function loadCategoriasCad(){
-  var sel=document.getElementById('cad-categoria');
-  if(!sel)return;
-  sel.innerHTML='<option value="">Carregando...</option>';
+  var el=document.getElementById('cad-categoria');
+  if(!el)return;
+  el.innerHTML='<div style="font-size:11px;color:var(--t3)">Carregando...</div>';
   var { data, error } = await _sb.from('categorias').select('id, slug, nome, emoji, grupo').eq('ativa',true).order('nome');
-  if(error||!data){sel.innerHTML='<option value="">Erro ao carregar</option>';return;}
-  console.log('[FoodHub] categorias carregadas:', data.slice(0,5));
+  if(error||!data){el.innerHTML='<div style="font-size:11px;color:var(--rd)">Erro ao carregar</div>';return;}
   function _catLabel(c){var e=c.emoji;return(e&&typeof e==='string'&&e.trim()!==''&&e!=='undefined')?e+' '+c.nome:c.nome;}
   var grupos={},semGrupo=[];
   data.forEach(function(c){
-    if(c.grupo){
-      if(!grupos[c.grupo])grupos[c.grupo]=[];
-      grupos[c.grupo].push(c);
-    } else {
-      semGrupo.push(c);
-    }
+    if(c.grupo){if(!grupos[c.grupo])grupos[c.grupo]=[];grupos[c.grupo].push(c);}
+    else semGrupo.push(c);
   });
-  var html='<option value="">Selecione a categoria</option>';
+  var html='';
   var ordemGrupos=['Itens Nervosos - In Natura','Itens Nervosos - Processados','Itens de Interesse'];
   ordemGrupos.forEach(function(g){
     if(grupos[g]&&grupos[g].length){
-      html+='<optgroup label="'+g+'">';
-      grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+_catLabel(c)+'</option>';});
-      html+='</optgroup>';
+      html+='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 4px;font-weight:700">'+g+'</div>';
+      grupos[g].forEach(function(c){
+        html+='<label style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:var(--t1);cursor:pointer"><input type="checkbox" class="cad-cat-cb" value="'+c.slug+'" style="accent-color:var(--ac)"> '+_catLabel(c)+'</label>';
+      });
       delete grupos[g];
     }
   });
   Object.keys(grupos).forEach(function(g){
-    html+='<optgroup label="'+g+'">';
-    grupos[g].forEach(function(c){html+='<option value="'+c.slug+'">'+_catLabel(c)+'</option>';});
-    html+='</optgroup>';
+    html+='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 4px;font-weight:700">'+g+'</div>';
+    grupos[g].forEach(function(c){
+      html+='<label style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:var(--t1);cursor:pointer"><input type="checkbox" class="cad-cat-cb" value="'+c.slug+'" style="accent-color:var(--ac)"> '+_catLabel(c)+'</label>';
+    });
   });
   if(semGrupo.length){
-    if(Object.keys(grupos).length||ordemGrupos.length) html+='<optgroup label="Outros">';
-    semGrupo.forEach(function(c){html+='<option value="'+c.slug+'">'+_catLabel(c)+'</option>';});
-    if(Object.keys(grupos).length||ordemGrupos.length) html+='</optgroup>';
+    html+='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin:6px 0 4px;font-weight:700">Outros</div>';
+    semGrupo.forEach(function(c){
+      html+='<label style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:var(--t1);cursor:pointer"><input type="checkbox" class="cad-cat-cb" value="'+c.slug+'" style="accent-color:var(--ac)"> '+_catLabel(c)+'</label>';
+    });
   }
-  sel.innerHTML=html;
+  el.innerHTML=html;
 }
 async function salvarFornecedor(){
   var msgEl=document.getElementById('cad-forn-msg');
@@ -4772,12 +4770,14 @@ async function salvarFornecedor(){
   var sif=document.getElementById('cad-sif').value.trim();
   var cidade=document.getElementById('cad-cidade').value.trim();
   var estado=document.getElementById('cad-estado').value;
-  var categoria=document.getElementById('cad-categoria').value;
+  var catCbs=document.querySelectorAll('.cad-cat-cb:checked');
+  var categorias=[];catCbs.forEach(function(cb){categorias.push(cb.value);});
+  var categoria=categorias.length?JSON.stringify(categorias):null;
   var score=parseInt(document.getElementById('cad-score').value)||70;
   if(!nome){showCadMsg('Informe o nome do fornecedor.','err');return;}
   if(!cidade){showCadMsg('Informe a cidade.','err');return;}
   if(!estado){showCadMsg('Selecione o estado.','err');return;}
-  if(!categoria){showCadMsg('Selecione a categoria.','err');return;}
+  if(!categorias.length){showCadMsg('Selecione ao menos uma categoria.','err');return;}
   if(score<0)score=0;if(score>100)score=100;
   var { error } = await _sb.from('fornecedores').insert({
     nome: nome,
@@ -4795,7 +4795,7 @@ async function salvarFornecedor(){
   document.getElementById('cad-sif').value='';
   document.getElementById('cad-cidade').value='';
   document.getElementById('cad-estado').value='';
-  document.getElementById('cad-categoria').value='';
+  document.querySelectorAll('.cad-cat-cb').forEach(function(cb){cb.checked=false;});
   document.getElementById('cad-score').value='70';
 }
 function showCadMsg(txt,type){
