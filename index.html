@@ -4459,8 +4459,8 @@ async function loadMarketLive(){
   if(!el) return;
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando ofertas...</div>';
   var { data, error } = await _sb.from('ofertas').select('*, fornecedores(nome)').eq('status','ativa').order('criado_em',{ascending:false});
-  if(error||!data){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
-  _mktOfertas = data;
+  if(error){console.log('Erro ofertas:', JSON.stringify(error));el.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar ofertas.</div>';return;}
+  _mktOfertas = data||[];
   renderMarketList();
 }
 function renderMarketList(){
