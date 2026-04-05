@@ -54,6 +54,7 @@ body{background:#0a0a1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-siz
   <div class="topbar">
     <div class="logo">Food<span style="color:var(--ac)">Hub</span> <span class="badge-admin">ADMIN</span></div>
     <div style="display:flex;align-items:center;gap:10px">
+      <span id="admin-notif-badge" style="display:none;background:var(--rd);color:#fff;font-size:9px;padding:2px 7px;border-radius:8px;font-weight:700;cursor:pointer" onclick="showTab('fornecedores')"></span>
       <span id="auto-refresh" style="font-size:10px;color:#666;font-family:var(--mono)">Auto-refresh: 30s</span>
       <button class="btn-gh" onclick="loadAll()">Atualizar</button>
     </div>
@@ -127,6 +128,16 @@ function showTab(id){
 }
 async function loadAll(){
   await Promise.all([loadKPIs(),loadPipelineCRM(),loadFeed(),loadDemandas(),loadFornecedores(),loadCompradores(),loadNegocios(),loadReceita()]);
+}
+var _prevFornCount=-1;var _prevProfCount=-1;
+function adminNotify(msg){
+  var c=document.getElementById('admin-app');if(!c)return;
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1a3a;border:1px solid var(--ac);border-radius:10px;padding:12px 16px;font-size:12px;color:#fff;z-index:999;box-shadow:0 4px 20px rgba(124,92,252,.3);cursor:pointer;max-width:320px;animation:fadeIn .3s ease';
+  t.innerHTML=msg;
+  t.onclick=function(){showTab('fornecedores');if(t.parentNode)t.parentNode.removeChild(t);};
+  document.body.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},8000);
 }
 var _pipeSearch='';var _pipeFilt='todos';var _pipeSortCol='dt';var _pipeSortAsc=false;var _pipePage=0;var _pipePerPage=20;
 async function loadPipelineCRM(){
@@ -320,7 +331,16 @@ async function loadDemandas(){
 async function loadFornecedores(){
   var el=document.getElementById('tab-fornecedores');if(!el)return;
   var { data } = await _sb.from('fornecedores').select('*').order('nome');
-  var h='<div class="sec-title">🏭 Fornecedores</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Nome</th><th>Categorias</th><th>Cidade/UF</th><th>Score</th><th>Comissão</th><th>Status</th><th></th></tr></thead><tbody>';
+  // Detect new fornecedores
+  var newCount=data?data.length:0;
+  if(_prevFornCount>=0&&newCount>_prevFornCount){
+    var diff=newCount-_prevFornCount;
+    adminNotify('🏭 <strong>'+diff+' novo'+(diff>1?'s':'')+' fornecedor'+(diff>1?'es':'')+'</strong> cadastrado'+(diff>1?'s':'')+'! <span style="color:var(--ac)">Aprovar agora →</span>');
+    var badge=document.getElementById('admin-notif-badge');
+    if(badge){badge.textContent='🔔 '+diff+' novo'+(diff>1?'s':'');badge.style.display='inline';}
+  }
+  _prevFornCount=newCount;
+  var h='<div class="sec-title">🏭 Fornecedores ('+newCount+')</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Nome</th><th>Categorias</th><th>Cidade/UF</th><th>Score</th><th>Comissão</th><th>Status</th><th></th></tr></thead><tbody>';
   if(data)data.forEach(function(f){
     var cats=f.categoria||'—';
     var com='1%';try{var cc=JSON.parse(f.comissao_config||'{}');com=(cc.default||1)+'%';}catch(e){}
@@ -373,7 +393,14 @@ async function salvarFornecedorAdmin(){
 async function loadCompradores(){
   var el=document.getElementById('tab-compradores');if(!el)return;
   var { data } = await _sb.from('profiles').select('*').order('criado_em',{ascending:false});
-  var h='<div class="sec-title">👤 Compradores</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Email</th><th>Nome</th><th>Empresa</th><th>Aprovado</th><th>Data</th><th></th></tr></thead><tbody>';
+  var newPCount=data?data.length:0;
+  if(_prevProfCount>=0&&newPCount>_prevProfCount){
+    var diff2=newPCount-_prevProfCount;
+    adminNotify('👤 <strong>'+diff2+' novo'+(diff2>1?'s':'')+' comprador'+(diff2>1?'es':'')+'</strong> cadastrado'+(diff2>1?'s':'')+'!');
+  }
+  _prevProfCount=newPCount;
+  var naoAprovados=data?data.filter(function(p){return!p.aprovado;}).length:0;
+  var h='<div class="sec-title">👤 Compradores ('+newPCount+(naoAprovados?' · <span style="color:var(--rd)">'+naoAprovados+' pendente'+(naoAprovados>1?'s':'')+'</span>':'')+')</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Email</th><th>Nome</th><th>Empresa</th><th>Aprovado</th><th>Data</th><th></th></tr></thead><tbody>';
   if(data)data.forEach(function(p){
     var apBadge=p.aprovado?'<span style="color:var(--gn)">✅ Sim</span>':'<span style="color:var(--rd)">❌ Não</span>';
     var btn=p.aprovado?'<button class="btn btn-rd" onclick="toggleAprovacao(\''+p.id+'\',false)" style="font-size:10px">Bloquear</button>':'<button class="btn btn-gn" onclick="toggleAprovacao(\''+p.id+'\',true)" style="font-size:10px">Aprovar</button>';

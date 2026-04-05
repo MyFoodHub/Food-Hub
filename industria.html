@@ -410,7 +410,8 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <input id="ind-email" type="email" placeholder="Email" style="width:100%;background:#171422;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:13px;color:#F2EDFF;font-family:sans-serif;outline:none;box-sizing:border-box">
       <input id="ind-pass" type="password" placeholder="Senha" style="width:100%;background:#171422;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:13px;color:#F2EDFF;font-family:sans-serif;outline:none;box-sizing:border-box">
       <button onclick="indLogin()" style="width:100%;border:none;border-radius:9px;padding:11px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:#F5B800;color:#000">Entrar</button>
-      <div style="text-align:center;font-size:11px;color:#7A6FA8">Acesso exclusivo para fornecedores homologados</div>
+      <button onclick="indSignup()" style="width:100%;border:none;border-radius:9px;padding:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#F5B800;border:1px solid rgba(245,184,0,.3)">Criar conta</button>
+      <div style="text-align:center;font-size:11px;color:#999">Acesso para fornecedores e indústrias</div>
     </div>
   </div>
 </div>
@@ -2074,10 +2075,31 @@ async function indLogin(){
   var pass = document.getElementById('ind-pass').value;
   var msgEl = document.getElementById('ind-auth-msg');
   if(!email||!pass){showIndAuthMsg('Preencha email e senha.','err');return;}
+  console.log('[FoodHub] Login tentativa:', email);
   var { data, error } = await _sb.auth.signInWithPassword({ email: email, password: pass });
-  if(error){showIndAuthMsg(error.message,'err');return;}
+  if(error){console.log('[FoodHub] Erro login:', error.message);showIndAuthMsg(error.message,'err');return;}
+  console.log('[FoodHub] Login ok, user:', data.user.email);
   _currentUser = data.user;
   await initIndApp();
+}
+async function indSignup(){
+  var email = document.getElementById('ind-email').value.trim();
+  var pass = document.getElementById('ind-pass').value;
+  if(!email||!pass){showIndAuthMsg('Preencha email e senha.','err');return;}
+  if(pass.length<6){showIndAuthMsg('Senha deve ter pelo menos 6 caracteres.','err');return;}
+  console.log('[FoodHub] Tentando criar conta:', email);
+  var { data, error } = await _sb.auth.signUp({ email: email, password: pass });
+  if(error){console.log('[FoodHub] Erro signup:', error.message);showIndAuthMsg(error.message,'err');return;}
+  console.log('[FoodHub] Signup ok, session:', data.session?'sim':'não');
+  if(data.session){
+    _currentUser = data.user;
+    showIndAuthMsg('Conta criada com sucesso!','ok');
+    await initIndApp();
+  } else if(data.user){
+    showIndAuthMsg('Conta criada! Verifique seu email para confirmar.','ok');
+  } else {
+    showIndAuthMsg('Conta criada! Faça login para continuar.','ok');
+  }
 }
 function showIndAuthMsg(txt,type){
   var el = document.getElementById('ind-auth-msg');
