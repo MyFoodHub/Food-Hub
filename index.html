@@ -907,33 +907,21 @@ window.go = window.go || function(id) {
       </div>
       <!-- RECENTES -->
       <div class="sh"><h3>Demandas recentes</h3><span style="font-size:11px;color:var(--ac);cursor:pointer" onclick="go('sDemandas')">Ver todas →</span></div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px" onclick="go('sScanPanel')">
-          <div style="width:7px;height:7px;border-radius:50%;background:var(--gn);box-shadow:0 0 5px var(--gn);flex-shrink:0"></div>
-          <div style="flex:1"><span style="font-weight:600;font-size:13px">Frango Sassami · cx 10kg</span><span style="color:var(--t2);font-size:11px"> · 10.000 kg · SP · Alvo R$8,20</span></div>
-          <span class="badge bg">8 propostas</span>
-        </div>
-        <div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px">
-          <div style="width:7px;height:7px;border-radius:50%;background:var(--gn);flex-shrink:0"></div>
-          <div style="flex:1"><span style="font-weight:600;font-size:13px">Muçarela Fatiada · SIF</span><span style="color:var(--t2);font-size:11px"> · 5.000 kg · RJ</span></div>
-          <span class="badge bb">3 propostas</span>
-        </div>
-        <div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px">
-          <div style="width:7px;height:7px;border-radius:50%;background:var(--am);flex-shrink:0"></div>
-          <div style="flex:1"><span style="font-weight:600;font-size:13px">Óleo de Soja 900ml</span><span style="color:var(--t2);font-size:11px"> · 500 cx · Campinas</span></div>
-          <span class="badge ba">aguardando</span>
-        </div>
+      <div id="dash-demandas-recentes" style="display:flex;flex-direction:column;gap:5px">
+        <div style="text-align:center;padding:12px;color:var(--t3);font-size:11px">Carregando...</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px">
-        <div class="card click" style="flex:1;padding:16px;text-align:center;cursor:pointer" onclick="go('sScan')">
+        <div class="card click" style="flex:1;padding:16px;text-align:center;cursor:pointer;background:linear-gradient(135deg,rgba(0,224,154,.08),rgba(0,224,154,.02));border-color:rgba(0,224,154,.2)" onclick="go('sScan')">
           <div style="font-size:24px;margin-bottom:6px">📡</div>
           <div style="font-size:13px;font-weight:700;color:var(--t1)">Criar demanda em 60s</div>
-          <div style="font-size:11px;color:var(--ac);margin-top:4px">Iniciar →</div>
+          <div style="font-size:10px;color:var(--t2);margin-top:3px">500+ fornecedores varrem o Brasil por você</div>
+          <div style="font-size:11px;color:var(--gn);margin-top:6px;font-weight:700">Iniciar →</div>
         </div>
-        <div class="card click" style="flex:1;padding:16px;text-align:center;cursor:pointer" onclick="go('sMarket')">
+        <div class="card click" style="flex:1;padding:16px;text-align:center;cursor:pointer;background:linear-gradient(135deg,rgba(245,166,35,.06),rgba(245,166,35,.02));border-color:rgba(245,166,35,.2)" onclick="go('sMarket')">
           <div style="font-size:24px;margin-bottom:6px">🏷️</div>
-          <div style="font-size:13px;font-weight:700;color:var(--t1)">Ver ofertas do mercado</div>
-          <div style="font-size:11px;color:var(--ac);margin-top:4px">Explorar →</div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1)">Ofertas do mercado agora</div>
+          <div style="font-size:10px;color:var(--t2);margin-top:3px">Fornecedores publicaram oportunidades para você</div>
+          <div style="font-size:11px;color:var(--am);margin-top:6px;font-weight:700">Explorar →</div>
         </div>
       </div>
     </div>
@@ -3537,6 +3525,28 @@ async function loadDashboardKPIs(){
   if(mvs[2]) mvs[2].textContent = volTotal>0?'R$'+(volTotal/1000000).toFixed(1)+'M':'R$0';
   if(mvs[3]) mvs[3].textContent = savingTotal>0?'R$'+Math.round(savingTotal/1000)+'k':'R$0';
   atualizarBadgeNotif();
+  // Demandas recentes reais
+  var drEl=document.getElementById('dash-demandas-recentes');
+  if(drEl&&_currentUser){
+    var { data: recentes } = await _sb.from('demandas').select('id, produto_nome, volume, unidade_volume, local_entrega, status, propostas(id)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false}).limit(5);
+    if(recentes&&recentes.length){
+      var rh='';
+      recentes.forEach(function(d){
+        var propCount=(d.propostas&&d.propostas.length)||0;
+        var dotColor=d.status==='ativa'?'var(--gn)':'var(--t3)';
+        var badge=propCount>0?'<span class="badge bg">'+propCount+' proposta'+(propCount>1?'s':'')+'</span>':'<span class="badge ba">aguardando</span>';
+        var vol=d.volume?d.volume+' '+(d.unidade_volume||'kg'):'';
+        rh+='<div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer" onclick="abrirDemanda(\''+d.id+'\')">';
+        rh+='<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>';
+        rh+='<div style="flex:1"><span style="font-weight:600;font-size:13px">'+(d.produto_nome||'Demanda')+'</span>';
+        rh+='<span style="color:var(--t2);font-size:11px">'+(vol?' · '+vol:'')+(d.local_entrega?' · '+d.local_entrega:'')+'</span></div>';
+        rh+=badge+'</div>';
+      });
+      drEl.innerHTML=rh;
+    } else {
+      drEl.innerHTML='<div style="text-align:center;padding:14px;color:var(--t3);font-size:12px">Nenhuma demanda ainda. Crie sua primeira!</div>';
+    }
+  }
 }
 
 async function atualizarBadgeNotif(){
