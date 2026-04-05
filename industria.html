@@ -439,10 +439,10 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
       <!-- KPI GRID -->
       <div class="metrics m4" style="margin-bottom:14px">
-        <div class="metric" style="border-left:3px solid var(--am)"><div class="mlbl">Receita via FoodHub</div><div class="mval" style="color:var(--am)">R$2,4M</div><div class="msub" style="color:var(--go)">↑ 18% vs mês anterior</div></div>
-        <div class="metric" style="border-left:3px solid var(--go)"><div class="mlbl">Volume vendido</div><div class="mval" style="color:var(--go)">847t</div><div class="msub" style="color:var(--go)">↑ 12% · 15 SKUs ativos</div></div>
-        <div class="metric" style="border-left:3px solid var(--ic)"><div class="mlbl">Compradores ativos</div><div class="mval" style="color:var(--ic)">134</div><div class="msub">+17 novos este mês</div></div>
-        <div class="metric" style="border-left:3px solid var(--gold)"><div class="mlbl">Match rate</div><div class="mval" style="color:var(--gold)">0%</div><div class="msub">propostas aceitas / enviadas</div></div>
+        <div class="metric" style="border-left:3px solid var(--am)"><div class="mlbl">Receita via FoodHub</div><div class="mval" id="ind-kpi-receita" style="color:var(--am)">R$0</div><div class="msub">propostas aceitas</div></div>
+        <div class="metric" style="border-left:3px solid var(--go)"><div class="mlbl">Volume vendido</div><div class="mval" id="ind-kpi-volume" style="color:var(--go)">0</div><div class="msub">total aceito</div></div>
+        <div class="metric" style="border-left:3px solid var(--ic)"><div class="mlbl">Compradores ativos</div><div class="mval" id="ind-kpi-compradores" style="color:var(--ic)">0</div><div class="msub">negócios fechados</div></div>
+        <div class="metric" style="border-left:3px solid var(--gold)"><div class="mlbl">Match rate</div><div class="mval" id="ind-kpi-match" style="color:var(--gold)">0%</div><div class="msub">aceitas / enviadas</div></div>
       </div>
 
       <div style="font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;font-family:var(--mono)">⭐ Meus produtos cadastrados</div>
@@ -2272,16 +2272,15 @@ async function loadDashboardIndustria(){
     receita+=pr*v;volTotal+=v;
   });
   var matchRate=props.length>0?Math.round((aceitas.length/props.length)*100):0;
-  // Update KPIs in dashboard - find the metric value elements
-  var dash=document.getElementById('s-main');
-  if(!dash) return;
-  var mvs=dash.querySelectorAll('.mval');
-  if(mvs.length>=4){
-    mvs[0].textContent=receita>1000000?'R$'+(receita/1000000).toFixed(1)+'M':'R$'+(receita/1000).toFixed(0)+'k';
-    mvs[1].textContent=volTotal>1000?(volTotal/1000).toFixed(0)+'t':volTotal+'kg';
-    mvs[2].textContent=aceitas.length;
-    mvs[3].textContent=matchRate+'%';
-  }
+  // Update KPIs by ID
+  var elR=document.getElementById('ind-kpi-receita');
+  var elV=document.getElementById('ind-kpi-volume');
+  var elC=document.getElementById('ind-kpi-compradores');
+  var elM=document.getElementById('ind-kpi-match');
+  if(elR) elR.textContent=receita>1000000?'R$'+(receita/1000000).toFixed(1)+'M':receita>0?'R$'+(receita/1000).toFixed(0)+'k':'R$0';
+  if(elV) elV.textContent=volTotal>1000?(volTotal/1000).toFixed(0)+'t':volTotal>0?volTotal.toLocaleString('pt-BR')+'kg':'0';
+  if(elC) elC.textContent=aceitas.length;
+  if(elM) elM.textContent=matchRate+'%';
   // Meus produtos from localStorage
   var prodEl=document.getElementById('dash-meus-produtos');
   if(prodEl){
