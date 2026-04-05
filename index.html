@@ -301,6 +301,14 @@ var SUPABASE_URL = 'https://jqbuckofiaopxwllghac.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
 var _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var _currentUser = null;
+var EMAILS_APROVADOS = ['humbertoabilio.fh@gmail.com', 'samanta.marcal@gmail.com'];
+
+async function checkApproval(){
+  if(!_currentUser) return false;
+  if(EMAILS_APROVADOS.indexOf(_currentUser.email)>=0) return true;
+  var { data: prof } = await _sb.from('profiles').select('aprovado').eq('id',_currentUser.id).single();
+  return prof && prof.aprovado === true;
+}
 
 // ── AUTH FUNCTIONS ──
 async function authLogin() {
@@ -323,6 +331,11 @@ async function authLogin() {
   }
   _currentUser = data.user;
   await loadUserProfile();
+  var approved = await checkApproval();
+  if(!approved){
+    document.getElementById('sAguardando').style.display='flex';
+    return;
+  }
   go('s1');
   setTimeout(renderDashSegBar, 150);
 }
@@ -355,6 +368,11 @@ async function authSignup() {
   _currentUser = data.user;
   if (data.session) {
     await loadUserProfile();
+    var approved = await checkApproval();
+    if(!approved){
+      document.getElementById('sAguardando').style.display='flex';
+      return;
+    }
     go('sBoasVindas');
   } else {
     if(errEl) { errEl.style.color = 'var(--gn)'; errEl.textContent = '✓ Verifique seu e-mail para confirmar o cadastro.'; }
@@ -365,7 +383,15 @@ async function authSignup() {
 async function authLogout() {
   await _sb.auth.signOut();
   _currentUser = null;
+  var agEl=document.getElementById('sAguardando');if(agEl)agEl.style.display='none';
   go('s0');
+}
+
+async function doLogout(){
+  await _sb.auth.signOut();
+  _currentUser=null;
+  var agEl=document.getElementById('sAguardando');if(agEl)agEl.style.display='none';
+  location.reload();
 }
 
 async function loadUserProfile() {
@@ -405,6 +431,11 @@ async function checkSession() {
   if (session && session.user) {
     _currentUser = session.user;
     await loadUserProfile();
+    var approved = await checkApproval();
+    if(!approved){
+      document.getElementById('sAguardando').style.display='flex';
+      return;
+    }
     go('s1');
     setTimeout(renderDashSegBar, 150);
     setTimeout(atualizarBadgeNotif, 500);
@@ -474,6 +505,16 @@ window.go = window.go || function(id) {
   });
 };
 </script>
+<div id="sAguardando" style="display:none;position:fixed;inset:0;background:#050810;z-index:9999;align-items:center;justify-content:center">
+  <div style="text-align:center;max-width:400px;padding:28px">
+    <div style="margin-bottom:8px"><div class="logo" style="justify-content:center"><div class="logo-dot"></div>Food<span>Hub</span></div></div>
+    <div style="font-size:48px;margin:24px 0">⏳</div>
+    <h2 style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:8px">Cadastro em análise</h2>
+    <p style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:24px">O time FoodHub avaliará seu perfil e entrará em contato em até 24h.</p>
+    <button onclick="doLogout()" style="border:none;border-radius:9px;padding:10px 24px;font-family:sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--t2);border:1px solid var(--b1)">Sair</button>
+  </div>
+</div>
+
 <div id="app">
 
 <!-- ══ S0 LOGIN ══ -->

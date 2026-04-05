@@ -414,6 +414,15 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     </div>
   </div>
 </div>
+<div id="ind-aguardando" style="display:none;align-items:center;justify-content:center;height:100vh;background:#06050A">
+  <div style="text-align:center;max-width:380px;padding:28px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#F2EDFF;margin-bottom:6px">Food<span style="color:#F5B800">Hub</span> <span style="font-size:14px;color:#7A6FA8">Indústria</span></div>
+    <div style="font-size:40px;margin:20px 0">⏳</div>
+    <div style="font-size:16px;font-weight:700;color:#F2EDFF;margin-bottom:8px">Cadastro em análise</div>
+    <div style="font-size:13px;color:#7A6FA8;line-height:1.6;margin-bottom:20px">O time FoodHub avaliará seu perfil e entrará em contato em até 24h.</div>
+    <button onclick="indLogout()" style="border:none;border-radius:9px;padding:10px 24px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.08);color:#7A6FA8;border:1px solid rgba(255,255,255,.1)">Sair</button>
+  </div>
+</div>
 <div id="app" style="display:none">
 
 <!-- ════════════ MAIN SCREEN ════════════ -->
@@ -506,7 +515,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 </div>
 
 <div id="s-demandas" class="screen">
-  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span></div><div style="font-size:12px;color:var(--w2)">Regra: preços e concorrentes são ocultos — você vê apenas a demanda real.</div></div>
+  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div><span class="ind-nome-empresa">FoodHub Indústria</span></div><div style="font-size:12px;color:var(--w2)">Regra: preços e concorrentes são ocultos — você vê apenas a demanda real.</div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
@@ -532,7 +541,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
 <!-- ════════════ CAMPANHAS ADS ════════════ -->
 <div id="s-campanhas" class="screen">
-  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span></div></div>
+  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div><span class="ind-nome-empresa">FoodHub Indústria</span></div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
@@ -612,7 +621,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 
 <!-- ════════════ INCENTIVOS FINDERS ════════════ -->
 <div id="s-incentivos" class="screen">
-  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Aurora <span style="color:var(--am)">Alimentos</span></div></div>
+  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div><span class="ind-nome-empresa">FoodHub Indústria</span></div></div>
   <div class="layout">
     <div class="sidebar">
       <div class="nsec">Operação</div>
@@ -658,9 +667,9 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
         </div>
       </div>
       <!-- RANKING FINDERS -->
-      <div class="sh"><h3>Top Finders · Aurora este mês</h3></div>
+      <div class="sh"><h3>Top Finders · <span class="ind-nome-empresa">FoodHub Indústria</span> este mês</h3></div>
       <table class="tbl">
-        <thead><tr><th>#</th><th>Finder</th><th>Negócios</th><th>Volume gerado</th><th>Receita Aurora</th><th>Incentivo recebido</th></tr></thead>
+        <thead><tr><th>#</th><th>Finder</th><th>Negócios</th><th>Volume gerado</th><th>Receita <span class="ind-nome-empresa">FoodHub Indústria</span></th><th>Incentivo recebido</th></tr></thead>
         <tbody>
           <tr><td><strong style="color:var(--gold)">🥇</strong></td><td><strong>Finder #A</strong></td><td style="font-family:var(--mono)">8</td><td style="font-family:var(--mono)">R$890k</td><td style="color:var(--go);font-family:var(--mono);font-weight:700">R$890k</td><td style="color:var(--am);font-family:var(--mono)">R$2.923</td></tr>
           <tr><td><strong style="color:var(--silver)">🥈</strong></td><td><strong>Finder #B</strong></td><td style="font-family:var(--mono)">6</td><td style="font-family:var(--mono)">R$620k</td><td style="color:var(--go);font-family:var(--mono);font-weight:700">R$620k</td><td style="color:var(--am);font-family:var(--mono)">R$2.034</td></tr>
@@ -1170,7 +1179,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <div class="xstb-tabs"><div class="xtab on" onclick="goX('sx-dash')">🌍 Radar</div><div class="xtab" onclick="goX('sx-demandas')">📡 Demandas</div><div class="xtab" onclick="goX('sx-hab')">✅ Habilitações</div><div class="xtab" onclick="goX('sx-ops')">🚢 Operações</div><div class="xtab" onclick="goX('sx-pricing')">💹 Pricing CIF</div></div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xkbar">
@@ -1205,7 +1214,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div>
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;color:#00D4FF">RADAR DE EXPORTAÇÃO</div>
-            <div style="font-size:12px;color:#8A9EC8">Demandas globais disponíveis para Aurora Alimentos agora</div>
+            <div style="font-size:12px;color:#8A9EC8">Demandas globais disponíveis para <span class="ind-nome-empresa">FoodHub Indústria</span> agora</div>
           </div>
           <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:#00E09A;font-family:var(--mono)">
             <div style="width:5px;height:5px;border-radius:50%;background:#00E09A;animation:blink 1.4s infinite"></div>AO VIVO
@@ -1394,7 +1403,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <div class="xstb-tabs"><div class="xtab" onclick="goX('sx-dash')">🌍 Radar</div><div class="xtab on" onclick="goX('sx-demandas')">📡 Demandas</div><div class="xtab" onclick="goX('sx-hab')">✅ Habilitações</div><div class="xtab" onclick="goX('sx-ops')">🚢 Operações</div><div class="xtab" onclick="goX('sx-pricing')">💹 Pricing CIF</div></div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xkbar">
@@ -1531,7 +1540,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <div class="xstb-tabs"><div class="xtab" onclick="goX('sx-dash')">🌍 Radar</div><div class="xtab" onclick="goX('sx-demandas')">📡 Demandas</div><div class="xtab on" onclick="goX('sx-hab')">✅ Habilitações</div><div class="xtab" onclick="goX('sx-ops')">🚢 Operações</div><div class="xtab" onclick="goX('sx-pricing')">💹 Pricing CIF</div></div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xkbar">
@@ -1571,7 +1580,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <div class="xstb-tabs"><div class="xtab" onclick="goX('sx-dash')">🌍 Radar</div><div class="xtab" onclick="goX('sx-demandas')">📡 Demandas</div><div class="xtab" onclick="goX('sx-hab')">✅ Habilitações</div><div class="xtab on" onclick="goX('sx-ops')">🚢 Operações</div><div class="xtab" onclick="goX('sx-pricing')">💹 Pricing CIF</div></div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xkbar">
@@ -1596,7 +1605,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="xcard xcard-gn" style="padding:13px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
           <span style="font-size:22px">🇦🇪</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Frango IQF Halal · CIF Dubai</div><div style="font-size:11px;color:#8A9EC8">Aurora Alimentos · SIF 1234 · Halal ESMA</div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Frango IQF Halal · CIF Dubai</div><div style="font-size:11px;color:#8A9EC8"><span class="ind-nome-empresa">FoodHub Indústria</span> · SIF 1234 · Halal ESMA</div></div>
           <span style="font-size:8.5px;padding:2px 8px;border-radius:3px;font-weight:700;background:rgba(0,229,154,.1);color:#00E09A;text-transform:uppercase">🚢 Em trânsito</span>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#00E09A">$3,1M</div>
         </div>
@@ -1613,7 +1622,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="xcard" style="border-color:rgba(0,212,255,.18);padding:13px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
           <span style="font-size:22px">🇲🇽</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Peito Frango IQF · CIF Veracruz <span style="font-size:8.5px;padding:2px 7px;border-radius:3px;background:rgba(0,229,154,.1);color:#00E09A;font-weight:700">✓ CONFIRMADO</span></div><div style="font-size:11px;color:#8A9EC8">Aurora Alimentos · SENASICA</div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Peito Frango IQF · CIF Veracruz <span style="font-size:8.5px;padding:2px 7px;border-radius:3px;background:rgba(0,229,154,.1);color:#00E09A;font-weight:700">✓ CONFIRMADO</span></div><div style="font-size:11px;color:#8A9EC8"><span class="ind-nome-empresa">FoodHub Indústria</span> · SENASICA</div></div>
           <span style="font-size:8.5px;padding:2px 8px;border-radius:3px;font-weight:700;background:rgba(0,212,255,.1);color:#00D4FF;text-transform:uppercase">📄 Docs</span>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#00D4FF">$1,6M</div>
         </div>
@@ -1637,7 +1646,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     <div class="xstb-tabs"><div class="xtab" onclick="goX('sx-dash')">🌍 Radar</div><div class="xtab" onclick="goX('sx-demandas')">📡 Demandas</div><div class="xtab" onclick="goX('sx-hab')">✅ Habilitações</div><div class="xtab" onclick="goX('sx-ops')">🚢 Operações</div><div class="xtab on" onclick="goX('sx-pricing')">💹 Pricing CIF</div></div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xkbar">
@@ -1728,7 +1737,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="mf-field"><label>Preço proposto (R$/kg)</label><input type="number" placeholder="Ex: 14.80" step="0.10" value="14.80"></div>
       <div class="mf-field"><label>Condição de pagamento</label><select><option>30D boleto</option><option>À vista (-3%)</option><option>60D boleto</option><option>14D (-1,5%)</option></select></div>
     </div>
-    <div class="mf-field"><label>Mensagem personalizada</label><textarea rows="3" placeholder="Ex: Fernanda, identificamos que a Nova Era tem alta demanda de Frango IQF e gostaríamos de apresentar uma proposta exclusiva...">Prezada equipe Nova Era, identificamos uma oportunidade de parceria estratégica com condições exclusivas para vocês. Aurora tem capacidade imediata de 200t de Frango IQF com certificação Halal ESMA, disponível para entrega em 7 dias.</textarea></div>
+    <div class="mf-field"><label>Mensagem personalizada</label><textarea rows="3" placeholder="Ex: Fernanda, identificamos que a Nova Era tem alta demanda de Frango IQF e gostaríamos de apresentar uma proposta exclusiva...">Prezada equipe Nova Era, identificamos uma oportunidade de parceria estratégica com condições exclusivas para vocês. Temos capacidade imediata de 200t de Frango IQF com certificação Halal ESMA, disponível para entrega em 7 dias.</textarea></div>
     <div style="background:rgba(245,184,0,.07);border:1px solid rgba(245,184,0,.15);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--w2)">
       🚀 <strong style="color:var(--am)">Como funciona:</strong> O FoodHub entrega sua proposta diretamente ao decisor de compra via notificação prioritária. Taxa de abertura: <strong style="color:var(--w)">94%</strong>. Resposta média: <strong style="color:var(--gn)">2,4 horas</strong>.
     </div>
@@ -1852,7 +1861,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     </div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xmain">
@@ -1941,7 +1950,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
     </div>
     <div class="xstb-co">
       <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#000;flex-shrink:0">AU</div>
-      <span style="font-size:11px;color:rgba(0,212,255,.7)">Aurora · Export</span>
+      <span class="ind-nome-empresa" style="font-size:11px;color:rgba(0,212,255,.7)">FoodHub Indústria</span>
     </div>
   </div>
   <div class="xmain">
@@ -2066,8 +2075,10 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 var SUPABASE_URL = 'https://jqbuckofiaopxwllghac.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
 var _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var EMAILS_APROVADOS_IND = ['humbertoabilio.fh@gmail.com'];
 var _currentUser = null;
 var _fornecedorId = null;
+var _fornecedorNome = '';
 var _fornecedorCategorias = [];
 
 // ── AUTH ──
@@ -2090,14 +2101,25 @@ function showIndAuthMsg(txt,type){
   el.style.color=type==='ok'?'#00E5A0':'#FF4D6A';
   el.style.border='1px solid '+(type==='ok'?'rgba(0,229,160,.3)':'rgba(255,77,106,.3)');
 }
+async function indLogout(){
+  await _sb.auth.signOut();
+  _currentUser=null;_fornecedorId=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('ind-aguardando').style.display='none';
+  document.getElementById('ind-auth-gate').style.display='flex';
+}
 async function initIndApp(){
-  document.getElementById('ind-auth-gate').style.display='none';
-  document.getElementById('app').style.display='flex';
   // Try to find fornecedor linked to this user (by email)
+  var forn = null;
   if(_currentUser){
-    var { data: forn } = await _sb.from('fornecedores').select('id, nome, categoria').eq('contato_email', _currentUser.email).limit(1);
+    var resp = await _sb.from('fornecedores').select('id, nome, categoria').eq('contato_email', _currentUser.email).limit(1);
+    forn = resp.data;
     if(forn && forn.length){
       _fornecedorId = forn[0].id;
+      var _fornecedorNome = (forn&&forn.length) ? forn[0].nome : 'FoodHub Indústria';
+      window._fornecedorNome = _fornecedorNome;
+      // Update all empresa name elements
+      document.querySelectorAll('.ind-nome-empresa').forEach(function(el){el.textContent=_fornecedorNome;});
       var catRaw = forn[0].categoria||'';
       try{_fornecedorCategorias=JSON.parse(catRaw);if(!Array.isArray(_fornecedorCategorias))_fornecedorCategorias=[catRaw];}
       catch(e){_fornecedorCategorias=catRaw?[catRaw]:[];}
@@ -2112,6 +2134,23 @@ async function initIndApp(){
     if(emailEl&&_currentUser) emailEl.textContent=_currentUser.email;
     if(avEl&&_currentUser) avEl.textContent=_currentUser.email.substring(0,2).toUpperCase();
   }
+  // Check approval
+  var isApproved = false;
+  if(_currentUser){
+    if(EMAILS_APROVADOS_IND.indexOf(_currentUser.email)>=0){
+      isApproved = true;
+    } else {
+      var { data: prof } = await _sb.from('profiles').select('aprovado').eq('id',_currentUser.id).single();
+      if(prof && prof.aprovado) isApproved = true;
+    }
+  }
+  if(!isApproved){
+    document.getElementById('ind-auth-gate').style.display='none';
+    document.getElementById('ind-aguardando').style.display='flex';
+    return;
+  }
+  document.getElementById('ind-auth-gate').style.display='none';
+  document.getElementById('app').style.display='flex';
 }
 // Auto-login if session exists
 (async function(){
