@@ -968,9 +968,6 @@ window.go = window.go || function(id) {
         </div>
         <span style="font-size:9px;background:#25D366;color:#000;padding:2px 8px;border-radius:10px;font-weight:700;flex-shrink:0">4 novos</span>
       </div>
-      <div class="sh" style="margin-top:14px"><h3>⭐ Seus itens frequentes</h3></div>
-      <div style="font-size:11px;color:var(--t2);margin-bottom:8px">Clique em Recomprar para ajustar e lançar nova demanda</div>
-      <div id="dash-itens-freq"></div>
 
       <!-- RECENTES -->
       <div class="sh"><h3>Demandas recentes</h3><span style="font-size:11px;color:var(--ac);cursor:pointer" onclick="go('sDemandas')">Ver todas →</span></div>
@@ -1145,6 +1142,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item active"><span class="ni">🏷️</span>Mesa ao Vivo</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
@@ -1268,6 +1266,30 @@ window.go = window.go || function(id) {
   </div>
 </div>
 
+<!-- ══ FREQUENTES ══ -->
+<div id="sFrequentes" class="screen">
+  <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><button class="btn-ghost sm" onclick="go('s1')">← Dashboard</button></div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-sec">Mesa</div>
+      <div class="nav-item" onclick="go('s1')"><span class="ni">⚡</span>Dashboard</div>
+      <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
+      <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Mesa ao Vivo</div>
+      <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item active"><span class="ni">⭐</span>Frequentes</div>
+      <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
+      <div class="nav-sec">Gestão</div>
+      <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
+      <div class="nav-item" onclick="go('sRelatorios')"><span class="ni">📊</span>Relatórios</div>
+    </div>
+    <div class="main">
+      <div class="sh"><h3>⭐ Itens Frequentes</h3></div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:12px">Seus produtos de compra recorrente. Clique em Recomprar para ajustar e lançar nova demanda.</div>
+      <div id="freq-lista"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ DETALHES DEMANDA ══ -->
 <div id="sDetalhesDemanda" class="screen">
   <div class="topbar"><div class="logo"><div class="logo-dot"></div>Food<span>Hub</span></div><button class="btn-ghost sm" onclick="go('sDemandas')">← Demandas</button></div>
@@ -1278,6 +1300,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
@@ -1327,6 +1350,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item active"><span class="ni">🏭</span>Fornecedores</div>
@@ -1352,6 +1376,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
@@ -1423,6 +1448,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
@@ -1499,6 +1525,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
@@ -1674,6 +1701,7 @@ window.go = window.go || function(id) {
       <div class="nav-item" onclick="go('sScan')"><span class="ni">📡</span>Scan</div>
       <div class="nav-item" onclick="go('sMarket')"><span class="ni">🏷️</span>Ofertas</div>
       <div class="nav-item" onclick="go('sDemandas')"><span class="ni">📋</span>Demandas</div>
+      <div class="nav-item" onclick="go('sFrequentes')"><span class="ni">⭐</span>Frequentes</div>
       <div class="nav-item" onclick="go('sNegocios')"><span class="ni">🤝</span>Negócios</div>
       <div class="nav-sec">Gestão</div>
       <div class="nav-item" onclick="go('sFornecedores')"><span class="ni">🏭</span>Fornecedores</div>
@@ -3522,6 +3550,7 @@ function go(id){
   if(id==='sNeg')buildNeg();
   if(id==='sScanLaunch')startLaunchCounter();
   if(id==='sDemandas')loadDemandas();
+  if(id==='sFrequentes')loadFrequentes();
   if(id==='sCadFornecedor')loadCategoriasCad();
   if(id==='sDetalhesDemanda')loadDetalhesDemanda();
   if(id==='sCadProposta')loadCadPropostaSelects();
@@ -3572,37 +3601,6 @@ async function loadDashboardKPIs(){
   if(mvs[2]) mvs[2].textContent = volTotal>0?'R$'+(volTotal/1000000).toFixed(1)+'M':'R$0';
   if(mvs[3]) mvs[3].textContent = savingTotal>0?'R$'+Math.round(savingTotal/1000)+'k':'R$0';
   atualizarBadgeNotif();
-  // Itens frequentes from localStorage
-  var freqEl=document.getElementById('dash-itens-freq');
-  if(freqEl){
-    var hist=[];
-    for(var k2=0;k2<localStorage.length;k2++){
-      var key2=localStorage.key(k2);
-      if(key2&&key2.indexOf('fh_modelo_')===0){
-        try{var m2=JSON.parse(localStorage.getItem(key2));if(m2&&m2.cat)hist.push(m2);}catch(e2){}
-      }
-    }
-    if(hist.length){
-      var fhtml='';
-      hist.forEach(function(m){
-        var catIcon='';
-        var cats=[{i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},{i:'🧀',l:'Muçarela'},{i:'🌶️',l:'Calabresa'},{i:'🌭',l:'Salsicha'},{i:'🍟',l:'Batata Frita'},{i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'}];
-        cats.forEach(function(c){if(c.l===m.cat)catIcon=c.i;});
-        var label=(m.corte||m.cat||'')+(m.embtipo?' · '+m.embtipo:'')+(m.volume?' · '+m.volume:'');
-        var precoAlvo=m.preco?'R$'+m.preco:'';
-        fhtml+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)">';
-        fhtml+='<span style="font-size:16px;flex-shrink:0">'+(catIcon||'📦')+'</span>';
-        fhtml+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>';
-        if(precoAlvo) fhtml+='<div style="font-size:10px;color:var(--t3)">Último alvo: '+precoAlvo+'</div>';
-        fhtml+='</div>';
-        fhtml+='<button class="btn sm" onclick="scanRecomprar(\''+m.cat.replace(/'/g,"\\'")+'\') " style="font-size:11px;flex-shrink:0">Recomprar →</button>';
-        fhtml+='</div>';
-      });
-      freqEl.innerHTML=fhtml;
-    } else {
-      freqEl.innerHTML='<div style="font-size:12px;color:var(--t3);padding:10px 0">Nenhum item frequente ainda. Crie sua primeira demanda pelo Scan.</div>';
-    }
-  }
 }
 
 async function atualizarBadgeNotif(){
@@ -3946,6 +3944,41 @@ function scanLoadHistorico(cat){
   _buildScanSeq();
   for(var i=0;i<_scanStepSeq.length;i++){if(_scanStepSeq[i]==='resumo'){_scanStepIdx=i;break;}}
   renderScan();
+}
+function loadFrequentes(){
+  var el=document.getElementById('freq-lista');
+  if(!el)return;
+  var hist=[];
+  for(var k=0;k<localStorage.length;k++){
+    var key=localStorage.key(k);
+    if(key&&key.indexOf('fh_modelo_')===0){
+      try{var m=JSON.parse(localStorage.getItem(key));if(m&&m.cat)hist.push(m);}catch(e){}
+    }
+  }
+  if(!hist.length){
+    el.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:10px">⭐</div><div style="font-size:14px;color:var(--t2);margin-bottom:14px">Nenhum item frequente ainda.</div><button class="btn" onclick="go(\'sScan\')" style="font-size:13px">Criar primeira demanda →</button></div>';
+    return;
+  }
+  var cats=[{i:'🍗',l:'Frango'},{i:'🥩',l:'Carne Bovina'},{i:'🐷',l:'Suínos'},{i:'🥚',l:'Ovos'},{i:'🐟',l:'Peixes'},{i:'🧀',l:'Muçarela'},{i:'🌶️',l:'Calabresa'},{i:'🌭',l:'Salsicha'},{i:'🍟',l:'Batata Frita'},{i:'🧈',l:'Manteiga'},{i:'🍖',l:'Linguiças'},{i:'🌾',l:'Farinha de Trigo'},{i:'🫙',l:'Óleo de Soja'}];
+  var h='';
+  hist.forEach(function(m){
+    var catIcon='';cats.forEach(function(c){if(c.l===m.cat)catIcon=c.i;});
+    var label=(m.corte||m.cat||'')+(m.embtipo?' · '+m.embtipo:'')+(m.conserv?' · '+m.conserv:'');
+    var details=[];
+    if(m.volume) details.push(m.volume);
+    if(m.local) details.push(m.local);
+    if(m.preco) details.push('Alvo: R$'+m.preco);
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1)">';
+    h+='<span style="font-size:20px;flex-shrink:0">'+(catIcon||'📦')+'</span>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-size:14px;font-weight:600;color:var(--t1)">'+m.cat+'</div>';
+    h+='<div style="font-size:12px;color:var(--t2)">'+label+'</div>';
+    if(details.length) h+='<div style="font-size:10px;color:var(--t3);margin-top:2px">'+details.join(' · ')+'</div>';
+    h+='</div>';
+    h+='<button class="btn sm btn-g" onclick="scanRecomprar(\''+m.cat.replace(/'/g,"\\'")+'\') " style="font-size:11px;flex-shrink:0">Recomprar →</button>';
+    h+='</div>';
+  });
+  el.innerHTML=h;
 }
 function scanRecomprar(cat){
   var saved=JSON.parse(localStorage.getItem('fh_modelo_'+cat)||'{}');
