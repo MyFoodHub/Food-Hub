@@ -110,9 +110,12 @@ var SUPABASE_ANON_KEY='sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
 var _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 var ADMIN_PASS='FOODHUB_ADMIN_2026';
 
-function adminLogin(){
+async function adminLogin(){
   var p=document.getElementById('admin-pass').value;
   if(p===ADMIN_PASS){
+    // Login with admin Supabase account for RLS access
+    var { error } = await _sb.auth.signInWithPassword({email:'humbertoabilio.fh@gmail.com',password:ADMIN_PASS});
+    if(error) console.log('[Admin] Auth fallback - sem login Supabase:', error.message);
     document.getElementById('login-gate').style.display='none';
     document.getElementById('admin-app').style.display='flex';
     loadAll();
@@ -318,8 +321,9 @@ async function loadFeed(){
 
 async function loadDemandas(){
   var el=document.getElementById('tab-demandas');if(!el)return;
-  var { data } = await _sb.from('demandas').select('*, profiles(nome,empresa), propostas(id)').order('criado_em',{ascending:false}).limit(50);
-  var h='<div class="sec-title">📋 Demandas</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Código</th><th>Produto</th><th>Volume</th><th>Local</th><th>Comprador</th><th>Propostas</th><th>Status</th><th>Data</th></tr></thead><tbody>';
+  var { data, error: demErr } = await _sb.from('demandas').select('*, profiles(nome,empresa), propostas(id)').order('criado_em',{ascending:false}).limit(50);
+  console.log('[Admin] Demandas:', data?data.length+' rows':'null', demErr?JSON.stringify(demErr):'ok');
+  var h='<div class="sec-title">📋 Demandas'+(data?' ('+data.length+')':' (erro)')+'</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Código</th><th>Produto</th><th>Volume</th><th>Local</th><th>Comprador</th><th>Propostas</th><th>Status</th><th>Data</th></tr></thead><tbody>';
   if(data)data.forEach(function(d){
     var prof=d.profiles||{};var pc=(d.propostas&&d.propostas.length)||0;
     h+='<tr><td style="font-family:var(--mono);font-size:11px">'+(d.codigo||'—')+'</td><td style="color:#fff;font-weight:600">'+(d.produto_nome||'—')+'</td><td style="font-family:var(--mono)">'+(d.volume||'—')+' '+(d.unidade_volume||'')+'</td><td>'+(d.local_entrega||'—')+'</td><td>'+(prof.nome||prof.empresa||'—')+'</td><td style="text-align:center;color:var(--gn)">'+pc+'</td><td>'+d.status+'</td><td style="font-family:var(--mono);font-size:11px">'+(d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'')+'</td></tr>';
