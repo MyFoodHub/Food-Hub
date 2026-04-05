@@ -4096,25 +4096,37 @@ async function launchScan(){
   var espec=especParts.join(' · ');
   if(c.obs) espec = espec ? espec+' | Obs: '+c.obs : 'Obs: '+c.obs;
   document.getElementById('launch-summary').innerHTML='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Resumo da Busca</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Item</div><div style="font-size:12px;font-weight:600;color:var(--rd)">⚡ '+item1+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Especificação</div><div style="font-size:12px;font-weight:600">'+espec+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Volume</div><div style="font-size:12px;font-weight:600">'+vol+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Entrega</div><div style="font-size:12px;font-weight:600">'+local+'</div></div></div>';
-  if(_currentUser){
-    var volNum=parseFloat((vol||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
-    var precoRaw=c.preco||'';
-    var precoNum=parseFloat((precoRaw||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
-    var { error } = await _sb.from('demandas').insert({
-      user_id: _currentUser.id,
-      produto_nome: item1,
-      especificacao: espec||null,
-      volume: volNum,
-      unidade_volume: 'kg',
-      local_entrega: local||null,
-      preco_alvo: precoNum,
-      condicao_pagamento: c.pag||null,
-      frete_preferencia: c.frete||null,
-      status: 'ativa'
-    });
-    if(error) console.log('Erro salvar demanda scan:', JSON.stringify(error));
-    else { try{localStorage.setItem('fh_modelo_'+c.cat,JSON.stringify(c));}catch(e){} }
+  if(!_currentUser){
+    alert('Você precisa estar logado para criar uma demanda.');
+    go('s1');
+    return;
   }
+  var volNum=parseFloat((vol||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
+  var precoRaw=c.preco||'';
+  var precoNum=parseFloat((precoRaw||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
+  console.log('[FoodHub] Salvando demanda... user_id:', _currentUser.id, 'produto:', item1);
+  var insertData={
+    user_id: _currentUser.id,
+    produto_nome: item1||'Demanda',
+    especificacao: espec||null,
+    volume: volNum,
+    unidade_volume: 'kg',
+    local_entrega: local||null,
+    preco_alvo: precoNum,
+    condicao_pagamento: c.pag||null,
+    frete_preferencia: c.frete||null,
+    status: 'ativa'
+  };
+  console.log('[FoodHub] INSERT data:', JSON.stringify(insertData));
+  var { data: insertResult, error } = await _sb.from('demandas').insert(insertData).select();
+  if(error){
+    console.log('[FoodHub] ERRO INSERT demanda:', JSON.stringify(error));
+    alert('Erro ao salvar demanda: '+error.message+'\n\nCódigo: '+error.code+'\nDetalhes: '+(error.details||''));
+    go('sScanLaunch');
+    return;
+  }
+  console.log('[FoodHub] Demanda salva com sucesso:', insertResult);
+  try{localStorage.setItem('fh_modelo_'+c.cat,JSON.stringify(c));}catch(e){}
   go('sScanLaunch');
 }
 
@@ -4531,8 +4543,10 @@ async function loadDemandas(){
   if(!listEl)return;
   if(!_currentUser){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Faça login para ver suas demandas.</div>';return;}
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando demandas...</div>';
+  console.log('[FoodHub] loadDemandas user_id:', _currentUser.id);
   var { data, error } = await _sb.from('demandas').select('*').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
-  if(error){console.log('Erro demandas:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas.</div>';return;}
+  console.log('[FoodHub] loadDemandas result:', data?data.length+' rows':'null', error?JSON.stringify(error):'ok');
+  if(error){console.log('Erro demandas:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas: '+(error.message||'')+'</div>';return;}
   if(!data||data.length===0){
     listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma demanda encontrada. Clique em "+ Nova Demanda" para criar.</div>';
     if(countEl)countEl.textContent='0';
