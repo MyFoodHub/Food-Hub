@@ -507,6 +507,17 @@ window.go = window.go || function(id) {
   });
 };
 </script>
+<div id="modal-confirmar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#12121f;border:1px solid #2a2a3e;border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🤝</div>
+    <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Fechar este negócio?</div>
+    <div id="modal-confirmar-resumo" style="font-size:13px;color:#888;margin-bottom:24px;line-height:1.6"></div>
+    <div style="display:flex;gap:12px">
+      <button onclick="cancelarModal()" style="flex:1;padding:13px;border-radius:10px;border:1px solid #333;background:transparent;color:#888;font-size:14px;cursor:pointer;font-family:sans-serif">Cancelar</button>
+      <button onclick="confirmarModal()" style="flex:1;padding:13px;border-radius:10px;border:none;background:#00e676;color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:sans-serif">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
 <div id="sAguardando" style="display:none;position:fixed;inset:0;background:#050810;z-index:9999;align-items:center;justify-content:center">
   <div style="text-align:center;max-width:400px;padding:28px">
     <div style="margin-bottom:8px"><div class="logo" style="justify-content:center"><div class="logo-dot"></div>Food<span>Hub</span></div></div>
@@ -3722,6 +3733,7 @@ setInterval(function(){
 var _lastPollCheck=new Date().toISOString();
 var _pollInterval=null;
 var _seenMsgIds={};
+document.addEventListener('click',function(){if(!window._fhAudioUnlocked){try{var c=new(window.AudioContext||window.webkitAudioContext)();c.resume().then(function(){window._fhAudioUnlocked=true;console.log('[FoodHub] AudioContext desbloqueado');});}catch(e){}}},{once:false});
 function startPolling(){
   if(_pollInterval) return;
   console.log('[FoodHub Poll] Polling ativado como fallback (3s)');
@@ -4631,6 +4643,16 @@ async function buildNeg(){
     var ab=(p.nome||'FH').substring(0,2).toUpperCase();
     document.getElementById('chat-box').innerHTML='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Olá! Confirmamos disponibilidade. Preço '+price+' CIF. Como prefere prosseguir?</div><div class="msg-t">agora</div></div></div>';
   }
+  // Check if frozen
+  if(p.negociacaoId){
+    var { data: nSt }=await _sb.from('negociacoes').select('status').eq('id',p.negociacaoId).single();
+    if(nSt&&(nSt.status==='aceita'||nSt.status==='fechada')){
+      var inp2=document.getElementById('chat-inp');if(inp2){inp2.disabled=true;inp2.placeholder='Negócio encerrado';}
+      var acts=document.getElementById('neg-actions');if(acts)acts.style.display='none';
+      var ctx2=document.getElementById('neg-context');
+      if(ctx2) ctx2.innerHTML='<div style="background:rgba(0,224,154,.08);border:1px solid rgba(0,224,154,.2);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gn)"><span>🔒</span><strong>NEGÓCIO FECHADO</strong><span style="color:var(--t3);margin-left:auto">Modo leitura</span></div>';
+    }
+  }
 }
 async function enviarContra(){
   var val=document.getElementById('neg-contra-val');
@@ -4650,9 +4672,26 @@ async function enviarContra(){
   document.getElementById('neg-contra').style.display='none';
   if(val) val.value='';
 }
+var _modalCallback=null;
+function showConfirmarModal(resumo,cb){
+  document.getElementById('modal-confirmar-resumo').innerHTML=resumo;
+  document.getElementById('modal-confirmar').style.display='flex';
+  _modalCallback=cb;
+}
+function confirmarModal(){
+  document.getElementById('modal-confirmar').style.display='none';
+  if(_modalCallback)_modalCallback();
+  _modalCallback=null;
+}
+function cancelarModal(){
+  document.getElementById('modal-confirmar').style.display='none';
+  _modalCallback=null;
+}
 async function fecharNegocio(){
   if(!_negData||!_negData.negociacaoId) return;
-  if(!confirm('Confirma fechar este negócio?')) return;
+  showConfirmarModal((_negData.nome||'')+' · R$'+Number(_negData.preco||0).toFixed(2)+'/kg · '+Number(_negData.vol||0).toLocaleString('pt-BR')+' kg',_fecharNegocioExec);
+}
+async function _fecharNegocioExec(){
   var precoFinal=Number(_negData.preco)||0;
   var volume=Number(_negData.vol)||0;
   var total=precoFinal*volume;
@@ -4727,7 +4766,7 @@ function gerarPdfPedido(ref,preco,vol,total,saving,comissao){
   fields.forEach(function(f){doc.setFontSize(9);doc.setTextColor(130);doc.text(f[0],20,y);doc.setFontSize(11);doc.setTextColor(30);doc.text(f[1],70,y);y+=8;});
   doc.line(20,y+2,190,y+2);y+=10;
   doc.setFontSize(11);doc.setTextColor(0,160,100);doc.text('SAVING: R$'+Number(saving).toLocaleString('pt-BR',{minimumFractionDigits:2}),20,y);y+=8;
-  doc.setTextColor(100);doc.text('COMISS\u00c3O FOODHUB (1%): R$'+Number(comissao).toFixed(2),20,y);y+=12;
+  doc.setFontSize(10);doc.setTextColor(60);doc.text('Status: CONFIRMADO',20,y);y+=12;
   doc.setDrawColor(200);doc.line(20,y,190,y);y+=8;
   doc.setFontSize(8);doc.setTextColor(150);doc.text('Canal Seguro FoodHub \u00b7 myfoodhub.github.io',20,y);
   doc.save('pedido_'+ref+'.pdf');
@@ -4738,6 +4777,7 @@ async function loadMensagens(negociacaoId, nomeForn){
   box.innerHTML='<div style="text-align:center;padding:10px;color:var(--t3);font-size:11px">Carregando mensagens...</div>';
   var { data, error } = await _sb.from('mensagens').select('*').eq('negociacao_id',negociacaoId).order('criado_em',{ascending:true});
   if(error){console.log('Erro mensagens:', JSON.stringify(error));box.innerHTML='<div style="text-align:center;padding:10px;color:var(--rd);font-size:11px">Erro ao carregar mensagens.</div>';return;}
+  _seenMsgIds={};
   // Mark other side's messages as read
   _sb.from('mensagens').update({lida:true}).eq('negociacao_id',negociacaoId).neq('sender','comprador').eq('lida',false).then(function(){});
   var ab=(nomeForn||'FH').substring(0,2).toUpperCase();
@@ -4748,6 +4788,7 @@ async function loadMensagens(negociacaoId, nomeForn){
   }
   var html='';
   data.forEach(function(m){
+    _seenMsgIds[m.id]=true;
     var isMe=m.sender==='comprador';
     var hora=m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
     if(isMe){

@@ -2511,7 +2511,9 @@ async function openIndChat(negId, nome, produto){
   if(!box) return;
   if(!msgs2||!msgs2.length){box.innerHTML='<div style="text-align:center;font-size:11px;color:var(--w3)">Nenhuma mensagem. Envie a primeira!</div>';return;}
   var mh='';
+  _seenMsgIdsInd={};
   msgs2.forEach(function(m){
+    _seenMsgIdsInd[m.id]=true;
     var isMe=m.sender==='fornecedor';
     var hora=m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
     if(isMe){
@@ -2522,6 +2524,18 @@ async function openIndChat(negId, nome, produto){
   });
   box.innerHTML=mh;
   box.scrollTop=box.scrollHeight;
+  // Check if frozen
+  var { data: nSt2 }=await _sb.from('negociacoes').select('status').eq('id',negId).single();
+  if(nSt2&&(nSt2.status==='aceita'||nSt2.status==='fechada')){
+    var inp3=document.getElementById('ind-chat-inp');if(inp3){inp3.disabled=true;inp3.placeholder='Negócio encerrado';}
+    var contra=document.getElementById('ind-contra');if(contra)contra.style.display='none';
+    // Hide action buttons - find the flex div with contraproposta/aceitar buttons
+    var btns=el.querySelectorAll('button');
+    btns.forEach(function(b){if(b.textContent.indexOf('Contraproposta')>=0||b.textContent.indexOf('Aceitar')>=0)b.style.display='none';});
+    // Add frozen banner at top of chat
+    var box3=document.getElementById('ind-chat-box');
+    if(box3) box3.innerHTML='<div style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:9px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--go)"><span>🔒</span><strong>NEGÓCIO FECHADO</strong><span style="color:var(--w3);margin-left:auto">Modo leitura</span></div>'+box3.innerHTML;
+  }
 }
 async function sendIndMsg(){
   var inp=document.getElementById('ind-chat-inp');
@@ -2552,9 +2566,27 @@ async function enviarContraInd(){
   document.getElementById('ind-contra').style.display='none';
   if(val) val.value='';
 }
+var _modalCallbackInd=null;
+function showConfirmarModalInd(resumo,cb){
+  document.getElementById('modal-confirmar-ind-resumo').innerHTML=resumo;
+  document.getElementById('modal-confirmar-ind').style.display='flex';
+  _modalCallbackInd=cb;
+}
+function confirmarModalInd(){
+  document.getElementById('modal-confirmar-ind').style.display='none';
+  if(_modalCallbackInd)_modalCallbackInd();
+  _modalCallbackInd=null;
+}
+function cancelarModalInd(){
+  document.getElementById('modal-confirmar-ind').style.display='none';
+  _modalCallbackInd=null;
+}
 async function fecharNegocioInd(){
   if(!_indChatNegId) return;
-  if(!confirm('Confirma aceitar este negócio?')) return;
+  showConfirmarModalInd('Confirmar fechamento deste negócio?',_fecharNegocioIndExec);
+  return;
+}
+async function _fecharNegocioIndExec(){
   await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_indChatNegId);
   // Triple sound
   playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
@@ -3048,6 +3080,7 @@ setInterval(function(){
 var _lastPollCheckInd=new Date().toISOString();
 var _pollIntervalInd=null;
 var _seenMsgIdsInd={};
+document.addEventListener('click',function(){if(!window._fhAudioUnlocked){try{var c=new(window.AudioContext||window.webkitAudioContext)();c.resume().then(function(){window._fhAudioUnlocked=true;console.log('[FoodHub Ind] AudioContext desbloqueado');});}catch(e){}}},{once:false});
 function startPollingInd(){
   if(_pollIntervalInd) return;
   console.log('[FoodHub Poll Ind] Polling ativado como fallback (3s)');
@@ -3661,6 +3694,18 @@ function gerarPdfOferta(){
       <div>Torpedos restantes este mês: <strong style="color:var(--am)">2 de 3</strong> · Renova em 01/04 · <a style="color:var(--am);cursor:pointer" onclick="openModal('modal-torpedo')">Usar torpedo agora →</a></div>
     </div>
   </div>
+
+<div id="modal-confirmar-ind" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#0a0810;border:1px solid rgba(245,184,0,.2);border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🤝</div>
+    <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px">Fechar este negócio?</div>
+    <div id="modal-confirmar-ind-resumo" style="font-size:13px;color:#888;margin-bottom:24px;line-height:1.6"></div>
+    <div style="display:flex;gap:12px">
+      <button onclick="cancelarModalInd()" style="flex:1;padding:13px;border-radius:10px;border:1px solid #333;background:transparent;color:#888;font-size:14px;cursor:pointer;font-family:sans-serif">Cancelar</button>
+      <button onclick="confirmarModalInd()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--go);color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:sans-serif">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
