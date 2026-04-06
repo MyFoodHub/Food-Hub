@@ -4881,8 +4881,10 @@ function renderMarketList(){
 function verOferta(idx){
   var o=_mktOfertas[idx];if(!o)return;
   var nome=o.nome||'Oferta';var desc=o.descricao||'';
-  var preco=o.preco?'R$'+Number(o.preco).toFixed(2)+(o.unidade_preco||'/kg'):'—';
+  var precoNum=o.preco?Number(o.preco):0;
+  var preco=precoNum?'R$'+precoNum.toFixed(2)+(o.unidade_preco||'/kg'):'—';
   var forn=(o.fornecedores&&o.fornecedores.nome)||'Fornecedor';
+  var fornId=o.fornecedor_id||'';
   var vol=o.quantidade?Number(o.quantidade).toLocaleString('pt-BR')+' '+(o.unidade_quantidade||'kg'):'—';
   var cond=o.condicao_especial||'';
   var h='<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.remove()">';
@@ -4890,13 +4892,42 @@ function verOferta(idx){
   h+='<div style="display:flex;justify-content:space-between;margin-bottom:12px"><div style="font-size:16px;font-weight:700;color:#fff">'+nome+'</div><span style="cursor:pointer;color:var(--t3);font-size:16px" onclick="this.closest(\'[style*=fixed]\').remove()">✕</span></div>';
   if(desc) h+='<div style="font-size:12px;color:var(--t2);margin-bottom:10px">'+desc+'</div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--t2);margin-bottom:14px">';
-  h+='<span>🏭 '+forn+'</span><span style="color:var(--gn);font-weight:700">'+preco+'</span><span>📦 '+vol+'</span>';
+  h+='<span>🏭 '+forn+'</span><span style="color:var(--gn);font-weight:700;font-size:16px">'+preco+'</span><span>📦 '+vol+'</span>';
   if(cond) h+='<span>'+cond+'</span>';
   h+='</div>';
-  h+='<div style="display:flex;gap:8px">';
-  h+='<button class="btn btn-g" style="flex:2;padding:11px;font-size:13px" onclick="this.closest(\'[style*=fixed]\').remove();go(\'sScan\')">📡 Criar demanda para este produto</button>';
+  h+='<div style="display:flex;flex-direction:column;gap:8px">';
+  h+='<button class="btn btn-g" style="padding:12px;font-size:14px" onclick="this.closest(\'[style*=fixed]\').remove();negociarOferta('+idx+')">🤝 Negociar esta oferta →</button>';
+  h+='<button class="btn-ghost" style="padding:9px;font-size:12px" onclick="this.closest(\'[style*=fixed]\').remove();go(\'sScan\')">📡 Criar demanda para este produto</button>';
   h+='</div></div></div>';
   var d=document.createElement('div');d.innerHTML=h;document.body.appendChild(d.firstChild);
+}
+async function negociarOferta(idx){
+  var o=_mktOfertas[idx];if(!o||!_currentUser)return;
+  var forn=(o.fornecedores&&o.fornecedores.nome)||'Fornecedor';
+  var fornId=o.fornecedor_id||'';
+  var precoNum=o.preco?Number(o.preco):0;
+  // Create demanda from oferta
+  var { data: dem, error: demErr }=await _sb.from('demandas').insert({
+    user_id:_currentUser.id,produto_nome:o.nome||'',
+    especificacao:o.descricao||null,volume:o.quantidade||null,
+    unidade_volume:'kg',status:'ativa'
+  }).select('id').single();
+  if(demErr){alert('Erro: '+demErr.message);return;}
+  // Create proposta from oferta
+  var { data: prop, error: propErr }=await _sb.from('propostas').insert({
+    demanda_id:dem.id,fornecedor_id:fornId,
+    preco_ofertado:precoNum,unidade_preco:o.unidade_preco||'/kg',
+    volume_ofertado:o.quantidade||null,status:'recebida'
+  }).select('id').single();
+  if(propErr){alert('Erro: '+propErr.message);return;}
+  // Create negociacao
+  var { data: neg, error: negErr }=await _sb.from('negociacoes').insert({
+    proposta_id:prop.id,demanda_id:dem.id,fornecedor_id:fornId,
+    user_id:_currentUser.id,status:'em_andamento',preco_atual:precoNum
+  }).select('id').single();
+  if(negErr){alert('Erro: '+negErr.message);return;}
+  _negData={negociacaoId:neg.id,demandaId:dem.id,propostaId:prop.id,fornecedorId:fornId,nome:forn,preco:precoNum,unidade:o.unidade_preco||'/kg',vol:o.quantidade||'',score:0};
+  go('sNeg');
 }
 function mktSetFilt(btn, filt){
   _mktFilt = filt;
