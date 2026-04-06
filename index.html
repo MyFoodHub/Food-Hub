@@ -4166,6 +4166,7 @@ async function launchScan(){
   var especParts=[item2,c.osso||'',c.miudos||'',c.cabeca||'',c.conserv||'',c.embtipo||'',c.ovoemb||''].filter(function(x){return x;});
   var espec=especParts.join(' · ');
   if(c.obs) espec = espec ? espec+' | Obs: '+c.obs : 'Obs: '+c.obs;
+  if(c.prazo) espec = espec ? espec+' | Prazo: '+c.prazo : 'Prazo: '+c.prazo;
   document.getElementById('launch-summary').innerHTML='<div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Resumo da Busca</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Item</div><div style="font-size:12px;font-weight:600;color:var(--rd)">⚡ '+item1+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Especificação</div><div style="font-size:12px;font-weight:600">'+espec+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Volume</div><div style="font-size:12px;font-weight:600">'+vol+'</div></div><div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Entrega</div><div style="font-size:12px;font-weight:600">'+local+'</div></div></div>';
   if(!_currentUser){
     alert('Você precisa estar logado para criar uma demanda.');
@@ -4262,12 +4263,14 @@ function renderCRM(){
     var savingColor=r.saving>0?'var(--gn)':'var(--t3)';
     var stIcon=r.st==='aberto'?'🟡':r.st==='propostas'?'🟢':r.st==='negociando'?'🔵':r.st==='fechado'?'✅':'⚫';
     var stLbl=r.st==='aberto'?'Aguardando':r.st==='propostas'?r.props.length+' proposta'+(r.props.length>1?'s':''):r.st==='negociando'?'Negociando':r.st==='fechado'?'Fechado':'Expirado';
+    var unreadBadge='';
+    if(r.st==='propostas') unreadBadge=' <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--rd);margin-left:4px"></span>';
     var dt=d.criado_em?new Date(d.criado_em).toLocaleDateString('pt-BR'):'';
     var btn='';
     if(r.st==='propostas') btn='<button class="btn sm btn-g" onclick="abrirDemanda(\''+d.id+'\')" style="font-size:10px">Ver →</button>';
     else if(r.st==='negociando') btn='<button class="btn sm" onclick="go(\'sNeg\')" style="font-size:10px">Continuar →</button>';
     else if(r.st==='fechado') btn='<button class="btn-ghost sm" onclick="go(\'sContract\')" style="font-size:10px">Contrato →</button>';
-    h+='<tr><td style="color:#fff;font-weight:600">'+produto+espec+'</td><td>'+fornNome+'</td><td style="font-family:var(--mono)">'+vol+'</td><td style="font-family:var(--mono)">'+alvo+'</td><td style="font-family:var(--mono);color:'+melhorColor+'">'+melhor+'</td><td style="font-family:var(--mono);color:'+savingColor+';font-weight:700">'+savingTxt+'</td><td>'+stIcon+' <span style="font-size:10px">'+stLbl+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--t3)">'+dt+'</td><td>'+btn+'</td></tr>';
+    h+='<tr><td style="color:#fff;font-weight:600">'+produto+espec+'</td><td>'+fornNome+'</td><td style="font-family:var(--mono)">'+vol+'</td><td style="font-family:var(--mono)">'+alvo+'</td><td style="font-family:var(--mono);color:'+melhorColor+'">'+melhor+'</td><td style="font-family:var(--mono);color:'+savingColor+';font-weight:700">'+savingTxt+'</td><td>'+stIcon+' <span style="font-size:10px">'+stLbl+unreadBadge+'</span></td><td style="font-family:var(--mono);font-size:10px;color:var(--t3)">'+dt+'</td><td>'+btn+'</td></tr>';
   });
   h+='</tbody></table>';
   lista.innerHTML=h;
@@ -4458,10 +4461,53 @@ async function iniciarNegociacao(propostaId, demandaId, fornecedorId, nome, prec
   go('sNeg');
 }
 async function buildNeg(){
-  var p=_negData||{nome:'Fornecedor',preco:'0.00',unidade:'/kg',vol:'',score:0,negociacaoId:null};
+  var p=_negData||{nome:'Fornecedor',preco:'0.00',unidade:'/kg',vol:'',score:0,negociacaoId:null,demandaId:null};
   var price='R$'+Number(p.preco).toFixed(2)+(p.unidade||'/kg');
   var volTxt=p.vol?Number(p.vol).toLocaleString('pt-BR')+' kg':'';
+  // Fetch demanda data for context
+  var meta='';var saving='';var prazoTxt='';var pagTxt='';var freteTxt='';var totalTxt='';
+  if(p.demandaId){
+    var { data: dem }=await _sb.from('demandas').select('preco_alvo,volume,condicao_pagamento,frete_preferencia,especificacao').eq('id',p.demandaId).single();
+    if(dem){
+      var precoNum=Number(p.preco)||0;
+      var alvo=dem.preco_alvo?Number(dem.preco_alvo):0;
+      var volNum=Number(p.vol)||Number(dem.volume)||0;
+      if(alvo) meta='R$'+alvo.toFixed(2);
+      var total=precoNum*volNum;
+      totalTxt='R$'+(total/1000).toFixed(1)+'k';
+      if(alvo&&precoNum) saving='R$'+((alvo-precoNum)*volNum/1000).toFixed(1)+'k';
+      pagTxt=dem.condicao_pagamento||'';
+      freteTxt=dem.frete_preferencia||'';
+      if(dem.especificacao){
+        var parts=dem.especificacao.split('|');
+        parts.forEach(function(pt){if(pt.trim().indexOf('Prazo')===0) prazoTxt=pt.trim().replace('Prazo: ','');});
+      }
+    }
+  }
+  var metaColor=meta&&Number(p.preco)<=Number(meta.replace('R$',''))?'var(--gn)':'var(--rd)';
+  var savingColor=saving&&saving.indexOf('-')<0?'var(--gn)':'var(--rd)';
+  // Header with name
   document.getElementById('neg-hdr').innerHTML='<div style="width:38px;height:38px;border-radius:8px;background:var(--g2);border:1px solid rgba(0,224,154,.18);display:flex;align-items:center;justify-content:center;font-size:16px">🏭</div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+p.nome+'</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Score '+(p.score||0)+'/100</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--gn)">'+price+'</div><div style="font-size:10px;color:var(--t2)">'+volTxt+'</div></div>';
+  // Context panel
+  var ctx='<div style="background:var(--bg3);border:1px solid var(--b1);border-radius:9px;padding:10px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;font-size:11px">';
+  if(meta) ctx+='<span>🎯 Meta: <strong style="color:'+metaColor+'">'+meta+'</strong></span>';
+  ctx+='<span>📤 Proposta: <strong>'+price+'</strong></span>';
+  if(volTxt) ctx+='<span>📦 '+volTxt+'</span>';
+  if(totalTxt) ctx+='<span>💰 Total: <strong>'+totalTxt+'</strong></span>';
+  if(saving) ctx+='<span style="color:'+savingColor+'">💚 Saving: '+saving+'</span>';
+  if(prazoTxt) ctx+='<span>📅 '+prazoTxt+'</span>';
+  if(pagTxt) ctx+='<span>💳 '+pagTxt+'</span>';
+  if(freteTxt) ctx+='<span>🚚 '+freteTxt+'</span>';
+  ctx+='</div>';
+  // Insert context panel after header, before chat
+  var hdrEl=document.getElementById('neg-hdr');
+  if(hdrEl&&hdrEl.parentNode){
+    var existing=document.getElementById('neg-context');
+    if(existing) existing.remove();
+    var div=document.createElement('div');div.id='neg-context';div.innerHTML=ctx;
+    hdrEl.parentNode.insertBefore(div,hdrEl.nextSibling);
+  }
+  // Load messages
   if(p.negociacaoId){
     await loadMensagens(p.negociacaoId, p.nome);
   } else {

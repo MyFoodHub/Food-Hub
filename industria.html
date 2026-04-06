@@ -2217,6 +2217,15 @@ async function loadDemandasMercado(){
     var alvo = d.preco_alvo ? 'R$'+Number(d.preco_alvo).toFixed(2)+(d.unidade_volume==='kg'?'/kg':'') : '—';
     var regiao = d.local_entrega||'—';
     var prazo = d.prazo_especifico ? new Date(d.prazo_especifico).toLocaleDateString('pt-BR') : (d.prazo||'—');
+    if(prazo==='—' && d.especificacao){
+      var prazoMatch=d.especificacao.match(/Prazo:\s*([^|]+)/);
+      if(prazoMatch) prazo=prazoMatch[1].trim();
+    }
+    var pagamento = d.condicao_pagamento||'';
+    if(!pagamento && d.especificacao){
+      var pagMatch=d.especificacao.match(/Pagamento:\s*([^|]+)/);
+      if(pagMatch) pagamento=pagMatch[1].trim();
+    }
     var badge = d.preco_alvo ? '<span class="badge b-go">🟢 Match</span>' : '<span class="badge b-ic">⚪ Oportunidade</span>';
     var freteBadge = '—';
     if(d.frete_preferencia){
@@ -2544,7 +2553,15 @@ function openResponder(idx){
   var vol = d.volume ? Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg') : '—';
   var local = d.local_entrega||'—';
   var prazo = d.prazo_especifico ? new Date(d.prazo_especifico).toLocaleDateString('pt-BR') : (d.prazo||'—');
+  if(prazo==='—' && d.especificacao){
+    var prazoMatch=d.especificacao.match(/Prazo:\s*([^|]+)/);
+    if(prazoMatch) prazo=prazoMatch[1].trim();
+  }
   var pag = d.condicao_pagamento||'—';
+  if(pag==='—' && d.especificacao){
+    var pagMatch=d.especificacao.match(/Pagamento:\s*([^|]+)/);
+    if(pagMatch) pag=pagMatch[1].trim();
+  }
   var alvo = d.preco_alvo ? 'R$'+Number(d.preco_alvo).toFixed(2) : '';
 
   // Build modal content dynamically
@@ -2564,6 +2581,16 @@ function openResponder(idx){
   if(demFrete) h+='<span>🚚 '+demFrete+'</span>';
   if(alvo) h+='<span style="color:var(--am);font-weight:700">🎯 Alvo: '+alvo+'</span>';
   h+='</div></div>';
+
+  // Negotiation calculator
+  if(alvo){
+    h+='<div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.12);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;display:flex;flex-wrap:wrap;gap:8px">';
+    h+='<span>🎯 Meta comprador: <strong style="color:var(--am)">'+alvo+'</strong></span>';
+    var volDem=Number(d.volume)||0;
+    if(volDem) h+='<span>📦 Volume: <strong>'+volDem.toLocaleString("pt-BR")+' '+(d.unidade_volume||'kg')+'</strong></span>';
+    h+='<span style="color:var(--w3)">Se você oferecer o preço-alvo → Total: <strong style="color:var(--go)">R$'+(Number(alvo.replace('R$',''))*volDem/1000).toFixed(1)+'k</strong></span>';
+    h+='</div>';
+  }
 
   if(demFrete && (demFrete==='CIF obrigatório'||demFrete==='FOB obrigatório')){
     h+='<div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.15);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;display:flex;align-items:center;gap:6px">';
