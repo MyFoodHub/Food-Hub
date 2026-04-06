@@ -3659,17 +3659,33 @@ window.addEventListener('focus',function(){_unreadCount=0;document.title='FoodHu
 
 function initRealtime(){
   _sb.removeAllChannels();
-  var ch=_sb.channel('buyer-all');
-  ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
-    buyerNotify('📨 Nova proposta recebida!');
-    atualizarBadgeNotif();
-  }).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
-    buyerNotify('💬 Nova mensagem na negociação');
-  }).on('postgres_changes',{event:'INSERT',schema:'public',table:'ofertas'},function(p){
-    buyerNotify('🏷️ Nova oferta no mercado');
-  }).subscribe(function(status){
-    console.log('[FoodHub RT] Status:', status);
-  });
+  console.log('[FoodHub RT] Iniciando canais...');
+  _sb.channel('buyer-all')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
+      console.log('[FoodHub RT] propostas INSERT:', p.new);
+      var preview=p.new&&p.new.preco_ofertado?'R$'+Number(p.new.preco_ofertado).toFixed(2):'';
+      buyerNotify('📨 Nova proposta recebida! '+preview);
+      atualizarBadgeNotif();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
+      console.log('[FoodHub RT] mensagens INSERT:', p.new);
+      if(p.new&&p.new.sender!=='comprador'){
+        var preview=p.new.conteudo||'';
+        if(preview.length>50) preview=preview.substring(0,47)+'...';
+        buyerNotify('💬 '+preview);
+      }
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'ofertas'},function(p){
+      console.log('[FoodHub RT] ofertas INSERT:', p.new);
+      buyerNotify('🏷️ Nova oferta: '+(p.new&&p.new.nome||''));
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'negociacoes'},function(p){
+      console.log('[FoodHub RT] negociacoes UPDATE:', p.new);
+      buyerNotify('🤝 Negociação atualizada');
+    })
+    .subscribe(function(status){
+      console.log('[FoodHub RT] Canal buyer-all:', status);
+    });
 }
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible') initRealtime();

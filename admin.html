@@ -122,14 +122,22 @@ async function adminLogin(){
     loadAll();
     setInterval(loadAll,30000);
     // Realtime subscriptions
+    console.log('[Admin RT] Iniciando canais...');
     _sb.channel('admin-all').on('postgres_changes',{event:'INSERT',schema:'public',table:'demandas'},function(p){
-      adminNotify('📡 Nova demanda: '+(p.new.produto_nome||''));loadAll();
+      console.log('[Admin RT] demandas INSERT:', p.new);
+      adminNotify('📡 Nova demanda: '+(p.new&&p.new.produto_nome||'')+(p.new&&p.new.volume?' · '+p.new.volume+'kg':''));loadAll();
     }).on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
-      adminNotify('📤 Nova proposta enviada');loadAll();
+      console.log('[Admin RT] propostas INSERT:', p.new);
+      adminNotify('📤 Nova proposta: R$'+(p.new&&p.new.preco_ofertado?Number(p.new.preco_ofertado).toFixed(2):'?'));loadAll();
     }).on('postgres_changes',{event:'INSERT',schema:'public',table:'ofertas'},function(p){
-      adminNotify('📢 Nova oferta publicada: '+(p.new.nome||''));loadAll();
+      console.log('[Admin RT] ofertas INSERT:', p.new);
+      adminNotify('📢 Oferta publicada: '+(p.new&&p.new.nome||''));loadAll();
     }).on('postgres_changes',{event:'INSERT',schema:'public',table:'negociacoes'},function(p){
+      console.log('[Admin RT] negociacoes INSERT:', p.new);
       adminNotify('🤝 Negociação iniciada');loadAll();
+    }).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
+      console.log('[Admin RT] mensagens INSERT:', p.new);
+      loadAll();
     }).subscribe();
   } else {
     document.getElementById('login-err').style.display='block';

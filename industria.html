@@ -2875,16 +2875,32 @@ window.addEventListener('focus',function(){_indUnread=0;document.title='FoodHub 
 
 function initRealtimeInd(){
   _sb.removeAllChannels();
-  var ch=_sb.channel('ind-all');
-  ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
-    indNotify('📤 Atualização na proposta');
-  }).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
-    indNotify('💬 Nova mensagem de negociação');
-  }).on('postgres_changes',{event:'INSERT',schema:'public',table:'demandas'},function(p){
-    indNotify('📡 Nova demanda no mercado');
-  }).subscribe(function(status){
-    console.log('[FoodHub RT Ind] Status:', status);
-  });
+  console.log('[FoodHub RT Ind] Iniciando canais...');
+  _sb.channel('ind-all')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'demandas'},function(p){
+      console.log('[FoodHub RT Ind] demandas INSERT:', p.new);
+      var produto=p.new&&p.new.produto_nome||'';
+      indNotify('📡 Nova demanda: '+produto);
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
+      console.log('[FoodHub RT Ind] mensagens INSERT:', p.new);
+      if(p.new&&p.new.sender!=='fornecedor'){
+        var preview=p.new.conteudo||'';
+        if(preview.length>50) preview=preview.substring(0,47)+'...';
+        indNotify('💬 Comprador: '+preview);
+      }
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'propostas'},function(p){
+      console.log('[FoodHub RT Ind] propostas UPDATE:', p.new);
+      if(p.new&&p.new.status==='aceita') indNotify('🎉 Proposta aceita pelo comprador!');
+      else indNotify('📤 Proposta atualizada');
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
+      console.log('[FoodHub RT Ind] propostas INSERT:', p.new);
+    })
+    .subscribe(function(status){
+      console.log('[FoodHub RT Ind] Canal ind-all:', status);
+    });
 }
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible') initRealtimeInd();
