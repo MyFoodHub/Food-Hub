@@ -3676,9 +3676,20 @@ function initRealtime(){
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
       console.log('[FoodHub RT] mensagens INSERT:', p.new);
       if(p.new&&p.new.sender!=='comprador'){
-        var preview=p.new.conteudo||'';
-        if(preview.length>50) preview=preview.substring(0,47)+'...';
-        buyerNotify('💬 '+preview);
+        if(_negData&&_negData.negociacaoId===p.new.negociacao_id){
+          var box=document.getElementById('chat-box');
+          if(box){
+            var ab=(_negData.nome||'FH').substring(0,2).toUpperCase();
+            box.innerHTML+='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">'+(p.new.conteudo||'')+'</div><div class="msg-t">agora</div></div></div>';
+            box.scrollTop=box.scrollHeight;
+            playFoodHubSound();
+            _sb.from('mensagens').update({lida:true}).eq('id',p.new.id).then(function(){});
+          }
+        } else {
+          var preview=p.new.conteudo||'';
+          if(preview.length>50) preview=preview.substring(0,47)+'...';
+          buyerNotify('💬 '+preview);
+        }
       }
     })
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'ofertas'},function(p){
@@ -3731,12 +3742,26 @@ function startPolling(){
     var { data: myNegs }=await _sb.from('negociacoes').select('id').eq('user_id',_currentUser.id);
     if(myNegs&&myNegs.length){
       var negIds=myNegs.map(function(n){return n.id;});
-      var { data: newMsgs }=await _sb.from('mensagens').select('id,conteudo,sender').in('negociacao_id',negIds).neq('sender','comprador').gt('criado_em',since);
+      var { data: newMsgs }=await _sb.from('mensagens').select('id,conteudo,sender,negociacao_id,criado_em').in('negociacao_id',negIds).neq('sender','comprador').gt('criado_em',since);
       if(newMsgs&&newMsgs.length){
         newMsgs.forEach(function(m){
-          var preview=m.conteudo||'';
-          if(preview.length>50) preview=preview.substring(0,47)+'...';
-          buyerNotify('💬 '+preview);
+          // If chat for this negotiation is open, append inline
+          if(_negData&&_negData.negociacaoId===m.negociacao_id){
+            var box=document.getElementById('chat-box');
+            if(box){
+              var ab=(_negData.nome||'FH').substring(0,2).toUpperCase();
+              var hora=m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+              box.innerHTML+='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">'+m.conteudo+'</div><div class="msg-t">'+hora+'</div></div></div>';
+              box.scrollTop=box.scrollHeight;
+              playFoodHubSound();
+              // Mark as read
+              _sb.from('mensagens').update({lida:true}).eq('id',m.id).then(function(){});
+            }
+          } else {
+            var preview=m.conteudo||'';
+            if(preview.length>50) preview=preview.substring(0,47)+'...';
+            buyerNotify('💬 '+preview);
+          }
         });
       }
     }
