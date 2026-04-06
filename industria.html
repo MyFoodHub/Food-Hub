@@ -2631,21 +2631,31 @@ function respCheckSubmit(){
   if(!btn) return;
   var preco = parseFloat((document.getElementById('resp-preco')||{}).value)||0;
   var specOk = _respSpecOk==='exato'||_respSpecOk==='similar'||_respSpecOk==='nao_forcar';
-  // If there are req buttons, check those too
   var reqBtns = document.getElementById('resp-req-btns');
   var reqOk = !reqBtns || _respReqOk==='ok'||_respReqOk==='parcial'||_respReqOk==='nao_forcar';
+  console.log('[FoodHub] respCheckSubmit: preco='+preco+' specOk='+specOk+' reqOk='+reqOk);
+  var hint='';
+  if(!specOk) hint='Confirme as especificações acima';
+  else if(!reqOk) hint='Confirme os requisitos acima';
+  else if(preco<=0) hint='Informe o preço';
+  btn.title=hint;
   if(preco>0 && specOk && reqOk){
     btn.style.opacity='1';btn.style.pointerEvents='auto';
+    btn.textContent='Enviar proposta →';
   } else {
     btn.style.opacity='.5';btn.style.pointerEvents='none';
+    btn.textContent=hint?'⚠️ '+hint:'Enviar proposta →';
   }
 }
 
 async function submitResposta(){
   var d = _respDemanda;
+  console.log('[FoodHub] submitResposta chamada. demanda:', d?d.id:'null', 'fornecedor:', _fornecedorId);
   if(!d){showRespMsg('Erro: demanda não identificada.','err');return;}
-  if(!_fornecedorId){showRespMsg('Nenhum fornecedor vinculado.','err');return;}
-  var preco = parseFloat(document.getElementById('resp-preco').value);
+  if(!_fornecedorId){showRespMsg('Nenhum fornecedor vinculado ao seu login. Cadastre seu email na tabela fornecedores.','err');return;}
+  var precoEl=document.getElementById('resp-preco');
+  console.log('[FoodHub] resp-preco element:', precoEl?'found, value='+precoEl.value:'NOT FOUND');
+  var preco = precoEl?parseFloat(precoEl.value):0;
   if(!preco||preco<=0){showRespMsg('Informe o preço.','err');return;}
   var volume = parseFloat((document.getElementById('resp-vol')||{}).value)||null;
   var prazo = parseInt((document.getElementById('resp-prazo')||{}).value)||null;
@@ -2669,7 +2679,7 @@ async function submitResposta(){
   if(nota) notaParts.push(nota);
   var notaFinal = notaParts.join(' | ');
   var unidade = d.unidade_volume==='kg'?'/kg':'/un';
-  var { error } = await _sb.from('propostas').insert({
+  var insertData={
     demanda_id: d.id,
     fornecedor_id: _fornecedorId,
     preco_ofertado: preco,
@@ -2679,8 +2689,11 @@ async function submitResposta(){
     condicao_pagamento: pagamento,
     nota_fornecedor: notaFinal||null,
     status: 'recebida'
-  });
-  if(error){console.log('Erro proposta:', JSON.stringify(error));showRespMsg('Erro: '+error.message,'err');return;}
+  };
+  console.log('[FoodHub] INSERT proposta:', JSON.stringify(insertData));
+  var { data: insResult, error } = await _sb.from('propostas').insert(insertData).select();
+  console.log('[FoodHub] INSERT resultado:', insResult, error?JSON.stringify(error):'ok');
+  if(error){showRespMsg('Erro: '+error.message+' ('+error.code+')','err');return;}
   document.getElementById('resp-success').style.display='flex';
   setTimeout(function(){ closeResponder(); },2500);
 }

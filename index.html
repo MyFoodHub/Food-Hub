@@ -3912,6 +3912,8 @@ function scanConfirmVolume(){
   var num=document.getElementById('scan-vol-num').value;
   var un=document.getElementById('scan-vol-un').value;
   if(!num){return;}
+  _scanChoices.volumeNum=Number(num);
+  _scanChoices.volumeUn=un;
   _scanChoices.volume=Number(num).toLocaleString('pt-BR')+' '+un;
   advanceScan();
 }
@@ -4101,7 +4103,7 @@ async function launchScan(){
     go('s1');
     return;
   }
-  var volNum=parseFloat((vol||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
+  var volNum=c.volumeNum||parseFloat((vol||'').replace(/[^\d]/g,''))||null;
   var precoRaw=c.preco||'';
   var precoNum=parseFloat((precoRaw||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
   console.log('[FoodHub] Salvando demanda... user_id:', _currentUser.id, 'produto:', item1);
@@ -4110,7 +4112,7 @@ async function launchScan(){
     produto_nome: item1||'Demanda',
     especificacao: espec||null,
     volume: volNum,
-    unidade_volume: 'kg',
+    unidade_volume: c.volumeUn||'kg',
     local_entrega: local||null,
     preco_alvo: precoNum,
     condicao_pagamento: c.pag||null,
