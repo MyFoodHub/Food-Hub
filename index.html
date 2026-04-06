@@ -4404,6 +4404,7 @@ var _negData = null;
 async function iniciarNegociacao(propostaId, demandaId, fornecedorId, nome, preco, unidade, vol, score){
   if(!_currentUser){alert('Faça login.');return;}
   _negData = {propostaId:propostaId,demandaId:demandaId,fornecedorId:fornecedorId,nome:nome,preco:preco,unidade:unidade,vol:vol,score:score,negociacaoId:null};
+  console.log('[FoodHub] Iniciando negociação: proposta='+propostaId+' demanda='+demandaId+' fornecedor='+fornecedorId);
   var { data: neg, error } = await _sb.from('negociacoes').insert({
     proposta_id: propostaId,
     demanda_id: demandaId,
@@ -4412,8 +4413,17 @@ async function iniciarNegociacao(propostaId, demandaId, fornecedorId, nome, prec
     status: 'em_andamento',
     preco_atual: preco
   }).select('id').single();
-  if(error){console.log('Erro negociacao:', JSON.stringify(error));alert('Erro ao iniciar negociação: '+error.message);return;}
-  if(neg) _negData.negociacaoId = neg.id;
+  if(error){
+    console.log('[FoodHub] ERRO negociacao INSERT:', JSON.stringify(error));
+    alert('Erro ao iniciar negociação: '+error.message+'\n\nVerifique se a policy de INSERT existe na tabela negociacoes.');
+    return;
+  }
+  if(neg){
+    _negData.negociacaoId = neg.id;
+    console.log('[FoodHub] Negociação criada: id='+neg.id);
+  } else {
+    console.log('[FoodHub] AVISO: negociacao INSERT retornou null — possível RLS bloqueio');
+  }
   go('sNeg');
 }
 async function buildNeg(){
@@ -4468,14 +4478,24 @@ async function sendMsg(){
   box.innerHTML+='<div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">'+userInit+'</div><div><div class="bubble">'+txt+'</div><div class="msg-t">agora</div></div></div>';
   inp.value='';box.scrollTop=box.scrollHeight;
   // Save to Supabase
-  if(_negData&&_negData.negociacaoId){
-    var { error } = await _sb.from('mensagens').insert({
+  console.log('[FoodHub] sendMsg: _negData=', _negData?JSON.stringify({negociacaoId:_negData.negociacaoId,propostaId:_negData.propostaId}):'NULL');
+  if(!_negData||!_negData.negociacaoId){
+    console.log('[FoodHub] ERRO: sem negociacaoId — mensagem NÃO salva no banco');
+    // Show warning to user
+    box.innerHTML+='<div style="text-align:center;font-size:10px;color:var(--rd);padding:4px">⚠️ Mensagem não enviada ao fornecedor (sem negociação ativa)</div>';
+  } else {
+    var { data: msgResult, error } = await _sb.from('mensagens').insert({
       negociacao_id: _negData.negociacaoId,
       sender: 'comprador',
       conteudo: txt,
       tipo: 'texto'
-    });
-    if(error) console.log('Erro enviar msg:', JSON.stringify(error));
+    }).select();
+    if(error){
+      console.log('[FoodHub] ERRO enviar msg:', JSON.stringify(error));
+      box.innerHTML+='<div style="text-align:center;font-size:10px;color:var(--rd);padding:4px">⚠️ Erro ao enviar: '+error.message+'</div>';
+    } else {
+      console.log('[FoodHub] Mensagem salva ok:', msgResult);
+    }
   }
 }
 
