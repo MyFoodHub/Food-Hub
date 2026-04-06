@@ -51,6 +51,7 @@ body{background:#0a0a1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-siz
   </div>
 </div>
 <div id="admin-app" style="display:none">
+  <button onclick="_sb.auth.signOut().then(function(){localStorage.clear();location.reload();})" style="position:fixed;top:10px;right:14px;z-index:9998;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 10px;font-size:11px;color:#999;cursor:pointer;font-family:sans-serif">Sair →</button>
   <div class="topbar">
     <div class="logo">Food<span style="color:var(--ac)">Hub</span> <span class="badge-admin">ADMIN</span></div>
     <div style="display:flex;align-items:center;gap:10px">
