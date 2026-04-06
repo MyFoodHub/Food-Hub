@@ -444,6 +444,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
@@ -511,6 +512,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni on"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
@@ -537,6 +539,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
@@ -617,6 +620,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
@@ -1692,12 +1696,21 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
       <div class="ni on"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
       <div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:var(--mono)">🤝 PIPELINE DE NEGOCIAÇÕES</div>
       <div id="pipeline-lista"><div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando...</div></div>
     </div>
+  </div>
+</div>
+
+<div id="s-mensagens" class="screen">
+  <div class="topbar"><div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Food<span style="color:var(--am)">Hub</span></div><button class="btn-gh sm" onclick="go('s-main')">← Dashboard</button></div>
+  <div style="flex:1;overflow-y:auto;padding:16px 18px;max-width:600px;margin:0 auto;width:100%">
+    <div style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:var(--mono)">💬 Mensagens</div>
+    <div id="ind-inbox-lista"><div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando...</div></div>
   </div>
 </div>
 
@@ -2166,14 +2179,7 @@ async function initIndApp(){
 
   // Realtime subscriptions
   if(_fornecedorId){
-    _sb.channel('ind-propostas').on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas',filter:'fornecedor_id=eq.'+_fornecedorId},function(payload){
-      console.log('[FoodHub RT] Nova atividade em propostas:', payload);
-      indNotify('📤 Atualização na sua proposta');
-    }).subscribe();
-    _sb.channel('ind-mensagens').on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(payload){
-      console.log('[FoodHub RT] Nova mensagem:', payload);
-      indNotify('💬 Nova mensagem de negociação');
-    }).subscribe();
+    initRealtimeInd();
   }
 }
 // Auto-login if session exists
@@ -2408,6 +2414,35 @@ async function loadDashboardIndustria(){
   }
 }
 
+// ── MENSAGENS INBOX ──
+async function loadIndInbox(){
+  var el=document.getElementById('ind-inbox-lista');
+  if(!el||!_fornecedorId)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando...</div>';
+  var { data: negs }=await _sb.from('negociacoes').select('id,demanda_id,status,criado_em,demandas(produto_nome,profiles(nome))').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  if(!negs||!negs.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma negociação ativa.</div>';return;}
+  var negIds=negs.map(function(n){return n.id;});
+  var { data: msgs }=await _sb.from('mensagens').select('negociacao_id,conteudo,sender,criado_em').in('negociacao_id',negIds).order('criado_em',{ascending:false});
+  var lastMsgMap={};
+  if(msgs) msgs.forEach(function(m){if(!lastMsgMap[m.negociacao_id])lastMsgMap[m.negociacao_id]=m;});
+  var h='';
+  negs.forEach(function(n){
+    var dem=n.demandas||{};var prof=dem.profiles||{};
+    var lastMsg=lastMsgMap[n.id];
+    var preview=lastMsg?(lastMsg.sender==='fornecedor'?'Você: ':'')+lastMsg.conteudo:'Nenhuma mensagem';
+    if(preview.length>60)preview=preview.substring(0,57)+'...';
+    var hora=lastMsg&&lastMsg.criado_em?new Date(lastMsg.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    var isUnread=lastMsg&&lastMsg.sender==='comprador';
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="go(\'s-main\')">';
+    if(isUnread) h+='<div style="width:6px;height:6px;border-radius:50%;background:var(--rd);flex-shrink:0"></div>';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w)">'+(prof.nome||'Comprador')+' · <span style="font-weight:400;color:var(--w2)">'+(dem.produto_nome||'')+'</span></div>';
+    h+='<div style="font-size:11px;color:var(--w3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div></div>';
+    if(hora) h+='<span style="font-size:10px;color:var(--w3);flex-shrink:0">'+hora+'</span>';
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+
 // ── NAVIGATION ──
 function go(id){
   document.querySelectorAll('.screen,.xs,.xscreen').forEach(function(s){s.classList.remove('on')});
@@ -2422,6 +2457,7 @@ function go(id){
   if(id==='s-demandas') loadDemandasMercado();
   if(id==='s-minhas-ofertas'){loadMinhasOfertas();loadKpisMinhasOfertas();}
   if(id==='s-pipeline') loadPipeline();
+  if(id==='s-mensagens') loadIndInbox();
 }
 function goX(id){
   document.querySelectorAll('.screen,.xs').forEach(function(s){s.classList.remove('on')});
@@ -2785,14 +2821,55 @@ function fireToast(msg){
   c.appendChild(el);
   setTimeout(function(){el.style.transition='all .4s';el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},400);},5000);
 }
-function indNotify(msg){
-  fireToast(msg);
-  // Update title with badge
-  if(!document.hasFocus()) document.title='(!) FoodHub Indústria';
-  // Play sound
-  try{var a=new AudioContext();var o=a.createOscillator();o.frequency.value=800;o.type='sine';var g=a.createGain();g.gain.value=0.1;o.connect(g);g.connect(a.destination);o.start();setTimeout(function(){o.stop();a.close();},150);}catch(e){}
+function playFoodHubSound(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var o1=ctx.createOscillator();var g1=ctx.createGain();
+    o1.connect(g1);g1.connect(ctx.destination);
+    o1.frequency.value=880;g1.gain.setValueAtTime(0.3,ctx.currentTime);
+    g1.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+    o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.15);
+    var o2=ctx.createOscillator();var g2=ctx.createGain();
+    o2.connect(g2);g2.connect(ctx.destination);
+    o2.frequency.value=1100;g2.gain.setValueAtTime(0.3,ctx.currentTime+0.2);
+    g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+    o2.start(ctx.currentTime+0.2);o2.stop(ctx.currentTime+0.35);
+    setTimeout(function(){ctx.close();},500);
+  }catch(e){}
 }
-window.addEventListener('focus',function(){document.title='FoodHub — Indústria';});
+var _indUnread=0;
+function indNotify(msg){
+  playFoodHubSound();
+  _indUnread++;
+  document.title='('+_indUnread+') FoodHub Indústria';
+  fireToast(msg);
+}
+window.addEventListener('focus',function(){_indUnread=0;document.title='FoodHub — Indústria';});
+
+function initRealtimeInd(){
+  _sb.removeAllChannels();
+  var ch=_sb.channel('ind-all');
+  ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
+    indNotify('📤 Atualização na proposta');
+  }).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
+    indNotify('💬 Nova mensagem de negociação');
+  }).on('postgres_changes',{event:'INSERT',schema:'public',table:'demandas'},function(p){
+    indNotify('📡 Nova demanda no mercado');
+  }).subscribe(function(status){
+    console.log('[FoodHub RT Ind] Status:', status);
+  });
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible') initRealtimeInd();
+});
+setInterval(function(){
+  if(document.visibilityState==='visible'){
+    var channels=_sb.getChannels();
+    var needReconnect=false;
+    channels.forEach(function(c){if(c.state!=='joined')needReconnect=true;});
+    if(needReconnect||channels.length===0) initRealtimeInd();
+  }
+},25000);
 
 /* ── OFERTA FLOW (fornecedor) — v2 ── */
 var _OFSKIP_CONSERV=['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
