@@ -4185,6 +4185,7 @@ async function launchScan(){
     unidade_volume: c.volumeUn||'kg',
     local_entrega: local||null,
     preco_alvo: precoNum,
+    prazo: c.prazo||null,
     condicao_pagamento: c.pag||null,
     frete_preferencia: c.frete||null,
     status: 'ativa'
@@ -4521,6 +4522,8 @@ async function loadMensagens(negociacaoId, nomeForn){
   box.innerHTML='<div style="text-align:center;padding:10px;color:var(--t3);font-size:11px">Carregando mensagens...</div>';
   var { data, error } = await _sb.from('mensagens').select('*').eq('negociacao_id',negociacaoId).order('criado_em',{ascending:true});
   if(error){console.log('Erro mensagens:', JSON.stringify(error));box.innerHTML='<div style="text-align:center;padding:10px;color:var(--rd);font-size:11px">Erro ao carregar mensagens.</div>';return;}
+  // Mark other side's messages as read
+  _sb.from('mensagens').update({lida:true}).eq('negociacao_id',negociacaoId).neq('sender','comprador').eq('lida',false).then(function(){});
   var ab=(nomeForn||'FH').substring(0,2).toUpperCase();
   var userInit=(_currentUser&&_currentUser.email?_currentUser.email.substring(0,2).toUpperCase():'EU');
   if(!data||data.length===0){
@@ -4565,7 +4568,8 @@ async function sendMsg(){
       negociacao_id: _negData.negociacaoId,
       sender: 'comprador',
       conteudo: txt,
-      tipo: 'texto'
+      tipo: 'texto',
+      lida: false
     }).select();
     if(error){
       console.log('[FoodHub] ERRO enviar msg:', JSON.stringify(error));
