@@ -2428,24 +2428,39 @@ async function loadIndInbox(){
   var el=document.getElementById('ind-inbox-lista');
   if(!el||!_fornecedorId)return;
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando...</div>';
-  var { data: negs }=await _sb.from('negociacoes').select('id,demanda_id,status,criado_em,demandas(produto_nome,profiles(nome))').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  var { data: negs }=await _sb.from('negociacoes').select('id,demanda_id,status,preco_atual,criado_em,demandas(produto_nome,volume,unidade_volume,preco_alvo,profiles(nome))').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
   if(!negs||!negs.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma negociação ativa.</div>';return;}
   var negIds=negs.map(function(n){return n.id;});
-  var { data: msgs }=await _sb.from('mensagens').select('negociacao_id,conteudo,sender,criado_em').in('negociacao_id',negIds).order('criado_em',{ascending:false});
-  var lastMsgMap={};
-  if(msgs) msgs.forEach(function(m){if(!lastMsgMap[m.negociacao_id])lastMsgMap[m.negociacao_id]=m;});
+  var { data: msgs }=await _sb.from('mensagens').select('negociacao_id,conteudo,sender,criado_em,lida').in('negociacao_id',negIds).order('criado_em',{ascending:false});
+  var lastMsgMap={};var unreadMap={};
+  if(msgs) msgs.forEach(function(m){
+    if(!lastMsgMap[m.negociacao_id]) lastMsgMap[m.negociacao_id]=m;
+    if(m.sender!=='fornecedor'&&!m.lida){if(!unreadMap[m.negociacao_id])unreadMap[m.negociacao_id]=0;unreadMap[m.negociacao_id]++;}
+  });
+  // Sort: unread first, then by last message time
+  negs.sort(function(a,b){
+    var ua=unreadMap[a.id]||0;var ub=unreadMap[b.id]||0;
+    if(ua&&!ub)return -1;if(!ua&&ub)return 1;
+    var ta=lastMsgMap[a.id]?lastMsgMap[a.id].criado_em:'';var tb=lastMsgMap[b.id]?lastMsgMap[b.id].criado_em:'';
+    return tb>ta?1:-1;
+  });
   var h='';
   negs.forEach(function(n){
     var dem=n.demandas||{};var prof=dem.profiles||{};
-    var lastMsg=lastMsgMap[n.id];
+    var lastMsg=lastMsgMap[n.id];var unread=unreadMap[n.id]||0;
     var preview=lastMsg?(lastMsg.sender==='fornecedor'?'Você: ':'')+lastMsg.conteudo:'Nenhuma mensagem';
-    if(preview.length>60)preview=preview.substring(0,57)+'...';
+    if(preview.length>60) preview=preview.substring(0,57)+'...';
     var hora=lastMsg&&lastMsg.criado_em?new Date(lastMsg.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-    var isUnread=lastMsg&&lastMsg.sender==='comprador';
+    var vol=dem.volume?Number(dem.volume).toLocaleString('pt-BR')+' '+(dem.unidade_volume||'kg'):'';
+    var meta=dem.preco_alvo?'R$'+Number(dem.preco_alvo).toFixed(2):'';
+    var stBadge=n.status==='aceita'?'<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(0,229,160,.15);color:var(--go);font-weight:700">Fechado</span>':'<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:var(--am2);color:var(--am);font-weight:700">Negociando</span>';
     h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="openIndChat(\''+n.id+'\',\''+(prof.nome||'Comprador').replace(/'/g,"\\'")+'\',\''+(dem.produto_nome||'').replace(/'/g,"\\'")+'\')">';
-    if(isUnread) h+='<div style="width:6px;height:6px;border-radius:50%;background:var(--rd);flex-shrink:0"></div>';
-    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w)">'+(prof.nome||'Comprador')+' · <span style="font-weight:400;color:var(--w2)">'+(dem.produto_nome||'')+'</span></div>';
-    h+='<div style="font-size:11px;color:var(--w3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div></div>';
+    if(unread) h+='<div style="min-width:18px;height:18px;border-radius:9px;background:var(--rd);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0">'+unread+'</div>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:13px;font-weight:600;color:var(--w)">'+(prof.nome||'Comprador')+'</span>'+stBadge+'</div>';
+    h+='<div style="font-size:11px;color:var(--w2);margin-bottom:2px">'+(dem.produto_nome||'')+(vol?' · '+vol:'')+(meta?' · Meta '+meta:'')+'</div>';
+    h+='<div style="font-size:11px;color:var(--w3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div>';
+    h+='</div>';
     if(hora) h+='<span style="font-size:10px;color:var(--w3);flex-shrink:0">'+hora+'</span>';
     h+='</div>';
   });
@@ -2459,20 +2474,44 @@ async function openIndChat(negId, nome, produto){
   if(!el) return;
   // Mark as read
   _sb.from('mensagens').update({lida:true}).eq('negociacao_id',negId).neq('sender','fornecedor').eq('lida',false).then(function(){});
+  // Get negotiation context
+  var { data: neg }=await _sb.from('negociacoes').select('preco_atual,demandas(produto_nome,volume,unidade_volume,preco_alvo)').eq('id',negId).single();
+  var dem=neg&&neg.demandas||{};
+  var meta=dem.preco_alvo?'R$'+Number(dem.preco_alvo).toFixed(2):'';
+  var precoAtual=neg&&neg.preco_atual?'R$'+Number(neg.preco_atual).toFixed(2):'';
+  var vol=dem.volume?Number(dem.volume).toLocaleString('pt-BR')+' '+(dem.unidade_volume||'kg'):'';
+  var total=neg&&neg.preco_atual&&dem.volume?'R$'+(Number(neg.preco_atual)*Number(dem.volume)/1000).toFixed(1)+'k':'';
+  var saving=dem.preco_alvo&&neg&&neg.preco_atual?'R$'+((Number(dem.preco_alvo)-Number(neg.preco_atual))*Number(dem.volume||0)/1000).toFixed(1)+'k':'';
   // Build chat UI
   var h='<div style="margin-bottom:10px"><span style="font-size:12px;color:var(--am);cursor:pointer" onclick="loadIndInbox()">← Voltar ao inbox</span></div>';
   h+='<div style="font-size:14px;font-weight:700;color:var(--w);margin-bottom:4px">'+nome+'</div>';
-  h+='<div style="font-size:11px;color:var(--w3);margin-bottom:12px">'+produto+'</div>';
-  h+='<div id="ind-chat-box" style="max-height:400px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:6px"><div style="text-align:center;font-size:11px;color:var(--w3)">Carregando...</div></div>';
-  h+='<div style="display:flex;gap:6px"><input id="ind-chat-inp" type="text" placeholder="Digite sua mensagem..." style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 12px;font-size:13px;color:#fff;outline:none;box-sizing:border-box" onkeydown="if(event.key===\'Enter\')sendIndMsg()"><button onclick="sendIndMsg()" style="border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000;flex-shrink:0">Enviar</button></div>';
+  h+='<div style="font-size:11px;color:var(--w3);margin-bottom:8px">'+produto+'</div>';
+  // Context panel
+  h+='<div style="background:var(--s3);border:1px solid var(--b1);border-radius:9px;padding:8px 12px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;font-size:11px">';
+  if(meta) h+='<span>🎯 Meta: <strong style="color:var(--am)">'+meta+'</strong></span>';
+  if(precoAtual) h+='<span>📤 Proposta: <strong>'+precoAtual+'</strong></span>';
+  if(vol) h+='<span>📦 '+vol+'</span>';
+  if(total) h+='<span>💰 '+total+'</span>';
+  if(saving) h+='<span style="color:var(--go)">💚 Saving: '+saving+'</span>';
+  h+='</div>';
+  h+='<div id="ind-chat-box" style="max-height:350px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:6px"></div>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:8px"><input id="ind-chat-inp" type="text" placeholder="Digite sua mensagem..." style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 12px;font-size:13px;color:#fff;outline:none;box-sizing:border-box" onkeydown="if(event.key===\'Enter\')sendIndMsg()"><button onclick="sendIndMsg()" style="border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000;flex-shrink:0">Enviar</button></div>';
+  // Contraproposta + Fechar
+  h+='<div id="ind-contra" style="display:none;background:var(--s3);border:1px solid var(--b1);border-radius:9px;padding:10px 12px;margin-bottom:8px">';
+  h+='<div style="font-size:11px;color:var(--w2);margin-bottom:6px">↩️ Contraproposta — informe seu preço:</div>';
+  h+='<div style="display:flex;gap:6px"><span style="align-self:center;font-size:13px;color:var(--w3)">R$</span><input id="ind-contra-val" type="number" step="0.01" placeholder="0.00" style="flex:1;background:var(--s4);border:1px solid var(--b1);border-radius:7px;padding:8px;font-size:14px;font-weight:700;color:#fff;font-family:var(--mono);outline:none"><button onclick="enviarContraInd()" style="border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000;flex-shrink:0">Enviar</button></div></div>';
+  h+='<div style="display:flex;gap:8px">';
+  h+='<button style="flex:1;border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:12px;cursor:pointer;background:transparent;color:var(--w2);font-family:sans-serif" onclick="document.getElementById(\'ind-contra\').style.display=document.getElementById(\'ind-contra\').style.display===\'none\'?\'block\':\'none\'">↩️ Contraproposta</button>';
+  h+='<button style="flex:2;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;background:var(--go);color:#000;font-family:sans-serif" onclick="fecharNegocioInd()">✅ Aceitar e fechar</button>';
+  h+='</div>';
   el.innerHTML=h;
   // Load messages
-  var { data: msgs }=await _sb.from('mensagens').select('*').eq('negociacao_id',negId).order('criado_em',{ascending:true});
+  var { data: msgs2 }=await _sb.from('mensagens').select('*').eq('negociacao_id',negId).order('criado_em',{ascending:true});
   var box=document.getElementById('ind-chat-box');
   if(!box) return;
-  if(!msgs||!msgs.length){box.innerHTML='<div style="text-align:center;font-size:11px;color:var(--w3)">Nenhuma mensagem. Envie a primeira!</div>';return;}
+  if(!msgs2||!msgs2.length){box.innerHTML='<div style="text-align:center;font-size:11px;color:var(--w3)">Nenhuma mensagem. Envie a primeira!</div>';return;}
   var mh='';
-  msgs.forEach(function(m){
+  msgs2.forEach(function(m){
     var isMe=m.sender==='fornecedor';
     var hora=m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
     if(isMe){
@@ -2497,6 +2536,28 @@ async function sendIndMsg(){
   inp.value='';
   var { error }=await _sb.from('mensagens').insert({negociacao_id:_indChatNegId,sender:'fornecedor',conteudo:txt,tipo:'texto',lida:false}).select();
   if(error) console.log('[FoodHub] Erro enviar msg ind:', JSON.stringify(error));
+}
+async function enviarContraInd(){
+  var val=document.getElementById('ind-contra-val');
+  var preco=val?parseFloat(val.value):0;
+  if(!preco||preco<=0) return;
+  if(!_indChatNegId) return;
+  var txt='↩️ Contraproposta: R$'+preco.toFixed(2)+'/kg';
+  var box=document.getElementById('ind-chat-box');
+  var hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(box) box.innerHTML+='<div style="display:flex;justify-content:flex-end;gap:6px"><div style="background:rgba(245,184,0,.12);border:1px solid rgba(245,184,0,.2);border-radius:10px 10px 2px 10px;padding:8px 12px;max-width:70%;font-size:12px;color:var(--w)">'+txt+'<div style="font-size:9px;color:var(--w3);margin-top:2px;text-align:right">'+hora+'</div></div></div>';
+  if(box) box.scrollTop=box.scrollHeight;
+  await _sb.from('mensagens').insert({negociacao_id:_indChatNegId,sender:'fornecedor',conteudo:txt,tipo:'contra_proposta',lida:false});
+  await _sb.from('negociacoes').update({preco_atual:preco}).eq('id',_indChatNegId);
+  document.getElementById('ind-contra').style.display='none';
+  if(val) val.value='';
+}
+async function fecharNegocioInd(){
+  if(!_indChatNegId) return;
+  if(!confirm('Confirma aceitar este negócio?')) return;
+  await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_indChatNegId);
+  fireToast('🎉 Negócio fechado com sucesso!');
+  loadIndInbox();
 }
 
 // ── NAVIGATION ──
@@ -2898,17 +2959,15 @@ function fireToast(msg){
 function playFoodHubSound(){
   try{
     var ctx=new(window.AudioContext||window.webkitAudioContext)();
-    var o1=ctx.createOscillator();var g1=ctx.createGain();
-    o1.connect(g1);g1.connect(ctx.destination);
-    o1.frequency.value=880;g1.gain.setValueAtTime(0.3,ctx.currentTime);
-    g1.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
-    o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.15);
-    var o2=ctx.createOscillator();var g2=ctx.createGain();
-    o2.connect(g2);g2.connect(ctx.destination);
-    o2.frequency.value=1100;g2.gain.setValueAtTime(0.3,ctx.currentTime+0.2);
-    g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
-    o2.start(ctx.currentTime+0.2);o2.stop(ctx.currentTime+0.35);
-    setTimeout(function(){ctx.close();},500);
+    function playTone(freq,start,dur,vol){
+      var o=ctx.createOscillator();var g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);o.type='sine';o.frequency.value=freq;
+      g.gain.setValueAtTime(0,ctx.currentTime+start);
+      g.gain.linearRampToValueAtTime(vol,ctx.currentTime+start+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      o.start(ctx.currentTime+start);o.stop(ctx.currentTime+start+dur+0.05);
+    }
+    playTone(2000,0,0.07,0.22);playTone(2400,0.10,0.07,0.22);
   }catch(e){}
 }
 var _indUnread=0;

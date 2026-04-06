@@ -1163,7 +1163,16 @@ window.go = window.go || function(id) {
       <div class="chat-area" id="chat-box"></div>
       <div style="display:flex;gap:7px"><input class="chat-inp" id="chat-inp" placeholder="Digite uma mensagem..."><button class="btn sm" onclick="sendMsg()">Enviar</button></div>
     </div>
-    <div style="display:flex;gap:8px"><button class="btn-ghost" style="flex:1" onclick="go('sOffers')">← Recusar</button><button class="btn btn-g" style="flex:2" onclick="go('sContract')">Aceitar e gerar contrato →</button></div>
+    <div id="neg-actions" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+      <div id="neg-contra" style="display:none;background:var(--bg3);border:1px solid var(--b1);border-radius:9px;padding:10px 12px">
+        <div style="font-size:11px;color:var(--t2);margin-bottom:6px">↩️ Contraproposta — informe seu preço:</div>
+        <div style="display:flex;gap:6px"><span style="align-self:center;font-size:13px;color:var(--t2)">R$</span><input id="neg-contra-val" type="number" step="0.01" placeholder="0.00" style="flex:1;background:var(--bg);border:1px solid var(--b1);border-radius:7px;padding:8px;font-size:14px;font-weight:700;color:var(--t1);font-family:var(--mono);outline:none"><button class="btn sm btn-g" onclick="enviarContra()" style="flex-shrink:0">Enviar</button></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('neg-contra').style.display=document.getElementById('neg-contra').style.display==='none'?'block':'none'">↩️ Contraproposta</button>
+        <button class="btn btn-g" style="flex:2" onclick="fecharNegocio()">✅ Aceitar e fechar negócio</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3630,21 +3639,19 @@ async function atualizarBadgeNotif(){
 function playFoodHubSound(){
   try{
     var ctx=new(window.AudioContext||window.webkitAudioContext)();
-    var o1=ctx.createOscillator();var g1=ctx.createGain();
-    o1.connect(g1);g1.connect(ctx.destination);
-    o1.frequency.value=880;g1.gain.setValueAtTime(0.3,ctx.currentTime);
-    g1.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
-    o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.15);
-    var o2=ctx.createOscillator();var g2=ctx.createGain();
-    o2.connect(g2);g2.connect(ctx.destination);
-    o2.frequency.value=1100;g2.gain.setValueAtTime(0.3,ctx.currentTime+0.2);
-    g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
-    o2.start(ctx.currentTime+0.2);o2.stop(ctx.currentTime+0.35);
-    setTimeout(function(){ctx.close();},500);
+    function playTone(freq,start,dur,vol){
+      var o=ctx.createOscillator();var g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);o.type='sine';o.frequency.value=freq;
+      g.gain.setValueAtTime(0,ctx.currentTime+start);
+      g.gain.linearRampToValueAtTime(vol,ctx.currentTime+start+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      o.start(ctx.currentTime+start);o.stop(ctx.currentTime+start+dur+0.05);
+    }
+    playTone(2000,0,0.07,0.22);playTone(2400,0.10,0.07,0.22);
   }catch(e){}
 }
 var _unreadCount=0;
-function buyerNotify(msg){
+function buyerNotify(msg,negId){
   playFoodHubSound();
   _unreadCount++;
   document.title='('+_unreadCount+') FoodHub';
@@ -3652,7 +3659,7 @@ function buyerNotify(msg){
   t.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--ac);border-radius:10px;padding:12px 16px;font-size:12px;color:#fff;z-index:9999;box-shadow:0 4px 20px rgba(0,200,255,.3);max-width:320px';
   t.innerHTML='<div style="margin-bottom:6px">'+msg+'</div><button style="background:var(--ac);border:none;border-radius:5px;padding:4px 12px;font-size:11px;font-weight:700;color:#000;cursor:pointer" onclick="go(\'sMensagens\');this.parentNode.parentNode.removeChild(this.parentNode)">Ver →</button>';
   document.body.appendChild(t);
-  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},6000);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},8000);
 }
 window.addEventListener('focus',function(){_unreadCount=0;document.title='FoodHub';});
 
@@ -4582,6 +4589,43 @@ async function buildNeg(){
     document.getElementById('chat-box').innerHTML='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">Olá! Confirmamos disponibilidade. Preço '+price+' CIF. Como prefere prosseguir?</div><div class="msg-t">agora</div></div></div>';
   }
 }
+async function enviarContra(){
+  var val=document.getElementById('neg-contra-val');
+  var preco=val?parseFloat(val.value):0;
+  if(!preco||preco<=0){alert('Informe o preço');return;}
+  if(!_negData||!_negData.negociacaoId) return;
+  // Send as chat message
+  var txt='↩️ Contraproposta: R$'+preco.toFixed(2)+'/kg';
+  var box=document.getElementById('chat-box');
+  var userInit=(_currentUser&&_currentUser.email?_currentUser.email.substring(0,2).toUpperCase():'EU');
+  if(box) box.innerHTML+='<div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">'+userInit+'</div><div><div class="bubble">'+txt+'</div><div class="msg-t">agora</div></div></div>';
+  if(box) box.scrollTop=box.scrollHeight;
+  // Save message
+  await _sb.from('mensagens').insert({negociacao_id:_negData.negociacaoId,sender:'comprador',conteudo:txt,tipo:'contra_proposta',lida:false});
+  // Update preco_atual
+  await _sb.from('negociacoes').update({preco_atual:preco}).eq('id',_negData.negociacaoId);
+  document.getElementById('neg-contra').style.display='none';
+  if(val) val.value='';
+}
+async function fecharNegocio(){
+  if(!_negData||!_negData.negociacaoId) return;
+  if(!confirm('Confirma fechar este negócio?')) return;
+  // Update negociacao
+  await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_negData.negociacaoId);
+  // Update proposta
+  if(_negData.propostaId) await _sb.from('propostas').update({status:'aceita'}).eq('id',_negData.propostaId);
+  // Calculate saving
+  var saving='';
+  if(_negData.demandaId){
+    var { data: dem }=await _sb.from('demandas').select('preco_alvo,volume').eq('id',_negData.demandaId).single();
+    if(dem&&dem.preco_alvo){
+      var s=(Number(dem.preco_alvo)-Number(_negData.preco))*Number(dem.volume||0);
+      saving='Saving: R$'+(s/1000).toFixed(1)+'k';
+    }
+  }
+  alert('🎉 Negócio fechado!\n'+saving);
+  go('sNegocios');
+}
 async function loadMensagens(negociacaoId, nomeForn){
   var box=document.getElementById('chat-box');
   if(!box) return;
@@ -4651,24 +4695,39 @@ async function loadInbox(){
   var el=document.getElementById('inbox-lista');
   if(!el||!_currentUser)return;
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando mensagens...</div>';
-  var { data: negs }=await _sb.from('negociacoes').select('id,demanda_id,fornecedor_id,status,criado_em,demandas(produto_nome),fornecedores(nome)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  var { data: negs }=await _sb.from('negociacoes').select('id,demanda_id,fornecedor_id,status,preco_atual,criado_em,demandas(produto_nome,volume,unidade_volume,preco_alvo),fornecedores(nome)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
   if(!negs||!negs.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma negociação ativa.</div>';return;}
-  // Get last message for each
   var negIds=negs.map(function(n){return n.id;});
-  var { data: msgs }=await _sb.from('mensagens').select('negociacao_id,conteudo,sender,criado_em').in('negociacao_id',negIds).order('criado_em',{ascending:false});
-  var lastMsgMap={};
-  if(msgs) msgs.forEach(function(m){if(!lastMsgMap[m.negociacao_id])lastMsgMap[m.negociacao_id]=m;});
+  var { data: msgs }=await _sb.from('mensagens').select('negociacao_id,conteudo,sender,criado_em,lida').in('negociacao_id',negIds).order('criado_em',{ascending:false});
+  var lastMsgMap={};var unreadMap={};
+  if(msgs) msgs.forEach(function(m){
+    if(!lastMsgMap[m.negociacao_id]) lastMsgMap[m.negociacao_id]=m;
+    if(m.sender!=='comprador'&&!m.lida){if(!unreadMap[m.negociacao_id])unreadMap[m.negociacao_id]=0;unreadMap[m.negociacao_id]++;}
+  });
+  // Sort: unread first, then by last message time
+  negs.sort(function(a,b){
+    var ua=unreadMap[a.id]||0;var ub=unreadMap[b.id]||0;
+    if(ua&&!ub)return -1;if(!ua&&ub)return 1;
+    var ta=lastMsgMap[a.id]?lastMsgMap[a.id].criado_em:'';var tb=lastMsgMap[b.id]?lastMsgMap[b.id].criado_em:'';
+    return tb>ta?1:-1;
+  });
   var h='';
   negs.forEach(function(n){
     var dem=n.demandas||{};var forn=n.fornecedores||{};
-    var lastMsg=lastMsgMap[n.id];
+    var lastMsg=lastMsgMap[n.id];var unread=unreadMap[n.id]||0;
     var preview=lastMsg?(lastMsg.sender==='comprador'?'Você: ':'')+lastMsg.conteudo:'Nenhuma mensagem';
     if(preview.length>60) preview=preview.substring(0,57)+'...';
     var hora=lastMsg&&lastMsg.criado_em?new Date(lastMsg.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-    h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="_negData={negociacaoId:\''+n.id+'\',nome:\''+(forn.nome||'').replace(/'/g,"\\'")+'\',preco:0,unidade:\'/kg\',vol:\'\',score:0};go(\'sNeg\')">';
-    h+='<div style="width:36px;height:36px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏭</div>';
-    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1)">'+(forn.nome||'Fornecedor')+' · <span style="font-weight:400;color:var(--t2)">'+(dem.produto_nome||'')+'</span></div>';
-    h+='<div style="font-size:11px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div></div>';
+    var vol=dem.volume?Number(dem.volume).toLocaleString('pt-BR')+' '+(dem.unidade_volume||'kg'):'';
+    var meta=dem.preco_alvo?'R$'+Number(dem.preco_alvo).toFixed(2):'';
+    var stBadge=n.status==='aceita'?'<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(0,224,154,.15);color:var(--gn);font-weight:700">Fechado</span>':'<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(0,200,255,.1);color:var(--ac);font-weight:700">Negociando</span>';
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="_negData={negociacaoId:\''+n.id+'\',demandaId:\''+n.demanda_id+'\',fornecedorId:\''+n.fornecedor_id+'\',nome:\''+(forn.nome||'').replace(/'/g,"\\'")+'\',preco:'+(n.preco_atual||0)+',unidade:\'/kg\',vol:\''+(dem.volume||'')+'\',score:0};go(\'sNeg\')">';
+    if(unread) h+='<div style="min-width:18px;height:18px;border-radius:9px;background:var(--rd);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0">'+unread+'</div>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:13px;font-weight:600;color:var(--t1)">'+(forn.nome||'Fornecedor')+'</span>'+stBadge+'</div>';
+    h+='<div style="font-size:11px;color:var(--t2);margin-bottom:2px">'+(dem.produto_nome||'')+(vol?' · '+vol:'')+(meta?' · Meta '+meta:'')+'</div>';
+    h+='<div style="font-size:11px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div>';
+    h+='</div>';
     if(hora) h+='<span style="font-size:10px;color:var(--t3);flex-shrink:0">'+hora+'</span>';
     h+='</div>';
   });
