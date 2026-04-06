@@ -3676,6 +3676,8 @@ function initRealtime(){
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
       console.log('[FoodHub RT] mensagens INSERT:', p.new);
       if(p.new&&p.new.sender!=='comprador'){
+        if(_seenMsgIds[p.new.id]) return;
+        _seenMsgIds[p.new.id]=true;
         if(_negData&&_negData.negociacaoId===p.new.negociacao_id){
           var box=document.getElementById('chat-box');
           if(box){
@@ -3719,6 +3721,7 @@ setInterval(function(){
 // ── POLLING FALLBACK ──
 var _lastPollCheck=new Date().toISOString();
 var _pollInterval=null;
+var _seenMsgIds={};
 function startPolling(){
   if(_pollInterval) return;
   console.log('[FoodHub Poll] Polling ativado como fallback (3s)');
@@ -3745,7 +3748,8 @@ function startPolling(){
       var { data: newMsgs }=await _sb.from('mensagens').select('id,conteudo,sender,negociacao_id,criado_em').in('negociacao_id',negIds).neq('sender','comprador').gt('criado_em',since);
       if(newMsgs&&newMsgs.length){
         newMsgs.forEach(function(m){
-          // If chat for this negotiation is open, append inline
+          if(_seenMsgIds[m.id]) return;
+          _seenMsgIds[m.id]=true;
           if(_negData&&_negData.negociacaoId===m.negociacao_id){
             var box=document.getElementById('chat-box');
             if(box){
@@ -3754,13 +3758,27 @@ function startPolling(){
               box.innerHTML+='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">'+m.conteudo+'</div><div class="msg-t">'+hora+'</div></div></div>';
               box.scrollTop=box.scrollHeight;
               playFoodHubSound();
-              // Mark as read
               _sb.from('mensagens').update({lida:true}).eq('id',m.id).then(function(){});
             }
           } else {
             var preview=m.conteudo||'';
             if(preview.length>50) preview=preview.substring(0,47)+'...';
             buyerNotify('💬 '+preview);
+          }
+        });
+      }
+    }
+    // Check negociacao status changes (fornecedor fechou?)
+    if(myNegs&&myNegs.length){
+      var { data: negStatus }=await _sb.from('negociacoes').select('id,status').in('id',negIds).eq('status','aceita').gt('atualizado_em',since);
+      if(negStatus&&negStatus.length){
+        negStatus.forEach(function(n){
+          if(_negData&&_negData.negociacaoId===n.id){
+            playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
+            var box2=document.getElementById('chat-box');
+            if(box2) box2.innerHTML+='<div style="text-align:center;padding:12px;color:var(--gn);font-size:13px;font-weight:700">🎉 Negócio fechado pelo fornecedor!</div>';
+          } else {
+            buyerNotify('🎉 Negócio fechado!');
           }
         });
       }
@@ -4666,6 +4684,8 @@ async function fecharNegocio(){
   // Update negociacao + proposta
   await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_negData.negociacaoId);
   if(_negData.propostaId) await _sb.from('propostas').update({status:'aceita'}).eq('id',_negData.propostaId);
+  // Auto-message in chat
+  await _sb.from('mensagens').insert({negociacao_id:_negData.negociacaoId,sender:'comprador',conteudo:'✅ Negócio fechado! Pedido '+ref+' confirmado. Total: R$'+(total/1000).toFixed(1)+'k',tipo:'sistema',lida:false}).then(function(){});
   // Celebration screen
   playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
   var box=document.getElementById('chat-box');
