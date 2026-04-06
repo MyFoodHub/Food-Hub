@@ -432,7 +432,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="brand"><div style="width:8px;height:8px;border-radius:50%;background:var(--am)"></div>Food<span style="color:var(--am)">Hub</span> <span style="font-weight:400;font-size:13px;color:var(--w3)">Indústria</span></div>
-    <div class="ind-chip"><div class="ind-av" id="ind-avatar">FH</div><div style="font-size:12px"><div style="font-weight:700;color:var(--w)" id="ind-nome">Fornecedor</div><div style="font-size:10px;color:var(--w3)" id="ind-email"></div></div></div>
+    <div class="ind-chip"><div class="ind-av" id="ind-avatar">FH</div><div style="font-size:12px"><div style="font-weight:700;color:var(--w)" id="ind-nome">Fornecedor</div><div style="font-size:10px;color:var(--w3)" id="ind-email-display"></div></div></div>
   </div>
 
   <!-- LAYOUT -->
@@ -2135,12 +2135,14 @@ async function initIndApp(){
       _fornecedorCategorias=_fornecedorCategorias.filter(function(c){return c;}).map(function(c){return c.toLowerCase();});
       console.log('[FoodHub] Categorias do fornecedor:', _fornecedorCategorias);
     }
-    console.log('[FoodHub] Fornecedor vinculado:', _fornecedorId ? 'SIM ('+forn[0].nome+')' : 'NÃO — cadastre contato_email na tabela fornecedores');
+    console.log('[FoodHub] Fornecedor vinculado:', _fornecedorId ? 'SIM ('+(forn&&forn[0]?forn[0].nome:'?')+')' : 'NÃO — cadastre contato_email='+_currentUser.email+' na tabela fornecedores');
+    console.log('[FoodHub] _fornecedorId =', _fornecedorId);
     var nomeEl=document.getElementById('ind-nome');
-    var emailEl=document.getElementById('ind-email');
     var avEl=document.getElementById('ind-avatar');
+    var emailDisplay=document.getElementById('ind-email-display');
     if(nomeEl&&forn&&forn.length) nomeEl.textContent=forn[0].nome;
-    if(emailEl&&_currentUser) emailEl.textContent=_currentUser.email;
+    if(emailDisplay&&_currentUser) emailDisplay.textContent=_currentUser.email;
+    else if(!emailDisplay){var e2=document.getElementById('ind-email');if(e2&&e2.tagName!=='INPUT'&&_currentUser) e2.textContent=_currentUser.email;}
     if(avEl&&_currentUser) avEl.textContent=_currentUser.email.substring(0,2).toUpperCase();
   }
   // Check approval
@@ -2474,10 +2476,11 @@ var _respDemanda = null;
 var _respSpecOk = null;
 var _respReqOk = null;
 function openResponder(idx){
+  console.log('[FoodHub] openResponder idx='+idx+' _demandasMercado.length='+(_demandasMercado?_demandasMercado.length:0)+' _fornecedorId='+_fornecedorId);
   _respDemanda = _demandasMercado[idx];
   _respSpecOk = null;
   _respReqOk = null;
-  if(!_respDemanda) return;
+  if(!_respDemanda){console.log('[FoodHub] ERRO: demanda não encontrada no índice '+idx);return;}
   var d = _respDemanda;
 
   // Frete compatibility check
