@@ -518,7 +518,7 @@ window.go = window.go || function(id) {
 </div>
 
 <div id="app">
-<button onclick="_sb.auth.signOut().then(function(){localStorage.clear();location.reload();})" style="position:fixed;top:10px;right:14px;z-index:9998;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 10px;font-size:11px;color:#999;cursor:pointer;font-family:sans-serif">Sair →</button>
+<button onclick="_sb.auth.signOut().then(function(){localStorage.clear();location.reload();})" style="position:fixed;top:12px;right:14px;z-index:9998;background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.2);border-radius:6px;padding:4px 10px;font-size:10px;color:#ff6b6b;cursor:pointer;font-family:sans-serif">🚪 Sair</button>
 
 <!-- ══ S0 LOGIN ══ -->
 <div id="s0" class="screen active">
@@ -4786,16 +4786,36 @@ function renderMarketList(){
     var preco = o.preco ? 'R$'+Number(o.preco).toFixed(2)+(o.unidade_preco||'/kg') : '—';
     var forn = (o.fornecedores&&o.fornecedores.nome)||'';
     var emoji = nome.indexOf('Frango')>=0?'🍗':nome.indexOf('Bovina')>=0||nome.indexOf('Carne')>=0?'🥩':nome.indexOf('Ovo')>=0?'🥚':nome.indexOf('Muçarela')>=0||nome.indexOf('Queijo')>=0?'🧀':nome.indexOf('Batata')>=0?'🍟':nome.indexOf('Calabresa')>=0?'🌶️':nome.indexOf('Salsicha')>=0?'🌭':nome.indexOf('Suín')>=0?'🐷':'📦';
-    html+='<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="go(\'sScan\')">';
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="verOferta('+data.indexOf(o)+')">';
     html+='<span style="font-size:16px;flex-shrink:0">'+emoji+'</span>';
     html+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>';
     if(desc) html+='<div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+desc+(forn?' · '+forn:'')+'</div>';
     html+='</div>';
     html+='<div style="text-align:right;flex-shrink:0"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--gn)">'+preco+'</div></div>';
-    html+='<button class="btn sm" onclick="event.stopPropagation();go(\'sScan\')" style="font-size:11px;flex-shrink:0">Cotar →</button>';
+    html+='<button class="btn sm" onclick="event.stopPropagation();verOferta('+data.indexOf(o)+')" style="font-size:11px;flex-shrink:0">Ver →</button>';
     html+='</div>';
   });
   el.innerHTML=html;
+}
+function verOferta(idx){
+  var o=_mktOfertas[idx];if(!o)return;
+  var nome=o.nome||'Oferta';var desc=o.descricao||'';
+  var preco=o.preco?'R$'+Number(o.preco).toFixed(2)+(o.unidade_preco||'/kg'):'—';
+  var forn=(o.fornecedores&&o.fornecedores.nome)||'Fornecedor';
+  var vol=o.quantidade?Number(o.quantidade).toLocaleString('pt-BR')+' '+(o.unidade_quantidade||'kg'):'—';
+  var cond=o.condicao_especial||'';
+  var h='<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.remove()">';
+  h+='<div style="background:var(--bg2);border:1px solid var(--ac);border-radius:14px;padding:20px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto">';
+  h+='<div style="display:flex;justify-content:space-between;margin-bottom:12px"><div style="font-size:16px;font-weight:700;color:#fff">'+nome+'</div><span style="cursor:pointer;color:var(--t3);font-size:16px" onclick="this.closest(\'[style*=fixed]\').remove()">✕</span></div>';
+  if(desc) h+='<div style="font-size:12px;color:var(--t2);margin-bottom:10px">'+desc+'</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--t2);margin-bottom:14px">';
+  h+='<span>🏭 '+forn+'</span><span style="color:var(--gn);font-weight:700">'+preco+'</span><span>📦 '+vol+'</span>';
+  if(cond) h+='<span>'+cond+'</span>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px">';
+  h+='<button class="btn btn-g" style="flex:2;padding:11px;font-size:13px" onclick="this.closest(\'[style*=fixed]\').remove();go(\'sScan\')">📡 Criar demanda para este produto</button>';
+  h+='</div></div></div>';
+  var d=document.createElement('div');d.innerHTML=h;document.body.appendChild(d.firstChild);
 }
 function mktSetFilt(btn, filt){
   _mktFilt = filt;
