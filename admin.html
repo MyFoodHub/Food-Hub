@@ -138,6 +138,12 @@ async function adminLogin(){
     }).on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(p){
       console.log('[Admin RT] mensagens INSERT:', p.new);
       loadAll();
+    }).on('postgres_changes',{event:'INSERT',schema:'public',table:'pedidos'},function(p){
+      console.log('[Admin RT] pedidos INSERT:', p.new);
+      var total=p.new&&p.new.preco_total?'R$'+Number(p.new.preco_total).toLocaleString('pt-BR'):'';
+      var com=p.new&&p.new.preco_total?'R$'+Math.round(Number(p.new.preco_total)*0.01).toLocaleString('pt-BR'):'';
+      adminNotify('🎉 DEAL FECHADO — '+(p.new&&p.new.produto_nome||'')+(p.new&&p.new.volume?' '+p.new.volume+'kg':'')+' · '+total+' · Comissão '+com);
+      loadAll();
     }).subscribe();
   } else {
     document.getElementById('login-err').style.display='block';
@@ -333,11 +339,13 @@ async function loadFeed(){
   var { data: props } = await _sb.from('propostas').select('preco_ofertado,unidade_preco,criado_em,fornecedores(nome),demandas(codigo)').order('criado_em',{ascending:false}).limit(10);
   var { data: ofers } = await _sb.from('ofertas').select('nome,criado_em,fornecedores(nome)').order('criado_em',{ascending:false}).limit(10);
   var { data: negs } = await _sb.from('negociacoes').select('criado_em,status').order('criado_em',{ascending:false}).limit(10);
+  var { data: peds } = await _sb.from('pedidos').select('produto_nome,preco_total,volume,criado_em').order('criado_em',{ascending:false}).limit(10);
   var feed=[];
   if(dems)dems.forEach(function(d){feed.push({t:d.criado_em,icon:'📡',msg:(d.profiles&&d.profiles.nome||'Comprador')+' criou demanda de '+(d.produto_nome||'')});});
   if(props)props.forEach(function(p){feed.push({t:p.criado_em,icon:'📤',msg:(p.fornecedores&&p.fornecedores.nome||'Fornecedor')+' respondeu '+(p.demandas&&p.demandas.codigo||'demanda')+' com R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg')});});
   if(ofers)ofers.forEach(function(o){feed.push({t:o.criado_em,icon:'📢',msg:(o.fornecedores&&o.fornecedores.nome||'Fornecedor')+' publicou oferta: '+(o.nome||'')});});
   if(negs)negs.forEach(function(n){feed.push({t:n.criado_em,icon:'🤝',msg:'Negociação '+(n.status||'iniciada')});});
+  if(peds)peds.forEach(function(p){feed.push({t:p.criado_em,icon:'🎉',msg:'DEAL FECHADO — '+(p.produto_nome||'')+' '+((p.volume||'')+' ')+' · R$'+(p.preco_total?Number(p.preco_total).toLocaleString('pt-BR'):'0')});});
   feed.sort(function(a,b){return b.t>a.t?1:-1;});
   var h='<div class="sec-title">📡 Feed ao vivo</div>';
   feed.slice(0,20).forEach(function(f){

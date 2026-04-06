@@ -4635,21 +4635,82 @@ async function enviarContra(){
 async function fecharNegocio(){
   if(!_negData||!_negData.negociacaoId) return;
   if(!confirm('Confirma fechar este negócio?')) return;
-  // Update negociacao
-  await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_negData.negociacaoId);
-  // Update proposta
-  if(_negData.propostaId) await _sb.from('propostas').update({status:'aceita'}).eq('id',_negData.propostaId);
-  // Calculate saving
-  var saving='';
+  var precoFinal=Number(_negData.preco)||0;
+  var volume=Number(_negData.vol)||0;
+  var total=precoFinal*volume;
+  var saving=0;
+  var demData=null;
   if(_negData.demandaId){
-    var { data: dem }=await _sb.from('demandas').select('preco_alvo,volume').eq('id',_negData.demandaId).single();
-    if(dem&&dem.preco_alvo){
-      var s=(Number(dem.preco_alvo)-Number(_negData.preco))*Number(dem.volume||0);
-      saving='Saving: R$'+(s/1000).toFixed(1)+'k';
-    }
+    var { data: dem }=await _sb.from('demandas').select('preco_alvo,volume,produto_nome,especificacao,condicao_pagamento,frete_preferencia,local_entrega,prazo').eq('id',_negData.demandaId).single();
+    demData=dem;
+    if(dem&&dem.preco_alvo) saving=(Number(dem.preco_alvo)-precoFinal)*volume;
   }
-  alert('🎉 Negócio fechado!\n'+saving);
-  go('sNegocios');
+  var comissao=total*0.01;
+  var ref='PD-2026-'+String(Math.floor(Math.random()*90000)+10000);
+  // Save pedido
+  await _sb.from('pedidos').insert({
+    codigo:ref,
+    user_id:_currentUser.id,
+    fornecedor_id:_negData.fornecedorId||null,
+    demanda_id:_negData.demandaId||null,
+    proposta_id:_negData.propostaId||null,
+    produto_nome:demData&&demData.produto_nome||'',
+    volume:volume,
+    unidade:'kg',
+    preco_unitario:precoFinal,
+    preco_total:total,
+    condicao_pagamento:demData&&demData.condicao_pagamento||'',
+    frete:demData&&demData.frete_preferencia||'cif_incluso',
+    status:'confirmado'
+  }).then(function(){});
+  // Update negociacao + proposta
+  await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_negData.negociacaoId);
+  if(_negData.propostaId) await _sb.from('propostas').update({status:'aceita'}).eq('id',_negData.propostaId);
+  // Celebration screen
+  playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
+  var box=document.getElementById('chat-box');
+  var hdr=document.getElementById('neg-hdr');
+  var ctx=document.getElementById('neg-context');
+  var acts=document.getElementById('neg-actions');
+  if(acts) acts.style.display='none';
+  if(ctx) ctx.innerHTML='';
+  if(box){
+    box.innerHTML='<div style="text-align:center;padding:30px">'
+      +'<div style="font-size:48px;margin-bottom:12px">🎉</div>'
+      +'<div style="font-size:20px;font-weight:700;color:var(--gn);margin-bottom:8px">NEGÓCIO FECHADO!</div>'
+      +'<div style="font-size:14px;color:var(--t1);margin-bottom:4px">'+(demData&&demData.produto_nome||'')+' — '+(_negData.nome||'')+'</div>'
+      +'<div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--gn);margin:12px 0">R$'+(total/1000).toFixed(1)+'k</div>'
+      +(saving>0?'<div style="font-size:14px;color:var(--gn);margin-bottom:4px">💚 Saving: R$'+(saving/1000).toFixed(1)+'k</div>':'')
+      +'<div style="font-size:12px;color:var(--t2);margin-bottom:16px">'+(demData&&demData.condicao_pagamento||'')+(demData&&demData.frete_preferencia?' · '+demData.frete_preferencia:'')+'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;max-width:240px;margin:0 auto">'
+      +'<button class="btn btn-g" onclick="gerarPdfPedido(\''+ref+'\','+precoFinal+','+volume+','+total+','+saving+','+comissao+')" style="padding:11px;font-size:13px">📄 Baixar PDF do pedido</button>'
+      +'<button class="btn-ghost" onclick="go(\'sNegocios\')" style="padding:9px;font-size:12px">← Voltar para a mesa</button>'
+      +'</div></div>';
+  }
+  // Auto redirect after 8s
+  setTimeout(function(){var el2=document.getElementById('chat-box');if(el2&&el2.innerHTML.indexOf('NEGÓCIO FECHADO')>=0)go('sNegocios');},8000);
+}
+function gerarPdfPedido(ref,preco,vol,total,saving,comissao){
+  var jsPDF=window.jspdf&&window.jspdf.jsPDF;if(!jsPDF)return;
+  var doc=new jsPDF();var now=new Date().toLocaleString('pt-BR');
+  doc.setFontSize(18);doc.setTextColor(0,80,180);doc.text('PEDIDO FORMAL FOODHUB',20,25);
+  doc.setFontSize(10);doc.setTextColor(100);doc.text('N\u00ba: '+ref,20,33);doc.text('Data: '+now,20,39);
+  doc.setDrawColor(200);doc.line(20,43,190,43);
+  doc.setFontSize(12);doc.setTextColor(0);doc.text('COMPRADOR',20,53);
+  doc.setFontSize(10);doc.setTextColor(60);doc.text(_currentUser?_currentUser.email:'',20,59);
+  doc.setFontSize(12);doc.setTextColor(0);doc.text('FORNECEDOR',20,69);
+  doc.setFontSize(10);doc.setTextColor(60);doc.text(_negData?_negData.nome:'',20,75);
+  doc.line(20,80,190,80);
+  doc.setFontSize(12);doc.setTextColor(0);doc.text('PRODUTO',20,90);
+  var y=98;
+  var fields=[['Pre\u00e7o unit\u00e1rio','R$'+Number(preco).toFixed(2)+'/kg'],['Volume',Number(vol).toLocaleString('pt-BR')+' kg'],['TOTAL','R$'+Number(total).toLocaleString('pt-BR',{minimumFractionDigits:2})]];
+  fields.forEach(function(f){doc.setFontSize(9);doc.setTextColor(130);doc.text(f[0],20,y);doc.setFontSize(11);doc.setTextColor(30);doc.text(f[1],70,y);y+=8;});
+  doc.line(20,y+2,190,y+2);y+=10;
+  doc.setFontSize(11);doc.setTextColor(0,160,100);doc.text('SAVING: R$'+Number(saving).toLocaleString('pt-BR',{minimumFractionDigits:2}),20,y);y+=8;
+  doc.setTextColor(100);doc.text('COMISS\u00c3O FOODHUB (1%): R$'+Number(comissao).toFixed(2),20,y);y+=12;
+  doc.setDrawColor(200);doc.line(20,y,190,y);y+=8;
+  doc.setFontSize(8);doc.setTextColor(150);doc.text('Canal Seguro FoodHub \u00b7 myfoodhub.github.io',20,y);
+  doc.save('pedido_'+ref+'.pdf');
 }
 async function loadMensagens(negociacaoId, nomeForn){
   var box=document.getElementById('chat-box');

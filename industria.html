@@ -2556,8 +2556,20 @@ async function fecharNegocioInd(){
   if(!_indChatNegId) return;
   if(!confirm('Confirma aceitar este negócio?')) return;
   await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_indChatNegId);
-  fireToast('🎉 Negócio fechado com sucesso!');
-  loadIndInbox();
+  // Triple sound
+  playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
+  // Celebration in chat area
+  var el=document.getElementById('ind-inbox-lista');
+  if(el){
+    el.innerHTML='<div style="text-align:center;padding:40px 20px">'
+      +'<div style="font-size:48px;margin-bottom:12px">🎉</div>'
+      +'<div style="font-size:20px;font-weight:700;color:var(--go);margin-bottom:8px">VENDA CONFIRMADA!</div>'
+      +'<div style="font-size:14px;color:var(--w);margin-bottom:16px">+1 cliente ativo · Negócio fechado com sucesso</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;max-width:240px;margin:0 auto">'
+      +'<button onclick="loadIndInbox()" style="border:none;border-radius:9px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;background:var(--go);color:#000;font-family:sans-serif">← Voltar para o CRM</button>'
+      +'</div></div>';
+  }
+  setTimeout(function(){loadIndInbox();},8000);
 }
 
 // ── NAVIGATION ──
