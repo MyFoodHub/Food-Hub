@@ -2914,6 +2914,55 @@ setInterval(function(){
   }
 },25000);
 
+// ── POLLING FALLBACK ──
+var _lastPollCheckInd=new Date().toISOString();
+var _pollIntervalInd=null;
+function startPollingInd(){
+  if(_pollIntervalInd) return;
+  console.log('[FoodHub Poll Ind] Polling ativado como fallback (3s)');
+  _pollIntervalInd=setInterval(async function(){
+    if(!_fornecedorId) return;
+    var since=_lastPollCheckInd;
+    _lastPollCheckInd=new Date().toISOString();
+    // Check new demandas
+    var { data: newDems }=await _sb.from('demandas').select('id,produto_nome').eq('status','ativa').gt('criado_em',since);
+    if(newDems&&newDems.length){
+      newDems.forEach(function(d){
+        indNotify('📡 Nova demanda: '+(d.produto_nome||''));
+      });
+    }
+    // Check new mensagens in my negociacoes
+    var { data: myNegs }=await _sb.from('negociacoes').select('id').eq('fornecedor_id',_fornecedorId);
+    if(myNegs&&myNegs.length){
+      var negIds=myNegs.map(function(n){return n.id;});
+      var { data: newMsgs }=await _sb.from('mensagens').select('id,conteudo,sender').in('negociacao_id',negIds).neq('sender','fornecedor').gt('criado_em',since);
+      if(newMsgs&&newMsgs.length){
+        newMsgs.forEach(function(m){
+          var preview=m.conteudo||'';
+          if(preview.length>50) preview=preview.substring(0,47)+'...';
+          indNotify('💬 Comprador: '+preview);
+        });
+      }
+    }
+    // Check propostas status changes
+    var { data: myProps }=await _sb.from('propostas').select('id,status').eq('fornecedor_id',_fornecedorId).eq('status','aceita').gt('atualizado_em',since);
+    if(myProps&&myProps.length){
+      myProps.forEach(function(){indNotify('🎉 Proposta aceita!');});
+    }
+  },3000);
+}
+setTimeout(function(){
+  var channels=_sb.getChannels();
+  var connected=false;
+  channels.forEach(function(c){if(c.state==='joined')connected=true;});
+  if(!connected){
+    console.log('[FoodHub Poll Ind] Realtime não conectou em 5s — ativando polling');
+  } else {
+    console.log('[FoodHub Poll Ind] Realtime conectado — polling como backup');
+  }
+  startPollingInd();
+},5000);
+
 /* ── OFERTA FLOW (fornecedor) — v2 ── */
 var _OFSKIP_CONSERV=['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
 var _OFSKIP_EMBIND=['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];

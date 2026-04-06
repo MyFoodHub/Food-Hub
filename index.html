@@ -3699,6 +3699,57 @@ setInterval(function(){
   }
 },25000);
 
+// ── POLLING FALLBACK ──
+var _lastPollCheck=new Date().toISOString();
+var _pollInterval=null;
+function startPolling(){
+  if(_pollInterval) return;
+  console.log('[FoodHub Poll] Polling ativado como fallback (3s)');
+  _pollInterval=setInterval(async function(){
+    if(!_currentUser) return;
+    var since=_lastPollCheck;
+    _lastPollCheck=new Date().toISOString();
+    // Check new propostas for my demandas
+    var { data: myDems }=await _sb.from('demandas').select('id').eq('user_id',_currentUser.id);
+    if(myDems&&myDems.length){
+      var demIds=myDems.map(function(d){return d.id;});
+      var { data: newProps }=await _sb.from('propostas').select('id,preco_ofertado').in('demanda_id',demIds).gt('criado_em',since);
+      if(newProps&&newProps.length){
+        newProps.forEach(function(p){
+          buyerNotify('📨 Nova proposta! R$'+Number(p.preco_ofertado).toFixed(2));
+        });
+        atualizarBadgeNotif();
+      }
+    }
+    // Check new mensagens in my negociacoes
+    var { data: myNegs }=await _sb.from('negociacoes').select('id').eq('user_id',_currentUser.id);
+    if(myNegs&&myNegs.length){
+      var negIds=myNegs.map(function(n){return n.id;});
+      var { data: newMsgs }=await _sb.from('mensagens').select('id,conteudo,sender').in('negociacao_id',negIds).neq('sender','comprador').gt('criado_em',since);
+      if(newMsgs&&newMsgs.length){
+        newMsgs.forEach(function(m){
+          var preview=m.conteudo||'';
+          if(preview.length>50) preview=preview.substring(0,47)+'...';
+          buyerNotify('💬 '+preview);
+        });
+      }
+    }
+  },3000);
+}
+// Auto-start polling after 5s if Realtime not connected
+setTimeout(function(){
+  var channels=_sb.getChannels();
+  var connected=false;
+  channels.forEach(function(c){if(c.state==='joined')connected=true;});
+  if(!connected){
+    console.log('[FoodHub Poll] Realtime não conectou em 5s — ativando polling');
+    startPolling();
+  } else {
+    console.log('[FoodHub Poll] Realtime conectado — polling como backup');
+    startPolling();
+  }
+},5000);
+
 /* ── TICKER ── */
 (function(){
   var wrap=document.getElementById('ticker-scroll'),pos=0,paused=false;
