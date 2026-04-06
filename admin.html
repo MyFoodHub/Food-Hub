@@ -120,6 +120,16 @@ async function adminLogin(){
     document.getElementById('admin-app').style.display='flex';
     loadAll();
     setInterval(loadAll,30000);
+    // Realtime subscriptions
+    _sb.channel('admin-all').on('postgres_changes',{event:'INSERT',schema:'public',table:'demandas'},function(p){
+      adminNotify('📡 Nova demanda: '+(p.new.produto_nome||''));loadAll();
+    }).on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(p){
+      adminNotify('📤 Nova proposta enviada');loadAll();
+    }).on('postgres_changes',{event:'INSERT',schema:'public',table:'ofertas'},function(p){
+      adminNotify('📢 Nova oferta publicada: '+(p.new.nome||''));loadAll();
+    }).on('postgres_changes',{event:'INSERT',schema:'public',table:'negociacoes'},function(p){
+      adminNotify('🤝 Negociação iniciada');loadAll();
+    }).subscribe();
   } else {
     document.getElementById('login-err').style.display='block';
   }
@@ -300,15 +310,25 @@ async function loadKPIs(){
     +'<div class="kpi"><div class="kpi-lbl">Compradores</div><div class="kpi-val">'+(profs?profs.length:0)+'</div></div>'
     +'<div class="kpi"><div class="kpi-lbl">Volume negociado</div><div class="kpi-val" style="font-size:18px">'+(volTotal>1e6?'R$'+(volTotal/1e6).toFixed(1)+'M':'R$'+(volTotal/1e3).toFixed(0)+'k')+'</div></div>'
     +'<div class="kpi"><div class="kpi-lbl">Receita FoodHub</div><div class="kpi-val" style="color:var(--gn);font-size:18px">R$'+Math.round(receitaFH).toLocaleString('pt-BR')+'</div></div>';
+  // Meta tracker
+  el.innerHTML+='<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">'
+    +'<div style="flex:1;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:10px 14px;min-width:150px"><div style="font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Meta Fornecedores</div><div style="font-size:14px;font-weight:700;color:#fff">'+(forns?forns.length:0)+' <span style="font-size:11px;color:#666">/ 275</span></div><div style="height:3px;background:var(--bg3);border-radius:2px;margin-top:4px"><div style="height:100%;background:var(--ac);border-radius:2px;width:'+Math.min(100,Math.round((forns?forns.length:0)/275*100))+'%"></div></div></div>'
+    +'<div style="flex:1;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:10px 14px;min-width:150px"><div style="font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Meta Compradores</div><div style="font-size:14px;font-weight:700;color:#fff">'+(profs?profs.length:0)+' <span style="font-size:11px;color:#666">/ 212</span></div><div style="height:3px;background:var(--bg3);border-radius:2px;margin-top:4px"><div style="height:100%;background:var(--gn);border-radius:2px;width:'+Math.min(100,Math.round((profs?profs.length:0)/212*100))+'%"></div></div></div>'
+    +'<div style="flex:1;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:10px 14px;min-width:150px"><div style="font-size:8px;color:#666;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Meta Transações/mês</div><div style="font-size:14px;font-weight:700;color:#fff">R$'+(volTotal/1e6).toFixed(1)+'M <span style="font-size:11px;color:#666">/ R$30M</span></div><div style="height:3px;background:var(--bg3);border-radius:2px;margin-top:4px"><div style="height:100%;background:var(--am);border-radius:2px;width:'+Math.min(100,Math.round(volTotal/30e6*100))+'%"></div></div></div>'
+    +'</div>';
 }
 
 async function loadFeed(){
   var el=document.getElementById('tab-feed');if(!el)return;
   var { data: dems } = await _sb.from('demandas').select('produto_nome,criado_em,profiles(nome)').order('criado_em',{ascending:false}).limit(10);
   var { data: props } = await _sb.from('propostas').select('preco_ofertado,unidade_preco,criado_em,fornecedores(nome),demandas(codigo)').order('criado_em',{ascending:false}).limit(10);
+  var { data: ofers } = await _sb.from('ofertas').select('nome,criado_em,fornecedores(nome)').order('criado_em',{ascending:false}).limit(10);
+  var { data: negs } = await _sb.from('negociacoes').select('criado_em,status').order('criado_em',{ascending:false}).limit(10);
   var feed=[];
   if(dems)dems.forEach(function(d){feed.push({t:d.criado_em,icon:'📡',msg:(d.profiles&&d.profiles.nome||'Comprador')+' criou demanda de '+(d.produto_nome||'')});});
   if(props)props.forEach(function(p){feed.push({t:p.criado_em,icon:'📤',msg:(p.fornecedores&&p.fornecedores.nome||'Fornecedor')+' respondeu '+(p.demandas&&p.demandas.codigo||'demanda')+' com R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg')});});
+  if(ofers)ofers.forEach(function(o){feed.push({t:o.criado_em,icon:'📢',msg:(o.fornecedores&&o.fornecedores.nome||'Fornecedor')+' publicou oferta: '+(o.nome||'')});});
+  if(negs)negs.forEach(function(n){feed.push({t:n.criado_em,icon:'🤝',msg:'Negociação '+(n.status||'iniciada')});});
   feed.sort(function(a,b){return b.t>a.t?1:-1;});
   var h='<div class="sec-title">📡 Feed ao vivo</div>';
   feed.slice(0,20).forEach(function(f){

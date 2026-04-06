@@ -338,6 +338,17 @@ async function authLogin() {
   }
   go('s1');
   setTimeout(renderDashSegBar, 150);
+
+  // Realtime: notify when new proposta arrives for user's demandas
+  _sb.channel('buyer-propostas').on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(payload){
+    console.log('[FoodHub RT] Nova proposta recebida:', payload);
+    buyerNotify('📨 Nova proposta recebida!');
+    atualizarBadgeNotif();
+  }).subscribe();
+  _sb.channel('buyer-mensagens').on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(payload){
+    console.log('[FoodHub RT] Nova mensagem:', payload);
+    buyerNotify('💬 Nova mensagem na negociação');
+  }).subscribe();
 }
 
 async function authSignup() {
@@ -439,6 +450,17 @@ async function checkSession() {
     go('s1');
     setTimeout(renderDashSegBar, 150);
     setTimeout(atualizarBadgeNotif, 500);
+
+    // Realtime: notify when new proposta arrives for user's demandas
+    _sb.channel('buyer-propostas').on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas'},function(payload){
+      console.log('[FoodHub RT] Nova proposta recebida:', payload);
+      buyerNotify('📨 Nova proposta recebida!');
+      atualizarBadgeNotif();
+    }).subscribe();
+    _sb.channel('buyer-mensagens').on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(payload){
+      console.log('[FoodHub RT] Nova mensagem:', payload);
+      buyerNotify('💬 Nova mensagem na negociação');
+    }).subscribe();
   }
 }
 
@@ -3613,6 +3635,22 @@ async function atualizarBadgeNotif(){
     else{el.style.display='none';}
   });
 }
+
+function buyerNotify(msg){
+  // Toast
+  var c=document.getElementById('app');if(!c)return;
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--ac);border-radius:10px;padding:12px 16px;font-size:12px;color:#fff;z-index:999;box-shadow:0 4px 20px rgba(0,200,255,.2);cursor:pointer;max-width:300px';
+  t.textContent=msg;
+  t.onclick=function(){go('sNegocios');if(t.parentNode)t.parentNode.removeChild(t);};
+  document.body.appendChild(t);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},8000);
+  // Title badge
+  if(!document.hasFocus()) document.title='(!) FoodHub';
+  // Sound
+  try{var a=new AudioContext();var o=a.createOscillator();o.frequency.value=800;o.type='sine';var g=a.createGain();g.gain.value=0.1;o.connect(g);g.connect(a.destination);o.start();setTimeout(function(){o.stop();a.close();},150);}catch(e){}
+}
+window.addEventListener('focus',function(){document.title='FoodHub';});
 
 /* ── TICKER ── */
 (function(){

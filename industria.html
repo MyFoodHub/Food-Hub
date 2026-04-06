@@ -2162,6 +2162,18 @@ async function initIndApp(){
   }
   document.getElementById('ind-auth-gate').style.display='none';
   document.getElementById('app').style.display='flex';
+
+  // Realtime subscriptions
+  if(_fornecedorId){
+    _sb.channel('ind-propostas').on('postgres_changes',{event:'INSERT',schema:'public',table:'propostas',filter:'fornecedor_id=eq.'+_fornecedorId},function(payload){
+      console.log('[FoodHub RT] Nova atividade em propostas:', payload);
+      indNotify('📤 Atualização na sua proposta');
+    }).subscribe();
+    _sb.channel('ind-mensagens').on('postgres_changes',{event:'INSERT',schema:'public',table:'mensagens'},function(payload){
+      console.log('[FoodHub RT] Nova mensagem:', payload);
+      indNotify('💬 Nova mensagem de negociação');
+    }).subscribe();
+  }
 }
 // Auto-login if session exists
 (async function(){
@@ -2512,6 +2524,7 @@ function openResponder(idx){
   h+='<span>📍 '+local+'</span>';
   h+='<span>⏱️ '+prazo+'</span>';
   h+='<span>💳 '+pag+'</span>';
+  if(demFrete) h+='<span>🚚 '+demFrete+'</span>';
   if(alvo) h+='<span style="color:var(--am);font-weight:700">🎯 Alvo: '+alvo+'</span>';
   h+='</div></div>';
 
@@ -2697,8 +2710,9 @@ async function submitResposta(){
   var { data: insResult, error } = await _sb.from('propostas').insert(insertData).select();
   console.log('[FoodHub] INSERT resultado:', insResult, error?JSON.stringify(error):'ok');
   if(error){showRespMsg('Erro: '+error.message+' ('+error.code+')','err');return;}
-  document.getElementById('resp-success').style.display='flex';
-  setTimeout(function(){ closeResponder(); },2500);
+  var successEl=document.getElementById('resp-success');
+  successEl.style.display='flex';
+  successEl.innerHTML='<div style="font-size:48px;margin-bottom:12px">✅</div><div style="font-family:var(--disp);font-size:22px;font-weight:900;color:var(--go);margin-bottom:6px">PROPOSTA ENVIADA</div><div style="font-size:13px;color:var(--w2);margin-bottom:16px">O comprador foi notificado.</div><div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:240px"><button onclick="gerarPdfProposta()" style="width:100%;border:none;border-radius:9px;padding:11px;font-family:sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--go);color:#000">📄 Baixar PDF da proposta</button><button onclick="closeResponder()" style="width:100%;border:none;border-radius:9px;padding:11px;font-family:sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:var(--s3);color:var(--w2);border:1px solid var(--b1)">Fechar</button></div>';
 }
 function showRespMsg(txt,type){
   var el = document.getElementById('resp-msg');
@@ -2708,6 +2722,45 @@ function showRespMsg(txt,type){
   el.style.background=type==='ok'?'rgba(0,229,160,.12)':'rgba(255,77,106,.12)';
   el.style.color=type==='ok'?'#00E5A0':'#FF4D6A';
   el.style.border='1px solid '+(type==='ok'?'rgba(0,229,160,.3)':'rgba(255,77,106,.3)');
+}
+
+function gerarPdfProposta(){
+  var jsPDF=window.jspdf&&window.jspdf.jsPDF;
+  if(!jsPDF){alert('Carregando biblioteca PDF...');return;}
+  var doc=new jsPDF();
+  var d=_respDemanda||{};
+  var ref='PR-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*90000)+10000);
+  var now=new Date().toLocaleString('pt-BR');
+  doc.setFontSize(20);doc.setTextColor(245,184,0);
+  doc.text('FoodHub Ind\u00fastria',20,25);
+  doc.setFontSize(10);doc.setTextColor(100);
+  doc.text('Comprovante de Proposta',20,32);
+  doc.setDrawColor(200);doc.line(20,36,190,36);
+  doc.setFontSize(14);doc.setTextColor(0);
+  doc.text('Proposta Enviada',20,48);
+  doc.setFontSize(11);doc.setTextColor(60);
+  doc.text('Ref: '+ref,20,56);
+  doc.text('Data: '+now,20,63);
+  doc.line(20,67,190,67);
+  var y=77;
+  var precoEl=document.getElementById('resp-preco');
+  var fields=[
+    ['Produto',d.produto_nome||''],['Especifica\u00e7\u00e3o',d.especificacao||''],
+    ['Volume solicitado',(d.volume||'')+' '+(d.unidade_volume||'')],
+    ['Pre\u00e7o ofertado','R$'+(precoEl?precoEl.value:'')],
+    ['Fornecedor',window._fornecedorNome||''],
+    ['Demanda ID',d.id||'']
+  ];
+  fields.forEach(function(f){
+    if(!f[1])return;
+    doc.setFontSize(9);doc.setTextColor(130);doc.text(f[0],20,y);
+    doc.setFontSize(11);doc.setTextColor(30);doc.text(String(f[1]),75,y);
+    y+=9;
+  });
+  doc.setDrawColor(200);doc.line(20,y+4,190,y+4);
+  doc.setFontSize(8);doc.setTextColor(150);
+  doc.text('Proposta enviada via FoodHub \u00b7 myfoodhub.github.io/Food-Hub/industria.html',20,y+12);
+  doc.save('proposta_'+ref+'.pdf');
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────
@@ -2731,6 +2784,14 @@ function fireToast(msg){
   c.appendChild(el);
   setTimeout(function(){el.style.transition='all .4s';el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},400);},5000);
 }
+function indNotify(msg){
+  fireToast(msg);
+  // Update title with badge
+  if(!document.hasFocus()) document.title='(!) FoodHub Indústria';
+  // Play sound
+  try{var a=new AudioContext();var o=a.createOscillator();o.frequency.value=800;o.type='sine';var g=a.createGain();g.gain.value=0.1;o.connect(g);g.connect(a.destination);o.start();setTimeout(function(){o.stop();a.close();},150);}catch(e){}
+}
+window.addEventListener('focus',function(){document.title='FoodHub — Indústria';});
 
 /* ── OFERTA FLOW (fornecedor) — v2 ── */
 var _OFSKIP_CONSERV=['Ovos','Farinha de Trigo','Óleo de Soja','Outro item'];
