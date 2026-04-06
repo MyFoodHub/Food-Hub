@@ -2442,7 +2442,7 @@ async function loadIndInbox(){
     if(preview.length>60)preview=preview.substring(0,57)+'...';
     var hora=lastMsg&&lastMsg.criado_em?new Date(lastMsg.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
     var isUnread=lastMsg&&lastMsg.sender==='comprador';
-    h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="go(\'s-main\')">';
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="openIndChat(\''+n.id+'\',\''+(prof.nome||'Comprador').replace(/'/g,"\\'")+'\',\''+(dem.produto_nome||'').replace(/'/g,"\\'")+'\')">';
     if(isUnread) h+='<div style="width:6px;height:6px;border-radius:50%;background:var(--rd);flex-shrink:0"></div>';
     h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w)">'+(prof.nome||'Comprador')+' · <span style="font-weight:400;color:var(--w2)">'+(dem.produto_nome||'')+'</span></div>';
     h+='<div style="font-size:11px;color:var(--w3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div></div>';
@@ -2450,6 +2450,53 @@ async function loadIndInbox(){
     h+='</div>';
   });
   el.innerHTML=h;
+}
+
+var _indChatNegId=null;
+async function openIndChat(negId, nome, produto){
+  _indChatNegId=negId;
+  var el=document.getElementById('ind-inbox-lista');
+  if(!el) return;
+  // Mark as read
+  _sb.from('mensagens').update({lida:true}).eq('negociacao_id',negId).neq('sender','fornecedor').eq('lida',false).then(function(){});
+  // Build chat UI
+  var h='<div style="margin-bottom:10px"><span style="font-size:12px;color:var(--am);cursor:pointer" onclick="loadIndInbox()">← Voltar ao inbox</span></div>';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--w);margin-bottom:4px">'+nome+'</div>';
+  h+='<div style="font-size:11px;color:var(--w3);margin-bottom:12px">'+produto+'</div>';
+  h+='<div id="ind-chat-box" style="max-height:400px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:6px"><div style="text-align:center;font-size:11px;color:var(--w3)">Carregando...</div></div>';
+  h+='<div style="display:flex;gap:6px"><input id="ind-chat-inp" type="text" placeholder="Digite sua mensagem..." style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px 12px;font-size:13px;color:#fff;outline:none;box-sizing:border-box" onkeydown="if(event.key===\'Enter\')sendIndMsg()"><button onclick="sendIndMsg()" style="border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;background:var(--am);color:#000;flex-shrink:0">Enviar</button></div>';
+  el.innerHTML=h;
+  // Load messages
+  var { data: msgs }=await _sb.from('mensagens').select('*').eq('negociacao_id',negId).order('criado_em',{ascending:true});
+  var box=document.getElementById('ind-chat-box');
+  if(!box) return;
+  if(!msgs||!msgs.length){box.innerHTML='<div style="text-align:center;font-size:11px;color:var(--w3)">Nenhuma mensagem. Envie a primeira!</div>';return;}
+  var mh='';
+  msgs.forEach(function(m){
+    var isMe=m.sender==='fornecedor';
+    var hora=m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    if(isMe){
+      mh+='<div style="display:flex;justify-content:flex-end;gap:6px"><div style="background:rgba(245,184,0,.12);border:1px solid rgba(245,184,0,.2);border-radius:10px 10px 2px 10px;padding:8px 12px;max-width:70%;font-size:12px;color:var(--w)">'+m.conteudo+'<div style="font-size:9px;color:var(--w3);margin-top:2px;text-align:right">'+hora+'</div></div></div>';
+    } else {
+      mh+='<div style="display:flex;gap:6px"><div style="background:var(--s3);border:1px solid var(--b1);border-radius:10px 10px 10px 2px;padding:8px 12px;max-width:70%;font-size:12px;color:var(--w)">'+m.conteudo+'<div style="font-size:9px;color:var(--w3);margin-top:2px">'+hora+'</div></div></div>';
+    }
+  });
+  box.innerHTML=mh;
+  box.scrollTop=box.scrollHeight;
+}
+async function sendIndMsg(){
+  var inp=document.getElementById('ind-chat-inp');
+  var txt=inp?inp.value.trim():'';
+  if(!txt||!_indChatNegId) return;
+  var box=document.getElementById('ind-chat-box');
+  if(box){
+    var hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    box.innerHTML+='<div style="display:flex;justify-content:flex-end;gap:6px"><div style="background:rgba(245,184,0,.12);border:1px solid rgba(245,184,0,.2);border-radius:10px 10px 2px 10px;padding:8px 12px;max-width:70%;font-size:12px;color:var(--w)">'+txt+'<div style="font-size:9px;color:var(--w3);margin-top:2px;text-align:right">'+hora+'</div></div></div>';
+    box.scrollTop=box.scrollHeight;
+  }
+  inp.value='';
+  var { error }=await _sb.from('mensagens').insert({negociacao_id:_indChatNegId,sender:'fornecedor',conteudo:txt,tipo:'texto',lida:false}).select();
+  if(error) console.log('[FoodHub] Erro enviar msg ind:', JSON.stringify(error));
 }
 
 // ── NAVIGATION ──
@@ -2844,9 +2891,9 @@ function fireToast(msg){
     document.body.appendChild(c); }
   var el = document.createElement('div');
   el.style.cssText='background:#060818;border:1px solid var(--am);border-radius:9px;padding:10px 13px;font-size:12px;color:#fff;animation:scr-in .25s ease;pointer-events:auto;box-shadow:0 4px 18px rgba(245,184,0,.2)';
-  el.innerHTML = '🚀 ' + msg;
+  el.innerHTML = '🚀 ' + msg + ' <button onclick="go(\'s-mensagens\');this.parentNode.parentNode.removeChild(this.parentNode)" style="background:var(--am);border:none;border-radius:4px;padding:3px 10px;font-size:10px;font-weight:700;color:#000;cursor:pointer;margin-left:6px">Ver →</button>';
   c.appendChild(el);
-  setTimeout(function(){el.style.transition='all .4s';el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},400);},5000);
+  setTimeout(function(){el.style.transition='all .4s';el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},400);},6000);
 }
 function playFoodHubSound(){
   try{

@@ -3649,11 +3649,10 @@ function buyerNotify(msg){
   _unreadCount++;
   document.title='('+_unreadCount+') FoodHub';
   var t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--ac);border-radius:10px;padding:12px 16px;font-size:12px;color:#fff;z-index:9999;box-shadow:0 4px 20px rgba(0,200,255,.3);cursor:pointer;max-width:300px';
-  t.textContent=msg;
-  t.onclick=function(){go('sNegocios');if(t.parentNode)t.parentNode.removeChild(t);};
+  t.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--ac);border-radius:10px;padding:12px 16px;font-size:12px;color:#fff;z-index:9999;box-shadow:0 4px 20px rgba(0,200,255,.3);max-width:320px';
+  t.innerHTML='<div style="margin-bottom:6px">'+msg+'</div><button style="background:var(--ac);border:none;border-radius:5px;padding:4px 12px;font-size:11px;font-weight:700;color:#000;cursor:pointer" onclick="go(\'sMensagens\');this.parentNode.parentNode.removeChild(this.parentNode)">Ver →</button>';
   document.body.appendChild(t);
-  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},8000);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},6000);
 }
 window.addEventListener('focus',function(){_unreadCount=0;document.title='FoodHub';});
 
