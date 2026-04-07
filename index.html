@@ -290,6 +290,8 @@ body{background:#050810;color:#ECF0FF;font-family:sans-serif;font-size:14px}
 .seg-btn{padding:5px 14px;border-radius:16px;border:1px solid var(--b2);background:transparent;color:var(--t3);font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;transition:all .15s}
 .seg-btn.active{border-color:var(--gn);color:var(--gn);background:var(--g2)}
 .seg-btn:hover{border-color:var(--b3);color:var(--t2)}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.3}}
+.badge-nova{animation:pulse-badge 1.2s infinite;background:var(--rd);color:#fff;font-size:8px;padding:1px 6px;border-radius:3px;font-weight:700}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -3751,6 +3753,8 @@ function startPolling(){
           buyerNotify('📨 Nova proposta! R$'+Number(p.preco_ofertado).toFixed(2));
         });
         atualizarBadgeNotif();
+        // Auto-refresh CRM if on sNegocios screen
+        if(document.getElementById('sNegocios')&&document.getElementById('sNegocios').classList.contains('active')) negRender();
       }
     }
     // Check new mensagens in my negociacoes

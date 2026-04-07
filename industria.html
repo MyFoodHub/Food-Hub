@@ -394,6 +394,8 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 .mf-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-am{background:#060812;border:1px solid rgba(245,184,0,.2);border-radius:14px;
   width:100%;max-width:520px;padding:22px;position:relative;max-height:88vh;overflow-y:auto}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.3}}
+.badge-nova{animation:pulse-badge 1.2s infinite;background:var(--rd);color:#fff;font-size:8px;padding:1px 6px;border-radius:3px;font-weight:700}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2783,8 +2785,8 @@ function openResponder(idx){
   h+='<div style="margin-bottom:14px">';
   h+='<div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;font-family:var(--mono)">Sua proposta</div>';
   h+='<div style="display:flex;flex-direction:column;gap:10px">';
-  h+='<div style="display:flex;gap:10px"><div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Volume que pode fornecer</div><div style="display:flex;gap:6px"><input id="resp-vol" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">'+(d.unidade_volume||'kg')+'</span></div></div>';
-  h+='<div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo de faturamento/expedição</div><div style="display:flex;gap:6px"><input id="resp-prazo" type="number" placeholder="0" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">dias úteis para faturar</span></div></div></div>';
+  h+='<div style="display:flex;gap:10px"><div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Volume que pode fornecer</div><div style="display:flex;gap:6px"><input id="resp-vol" type="number" placeholder="0" oninput="respCheckSubmit()" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">'+(d.unidade_volume||'kg')+'</span></div></div>';
+  h+='<div style="flex:1"><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Prazo de faturamento/expedição</div><div style="display:flex;gap:6px"><input id="resp-prazo" type="number" placeholder="0" oninput="respCheckSubmit()" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;font-family:var(--mono);outline:none"><span style="align-self:center;font-size:12px;color:var(--w3)">dias úteis para faturar</span></div></div></div>';
   h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Condição de pagamento</div><select id="resp-pag" style="width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:13px;color:#fff;outline:none"><option value="">Selecione</option><option value="À vista PIX">À vista · PIX</option><option value="14 dias boleto">14 dias · boleto</option><option value="28 dias boleto">28 dias · boleto</option><option value="30 dias boleto">30 dias · boleto</option><option value="45 dias boleto">45 dias · boleto</option><option value="Outro">Outro</option></select></div>';
   // Price with comparison
   h+='<div><div style="font-size:11px;color:var(--w2);margin-bottom:3px">Seu preço *</div><div style="display:flex;gap:6px;align-items:center"><span style="font-size:14px;color:var(--w3)">R$</span><input id="resp-preco" type="number" step="0.01" placeholder="0.00" oninput="respUpdatePreco();respCheckSubmit()" style="flex:1;background:var(--s3);border:1px solid var(--b1);border-radius:8px;padding:9px;font-size:16px;font-weight:700;color:#fff;font-family:var(--mono);outline:none"><span style="font-size:12px;color:var(--w3)">'+(d.unidade_volume==='kg'?'/kg':'/un')+'</span></div>';
@@ -2851,10 +2853,12 @@ function respUpdatePreco(){
   if(!cmp) return;
   var meu = parseFloat(document.getElementById('resp-preco').value)||0;
   var alvo = Number(_respDemanda.preco_alvo);
-  if(meu>0 && meu<=alvo){
-    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--go)">✅ Seu preço está abaixo!</strong>';
+  if(meu>0 && meu<alvo){
+    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--go)">✅ Abaixo do alvo — ótima proposta!</strong>';
+  } else if(meu>0 && meu===alvo){
+    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--am)">🎯 No alvo do comprador</strong>';
   } else if(meu>0){
-    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--rd)">⚠️ Acima do alvo</strong>';
+    cmp.innerHTML='Alvo: R$'+alvo.toFixed(2)+' — <strong style="color:var(--rd)">⚠️ Acima do alvo — pode perder o negócio</strong>';
   }
 }
 
@@ -2862,16 +2866,19 @@ function respCheckSubmit(){
   var btn = document.getElementById('resp-submit-btn');
   if(!btn) return;
   var preco = parseFloat((document.getElementById('resp-preco')||{}).value)||0;
+  var vol = parseFloat((document.getElementById('resp-vol')||{}).value)||0;
+  var prazo = parseInt((document.getElementById('resp-prazo')||{}).value)||0;
   var specOk = _respSpecOk==='exato'||_respSpecOk==='similar'||_respSpecOk==='nao_forcar';
   var reqBtns = document.getElementById('resp-req-btns');
   var reqOk = !reqBtns || _respReqOk==='ok'||_respReqOk==='parcial'||_respReqOk==='nao_forcar';
-  console.log('[FoodHub] respCheckSubmit: preco='+preco+' specOk='+specOk+' reqOk='+reqOk);
   var hint='';
-  if(!specOk) hint='Confirme as especificações acima';
-  else if(!reqOk) hint='Confirme os requisitos acima';
-  else if(preco<=0) hint='Informe o preço';
+  if(!specOk) hint='Confirme as especificações';
+  else if(!reqOk) hint='Confirme os requisitos';
+  else if(!preco) hint='Informe o preço';
+  else if(!vol) hint='Informe o volume';
+  else if(!prazo) hint='Informe o prazo';
   btn.title=hint;
-  if(preco>0 && specOk && reqOk){
+  if(preco>0 && vol>0 && prazo>0 && specOk && reqOk){
     btn.style.opacity='1';btn.style.pointerEvents='auto';
     btn.textContent='Enviar proposta →';
   } else {
@@ -3131,7 +3138,13 @@ function startPollingInd(){
             var box2=document.getElementById('ind-chat-box');
             if(box2) box2.innerHTML+='<div style="text-align:center;padding:12px;color:var(--go);font-size:13px;font-weight:700">🎉 Negócio fechado pelo comprador!</div>';
           } else {
-            indNotify('🎉 Negócio fechado!');
+          playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
+          // Big toast
+          var bigToast=document.createElement('div');
+          bigToast.style.cssText='position:fixed;bottom:20px;right:20px;background:#0a0810;border:2px solid var(--go);border-radius:14px;padding:20px;font-size:14px;color:#fff;z-index:9999;box-shadow:0 4px 30px rgba(0,229,160,.4);max-width:340px';
+          bigToast.innerHTML='<div style="font-size:28px;margin-bottom:8px">🎉</div><div style="font-weight:700;font-size:16px;color:var(--go);margin-bottom:4px">NEGÓCIO FECHADO!</div><div style="font-size:12px;color:var(--w2)">Comprador aceitou sua proposta</div>';
+          document.body.appendChild(bigToast);
+          setTimeout(function(){if(bigToast.parentNode)bigToast.parentNode.removeChild(bigToast);},12000);
           }
         });
       }
@@ -3140,6 +3153,8 @@ function startPollingInd(){
     var { data: myProps }=await _sb.from('propostas').select('id,status').eq('fornecedor_id',_fornecedorId).eq('status','aceita').gt('atualizado_em',since);
     if(myProps&&myProps.length){
       myProps.forEach(function(){indNotify('🎉 Proposta aceita!');});
+        // Auto-refresh CRM if on minhas-ofertas screen
+        if(document.getElementById('s-minhas-ofertas')&&document.getElementById('s-minhas-ofertas').classList.contains('on')) loadMinhasOfertas();
     }
   },3000);
 }
@@ -3511,7 +3526,7 @@ function gerarPdfOferta(){
 </div>
 
 <!-- ════════ MODAL: RESPONDER DEMANDA ════════ -->
-<div id="modal-responder" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeResponder()">
+<div id="modal-responder" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:16px">
   <div style="background:#0A0810;border:1px solid rgba(245,184,0,.2);border-radius:16px;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;position:relative;overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(245,184,0,.1);flex-shrink:0">
       <div style="font-family:var(--disp);font-size:18px;font-weight:900;text-transform:uppercase;color:var(--am)">Responder Demanda</div>
