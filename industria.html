@@ -445,7 +445,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni on"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
-      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">📦</span>Gestão de Pedidos</div>
       <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
@@ -513,7 +513,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni on"><span class="nicon">🔍</span>Demandas do mercado</div>
-      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">📦</span>Gestão de Pedidos</div>
       <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
@@ -540,7 +540,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
-      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">📦</span>Gestão de Pedidos</div>
       <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
@@ -621,7 +621,7 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
-      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni" onclick="go('s-pipeline')"><span class="nicon">📦</span>Gestão de Pedidos</div>
       <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
@@ -1697,13 +1697,13 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
       <div class="ni" onclick="go('s-main')"><span class="nicon">📊</span>Dashboard</div>
       <div class="ni" onclick="openOfertaFlow()"><span class="nicon">📢</span>Publicar oferta</div>
       <div class="ni" onclick="go('s-demandas')"><span class="nicon">🔍</span>Demandas do mercado</div>
-      <div class="ni on"><span class="nicon">🤝</span>Negociações</div>
+      <div class="ni on"><span class="nicon">📦</span>Gestão de Pedidos</div>
       <div class="ni" onclick="go('s-mensagens')"><span class="nicon">💬</span>Mensagens</div>
       <div class="ni" onclick="go('s-minhas-ofertas')"><span class="nicon">📊</span>Meu pipeline</div>
     </div>
     <div class="main">
-      <div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:var(--mono)">🤝 PIPELINE DE NEGOCIAÇÕES</div>
-      <div id="pipeline-lista"><div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando...</div></div>
+      <div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-family:var(--mono)">📦 GESTÃO DE PEDIDOS</div>
+      <div id="pipeline-lista"><div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Carregando pedidos...</div></div>
     </div>
   </div>
 </div>
@@ -2323,38 +2323,64 @@ function crmVSetFilt(btn,filt){
 async function loadPipeline(){
   var el=document.getElementById('pipeline-lista');
   if(!el)return;
-  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Para ver suas negociações, seu email de login precisa estar cadastrado no campo contato_email da tabela fornecedores no Supabase.</div>';return;}
-  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando...</div>';
-  var { data, error } = await _sb.from('propostas').select('*, demandas(produto_nome, volume, unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
-  if(error){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro.</div>';return;}
-  if(!data||!data.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma negociação ainda.</div>';return;}
-  var propIds=data.map(function(p){return p.id;});
+  if(!_fornecedorId){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Vincule seu email na tabela fornecedores.</div>';return;}
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--w3);font-size:12px">Carregando pedidos...</div>';
+  // Fetch pedidos
+  var { data: pedidos }=await _sb.from('pedidos').select('*').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  // Fetch propostas for pipeline
+  var { data: props }=await _sb.from('propostas').select('*, demandas(produto_nome,volume,unidade_volume)').eq('fornecedor_id',_fornecedorId).order('criado_em',{ascending:false});
+  var propIds=(props||[]).map(function(p){return p.id;});
   var negMap={};
-  var { data: negs } = await _sb.from('negociacoes').select('proposta_id,status').in('proposta_id',propIds);
-  if(negs) negs.forEach(function(n){negMap[n.proposta_id]=n.status;});
-  var enviadas=[],negociando=[],fechados=[],recusados=[];
-  data.forEach(function(p){
-    var ns=negMap[p.id]||null;
-    if(p.status==='aceita') fechados.push(p);
-    else if(p.status==='recusada') recusados.push(p);
-    else if(ns==='em_andamento') negociando.push(p);
-    else enviadas.push(p);
-  });
-  function ln(p,btn){
-    var dem=p.demandas||{};var prod=dem.produto_nome||'Proposta';
-    var preco='R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg');
-    var dt=p.criado_em?new Date(p.criado_em).toLocaleDateString('pt-BR'):'';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--w)">'+prod+'</div><div style="font-size:10px;color:var(--w3)">'+preco+(dt?' · '+dt:'')+'</div></div>'+btn+'</div>';
-  }
-  function sec(icon,label,count,id){
-    return '<div style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--b2);margin-top:8px" onclick="var s=document.getElementById(\''+id+'\');s.style.display=s.style.display===\'none\'?\'block\':\'none\'"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);color:var(--w3)">'+icon+' '+label+' ('+count+')</span><span style="margin-left:auto;font-size:10px;color:var(--w4)">▾</span></div>';
+  if(propIds.length){
+    var { data: negs }=await _sb.from('negociacoes').select('proposta_id,status').in('proposta_id',propIds);
+    if(negs) negs.forEach(function(n){negMap[n.proposta_id]=n.status;});
   }
   var html='';
-  if(enviadas.length){html+=sec('📨','PROPOSTAS ENVIADAS',enviadas.length,'pip-env');html+='<div id="pip-env">';enviadas.forEach(function(p){html+=ln(p,'<span style="font-size:11px;color:var(--am);flex-shrink:0">Aguardando...</span>');});html+='</div>';}
-  if(negociando.length){html+=sec('🔵','EM NEGOCIAÇÃO',negociando.length,'pip-neg');html+='<div id="pip-neg">';negociando.forEach(function(p){html+=ln(p,'<button style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--b2);background:var(--s3);color:var(--w2);cursor:pointer;flex-shrink:0;font-family:sans-serif">Continuar →</button>');});html+='</div>';}
-  if(fechados.length){html+=sec('✅','FECHADOS',fechados.length,'pip-fech');html+='<div id="pip-fech">';fechados.forEach(function(p){html+=ln(p,'<span style="font-size:11px;color:var(--go);flex-shrink:0">Aceita ✓</span>');});html+='</div>';}
-  if(recusados.length){html+=sec('❌','RECUSADOS/EXPIRADOS',recusados.length,'pip-rec');html+='<div id="pip-rec">';recusados.forEach(function(p){html+=ln(p,'<span style="font-size:11px;color:var(--rd);flex-shrink:0">Recusada</span>');});html+='</div>';}
-  if(!html) html='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhuma negociação ainda.</div>';
+  var now=new Date();
+  // PEDIDOS ATIVOS
+  if(pedidos&&pedidos.length){
+    html+='<div style="font-size:10px;color:var(--am);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-family:var(--mono)">📦 MEUS PEDIDOS ATIVOS</div>';
+    pedidos.forEach(function(pd){
+      var total=pd.preco_total?'R$'+Number(pd.preco_total).toLocaleString('pt-BR',{minimumFractionDigits:0}):'';
+      var vol=pd.volume?Number(pd.volume).toLocaleString('pt-BR')+' '+(pd.unidade||'kg'):'';
+      var entrega=pd.data_entrega_prevista?new Date(pd.data_entrega_prevista):null;
+      var st='🟡 Aguardando faturamento';var stColor='var(--am)';
+      if(pd.status==='entregue'){st='✅ Entregue';stColor='var(--go)';}
+      else if(entrega&&now>entrega){st='🔴 Atrasado';stColor='var(--rd)';}
+      else if(pd.nf_numero){st='🟢 On time';stColor='var(--go)';}
+      html+='<div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:12px 14px;margin-bottom:8px">';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--mono);font-size:11px;color:var(--w3)">'+(pd.codigo||'')+'</span><span style="font-size:11px;color:'+stColor+';font-weight:700">'+st+'</span></div>';
+      html+='<div style="font-size:14px;font-weight:700;color:var(--w);margin-bottom:4px">'+(pd.produto_nome||'Pedido')+'</div>';
+      html+='<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--w3)">';
+      if(vol) html+='<span>📦 '+vol+'</span>';
+      if(total) html+='<span style="color:var(--am);font-weight:700">'+total+'</span>';
+      if(pd.condicao_pagamento) html+='<span>💳 '+pd.condicao_pagamento+'</span>';
+      if(pd.frete) html+='<span>🚚 '+pd.frete+'</span>';
+      if(entrega) html+='<span>📅 '+entrega.toLocaleDateString('pt-BR')+'</span>';
+      html+='</div></div>';
+    });
+  }
+  // PROPOSTAS EM ANDAMENTO
+  var enviadas=[],negociando=[],fechados=[];
+  (props||[]).forEach(function(p){
+    var ns=negMap[p.id]||null;
+    if(p.status==='aceita') fechados.push(p);
+    else if(ns==='em_andamento') negociando.push(p);
+    else if(p.status!=='recusada') enviadas.push(p);
+  });
+  function ln2(p,badge){
+    var dem=p.demandas||{};
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--b1)"><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--w)">'+(dem.produto_nome||'')+'</div><div style="font-size:10px;color:var(--w3)">R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg')+'</div></div>'+badge+'</div>';
+  }
+  if(negociando.length){
+    html+='<div style="font-size:10px;color:var(--ic);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px;font-family:var(--mono)">🔵 EM NEGOCIAÇÃO ('+negociando.length+')</div>';
+    negociando.forEach(function(p){html+=ln2(p,'<span style="font-size:10px;color:var(--ic)">Negociando</span>');});
+  }
+  if(enviadas.length){
+    html+='<div style="font-size:10px;color:var(--w3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px;font-family:var(--mono)">📨 PROPOSTAS ENVIADAS ('+enviadas.length+')</div>';
+    enviadas.forEach(function(p){html+=ln2(p,'<span style="font-size:10px;color:var(--am)">Aguardando</span>');});
+  }
+  if(!html) html='<div style="text-align:center;padding:30px;color:var(--w3);font-size:12px">Nenhum pedido ou negociação.</div>';
   el.innerHTML=html;
 }
 
