@@ -1,0 +1,10 @@
+# Credenciais e env
+.env
+.env.local
+supabase/functions/.env.local
+
+# Supabase local
+.supabase/
+
+# Node
+node_modules/
