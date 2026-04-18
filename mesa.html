@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodHub — Mesa Diretiva</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#0a0a0f;color:#e0e0e0;font-family:system-ui,-apple-system,sans-serif;font-size:14px}
+
+:root{
+  --bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a28;--bg4:#222236;
+  --border:#1e1e2e;--border2:rgba(255,255,255,.10);--border3:rgba(255,255,255,.18);
+  --text:#e0e0e0;--text2:#b0b0c0;--text3:#707090;--text4:#4a4a6a;
+  --accent:#6c5ce7;--accent-bg:rgba(108,92,231,.10);--accent-border:rgba(108,92,231,.30);
+  --success:#00b894;--success-bg:rgba(0,184,148,.10);
+  --warning:#fdcb6e;--warning-bg:rgba(253,203,110,.10);
+  --danger:#e17055;--danger-bg:rgba(225,112,85,.10);
+  --info:#0984e3;--info-bg:rgba(9,132,227,.10);
+  --radius:10px;
+}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text4)}
+
+/* PASSWORD MODAL */
+#pw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center}
+#pw-overlay.hidden{display:none}
+.pw-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:36px;width:380px;max-width:90vw;text-align:center}
+.pw-box h2{font-size:20px;font-weight:700;margin-bottom:6px;color:#fff}
+.pw-box p{font-size:13px;color:var(--text3);margin-bottom:20px}
+.pw-box input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;outline:none;text-align:center;letter-spacing:.15em;margin-bottom:14px}
+.pw-box input:focus{border-color:var(--accent)}
+.pw-box .pw-err{color:var(--danger);font-size:12px;margin-bottom:10px;min-height:16px}
+.pw-box button{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:filter .15s}
+.pw-box button:hover{filter:brightness(1.15)}
+
+/* APP SHELL */
+#app{display:none;height:100vh;flex-direction:column;overflow:hidden}
+#app.active{display:flex}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;z-index:10}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;letter-spacing:-.01em}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.logo span{color:var(--accent)}
+.logo-mesa{font-size:10px;background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-left:6px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-time{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--text3);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);padding:14px 10px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-section{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.12em;padding:12px 10px 4px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;font-size:13px;color:var(--text2);cursor:pointer;transition:all .14s;border:1px solid transparent;position:relative}
+.nav-item:hover{background:var(--accent-bg);color:#fff}
+.nav-item.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);font-weight:600}
+.nav-item .ni{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.nav-item .badge-count{margin-left:auto;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+
+/* MAIN CONTENT */
+.main{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* PANEL */
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* PANEL HEADER */
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.panel-header h2{font-size:18px;font-weight:700;color:#fff}
+.panel-header .refresh-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:7px;font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.panel-header .refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* METRIC CARDS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.metric-card.purple::before{background:var(--accent)}
+.metric-card.green::before{background:var(--success)}
+.metric-card.orange::before{background:var(--warning)}
+.metric-card.red::before{background:var(--danger)}
+.metric-card.blue::before{background:var(--info)}
+.metric-card .label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.metric-card .value{font-size:24px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.metric-card .sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2)}
+table.tbl{width:100%;border-collapse:collapse;min-width:700px}
+table.tbl thead th{padding:10px 14px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);white-space:nowrap}
+table.tbl tbody tr{transition:background .12s}
+table.tbl tbody tr:hover{background:rgba(108,92,231,.04)}
+table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.badge-green{background:var(--success-bg);color:var(--success)}
+.badge-orange{background:var(--warning-bg);color:var(--warning)}
+.badge-red{background:var(--danger-bg);color:var(--danger)}
+.badge-purple{background:var(--accent-bg);color:var(--accent)}
+.badge-blue{background:var(--info-bg);color:var(--info)}
+.badge-gray{background:rgba(255,255,255,.05);color:var(--text3)}
+
+/* BUTTONS */
+.btn{border:none;border-radius:7px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:system-ui}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-success{background:var(--success);color:#000}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);padding:6px 14px}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:4px 10px;font-size:11px}
+
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.filter-tab{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;transition:all .14s;font-family:system-ui}
+.filter-tab:hover{border-color:var(--accent);color:var(--accent)}
+.filter-tab.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);font-weight:600}
+
+/* FEED TIMELINE */
+.feed-list{display:flex;flex-direction:column;gap:8px}
+.feed-item{display:flex;gap:12px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .15s}
+.feed-item:hover{border-color:var(--accent-border)}
+.feed-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.feed-icon.log{background:var(--accent-bg)}
+.feed-icon.notif{background:var(--warning-bg)}
+.feed-icon.aprov{background:var(--success-bg)}
+.feed-body{flex:1;min-width:0}
+.feed-body .feed-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:2px}
+.feed-body .feed-desc{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed-time{font-size:10px;color:var(--text4);white-space:nowrap;flex-shrink:0;padding-top:2px}
+
+/* BAR CHART CSS */
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:12px;color:var(--text2);min-width:120px;text-align:right}
+.bar-track{flex:1;height:24px;background:var(--bg3);border-radius:5px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:5px;transition:width .6s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:10px;font-weight:700;color:#fff;min-width:fit-content}
+.bar-fill.c1{background:linear-gradient(90deg,var(--accent),#8b7cf7)}
+.bar-fill.c2{background:linear-gradient(90deg,var(--success),#2ecc71)}
+.bar-fill.c3{background:linear-gradient(90deg,var(--warning),#f39c12)}
+.bar-fill.c4{background:linear-gradient(90deg,var(--danger),#e74c3c)}
+.bar-fill.c5{background:linear-gradient(90deg,var(--info),#3498db)}
+.bar-value{font-size:12px;color:var(--text);min-width:80px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* RANKING LIST */
+.rank-list{display:flex;flex-direction:column;gap:6px}
+.rank-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.rank-pos{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.rank-pos.r1{background:rgba(0,184,148,.15);color:var(--success)}
+.rank-pos.r2{background:var(--accent-bg);color:var(--accent)}
+.rank-pos.r3{background:var(--warning-bg);color:var(--warning)}
+.rank-pos.rn{background:rgba(255,255,255,.05);color:var(--text3)}
+.rank-name{flex:1;font-size:13px;font-weight:500}
+.rank-value{font-size:13px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+
+/* SECTION CARD */
+.section-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px}
+.section-card h3{font-size:13px;font-weight:700;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-card h3 span{font-size:14px}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+.loading::before{content:'';display:block;width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ERROR */
+.error-msg{background:var(--danger-bg);border:1px solid rgba(225,112,85,.25);color:var(--danger);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
+
+/* APPROVAL CARD */
+.approval-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:border-color .15s}
+.approval-card:hover{border-color:var(--accent-border)}
+.approval-info{flex:1;min-width:0}
+.approval-info .ap-type{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:3px}
+.approval-info .ap-code{font-size:14px;font-weight:600;color:#fff;margin-bottom:2px}
+.approval-info .ap-date{font-size:11px;color:var(--text4)}
+.approval-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* MODAL OVERLAY FOR REJECTIONS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;width:400px;max-width:90vw}
+.modal-box h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:14px}
+.modal-box textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:13px;resize:vertical;min-height:80px;outline:none;font-family:system-ui}
+.modal-box textarea:focus{border-color:var(--accent)}
+.modal-box .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state .empty-icon{font-size:32px;margin-bottom:10px}
+.empty-state p{font-size:13px}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{padding:14px}
+  .metrics-grid{grid-template-columns:1fr 1fr}
+  .topbar{padding:8px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD OVERLAY -->
+<div id="pw-overlay">
+  <div class="pw-box">
+    <h2>Mesa Diretiva</h2>
+    <p>Acesso restrito. Informe a senha de acesso.</p>
+    <div class="pw-err" id="pw-err"></div>
+    <input type="password" id="pw-input" placeholder="Senha" autofocus>
+    <button id="pw-btn" onclick="checkPassword()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      Food<span>Hub</span>
+      <div class="logo-mesa">Mesa</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-time" id="clock"></div>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="nav-section">Operacional</div>
+      <div class="nav-item active" data-panel="pipeline" onclick="switchPanel('pipeline')">
+        <span class="ni">📊</span> Pipeline Executivo
+      </div>
+      <div class="nav-item" data-panel="aprovacoes" onclick="switchPanel('aprovacoes')">
+        <span class="ni">✅</span> Aprovacoes
+        <span class="badge-count" id="badge-aprovacoes" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-panel="financeiro" onclick="switchPanel('financeiro')">
+        <span class="ni">💰</span> Financeiro
+      </div>
+      <div class="nav-section">Gestao</div>
+      <div class="nav-item" data-panel="membros" onclick="switchPanel('membros')">
+        <span class="ni">👥</span> Membros
+      </div>
+      <div class="nav-item" data-panel="feed" onclick="switchPanel('feed')">
+        <span class="ni">📡</span> Feed ao Vivo
+      </div>
+      <div class="nav-item" data-panel="inteligencia" onclick="switchPanel('inteligencia')">
+        <span class="ni">🧠</span> Inteligencia
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- 1. PIPELINE EXECUTIVO -->
+      <div class="panel active" id="panel-pipeline">
+        <div class="panel-header">
+          <h2>Pipeline Executivo</h2>
+          <button class="refresh-btn" onclick="loadPipeline()">&#x21bb; Atualizar</button>
+        </div>
+        <div id="pipeline-metrics" class="metrics-grid"></div>
+        <div id="pipeline-table" class="tbl-wrap"></div>
+      </div>
+
+      <!-- 2. APROVACOES PENDENTES -->
+      <div class="panel" id="panel-aprovacoes">
+        <div class="panel-header">
+          <h2>Aprovacoes Pendentes</h2>
+          <button class="refresh-btn" onclick="loadAprovacoes()">&#x21bb; Atualizar</button>
+        </div>
+        <div id="aprovacoes-content"></div>
+      </div>
+
+      <!-- 3. FINANCEIRO -->
+      <div class="panel" id="panel-financeiro">
+        <div class="panel-header">
+          <h2>Financeiro</h2>
+          <button class="refresh-btn" onclick="loadFinanceiro()">&#x21bb; Atualizar</button>
+        </div>
+        <div id="financeiro-metrics" class="metrics-grid"></div>
+        <div id="financeiro-table" class="tbl-wrap"></div>
+      </div>
+
+      <!-- 4. MEMBROS -->
+      <div class="panel" id="panel-membros">
+        <div class="panel-header">
+          <h2>Membros</h2>
+          <button class="refresh-btn" onclick="loadMembros()">&#x21bb; Atualizar</button>
+        </div>
+        <div id="membros-metrics" class="metrics-grid"></div>
+        <div id="membros-filters" class="filter-tabs"></div>
+        <div id="membros-table" class="tbl-wrap"></div>
+      </div>
+
+      <!-- 5. FEED AO VIVO -->
+      <div class="panel" id="panel-feed">
+        <div class="panel-header">
+          <h2>Feed ao Vivo</h2>
+          <button class="refresh-btn" onclick="loadFeed()">&#x21bb; Atualizar</button>
+        </div>
+        <div id="feed-content" class="feed-list"></div>
+      </div>
+
+      <!-- 6. INTELIGENCIA -->
+      <div class="panel" id="panel-inteligencia">
+        <div class="panel-header">
+          <h2>Inteligencia</h2>
+          <button class="refresh-btn" onclick="loadInteligencia()">&#x21bb; Atualizar</button>
+        </div>
+        <div id="inteligencia-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal-box">
+    <h3>Motivo da Rejeicao</h3>
+    <textarea id="reject-motivo" placeholder="Informe o motivo..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRejectModal()">Cancelar</button>
+      <button class="btn btn-danger" id="reject-confirm-btn" onclick="confirmReject()">Rejeitar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _sb = supabase.createClient(
+  'https://jqbuckofiaopxwllghac.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+);
+
+var PASSWORD = 'FOODHUB_MESA_2026';
+var currentPanel = 'pipeline';
+var feedInterval = null;
+var rejectingId = null;
+var allMembros = [];
+var currentMembrosFilter = 'todos';
+
+// =============================================
+// PASSWORD CHECK
+// =============================================
+function checkPassword() {
+  var input = document.getElementById('pw-input');
+  var err = document.getElementById('pw-err');
+  if (input.value === PASSWORD) {
+    sessionStorage.setItem('mesa_auth', 'true');
+    document.getElementById('pw-overlay').classList.add('hidden');
+    document.getElementById('app').classList.add('active');
+    initApp();
+  } else {
+    err.textContent = 'Senha incorreta. Tente novamente.';
+    input.value = '';
+    input.focus();
+  }
+}
+
+document.getElementById('pw-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkPassword();
+});
+
+function logout() {
+  sessionStorage.removeItem('mesa_auth');
+  location.reload();
+}
+
+// Check session on load
+(function() {
+  if (sessionStorage.getItem('mesa_auth') === 'true') {
+    document.getElementById('pw-overlay').classList.add('hidden');
+    document.getElementById('app').classList.add('active');
+    initApp();
+  }
+})();
+
+// =============================================
+// INIT
+// =============================================
+function initApp() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadPipeline();
+  loadAprovacoesBadge();
+}
+
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2, '0');
+  var m = String(now.getMinutes()).padStart(2, '0');
+  var s = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+}
+
+// =============================================
+// NAVIGATION
+// =============================================
+function switchPanel(name) {
+  currentPanel = name;
+  var items = document.querySelectorAll('.nav-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.remove('active');
+    if (items[i].getAttribute('data-panel') === name) {
+      items[i].classList.add('active');
+    }
+  }
+  var panels = document.querySelectorAll('.panel');
+  for (var i = 0; i < panels.length; i++) {
+    panels[i].classList.remove('active');
+  }
+  document.getElementById('panel-' + name).classList.add('active');
+
+  if (feedInterval) { clearInterval(feedInterval); feedInterval = null; }
+
+  if (name === 'pipeline') loadPipeline();
+  else if (name === 'aprovacoes') loadAprovacoes();
+  else if (name === 'financeiro') loadFinanceiro();
+  else if (name === 'membros') loadMembros();
+  else if (name === 'feed') { loadFeed(); feedInterval = setInterval(loadFeed, 30000); }
+  else if (name === 'inteligencia') loadInteligencia();
+}
+
+// =============================================
+// HELPERS
+// =============================================
+function formatBRL(v) {
+  if (v === null || v === undefined) return 'R$ 0,00';
+  return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  var dt = new Date(d);
+  return String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + dt.getFullYear();
+}
+
+function fmtDateTime(d) {
+  if (!d) return '-';
+  var dt = new Date(d);
+  return String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0') + ' ' +
+    String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+}
+
+function statusBadge(status) {
+  if (!status) return '<span class="badge badge-gray">-</span>';
+  var s = String(status).toLowerCase();
+  var cls = 'badge-gray';
+  if (s === 'ativa' || s === 'ativo' || s === 'aprovado' || s === 'aprovada' || s === 'paga' || s === 'entregue' || s === 'concluida' || s === 'concluido') cls = 'badge-green';
+  else if (s === 'pendente' || s === 'em_negociacao' || s === 'negociacao' || s === 'calculada' || s === 'em negociacao') cls = 'badge-orange';
+  else if (s === 'rejeitado' || s === 'rejeitada' || s === 'cancelada' || s === 'cancelado' || s === 'inadimplente') cls = 'badge-red';
+  else if (s === 'prospeccao' || s === 'nova' || s === 'novo' || s === 'cobrada') cls = 'badge-purple';
+  else if (s === 'aprovada_mesa' || s === 'aprovada mesa') cls = 'badge-blue';
+  return '<span class="badge ' + cls + '">' + status + '</span>';
+}
+
+function showLoading(el) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  el.innerHTML = '<div class="loading">Carregando...</div>';
+}
+
+function showError(el, msg) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  el.innerHTML = '<div class="error-msg">' + msg + '</div>';
+}
+
+function showEmpty(el, msg) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>' + (msg || 'Nenhum dado encontrado.') + '</p></div>';
+}
+
+// =============================================
+// 1. PIPELINE EXECUTIVO
+// =============================================
+async function loadPipeline() {
+  var metricsEl = document.getElementById('pipeline-metrics');
+  var tableEl = document.getElementById('pipeline-table');
+  showLoading(metricsEl);
+  tableEl.innerHTML = '';
+
+  try {
+    var results = await Promise.all([
+      _sb.from('demandas_v2').select('*'),
+      _sb.from('negociacoes_v2').select('*'),
+      _sb.from('pedidos_v2').select('*')
+    ]);
+
+    var demandas = (results[0].data || []);
+    var negociacoes = (results[1].data || []);
+    var pedidos = (results[2].data || []);
+
+    if (results[0].error) { showError(metricsEl, 'Erro ao carregar demandas: ' + results[0].error.message); return; }
+
+    // Aggregate pipeline values
+    var totalPipeline = 0;
+    var emNegociacao = 0;
+    var pendenciaAtiva = 0;
+    var prospeccao = 0;
+
+    var deals = [];
+
+    for (var i = 0; i < demandas.length; i++) {
+      var d = demandas[i];
+      var spec = d.especificacao || {};
+      var potencial = spec.potencial || spec.valor_estimado || d.valor_estimado || 0;
+      var status = d.status || 'nova';
+      var sl = status.toLowerCase();
+
+      totalPipeline += Number(potencial) || 0;
+
+      if (sl === 'em_negociacao' || sl === 'em negociacao' || sl === 'negociacao') {
+        emNegociacao += Number(potencial) || 0;
+      } else if (sl === 'pendente' || sl === 'ativa' || sl === 'ativo') {
+        pendenciaAtiva += Number(potencial) || 0;
+      } else if (sl === 'prospeccao' || sl === 'nova' || sl === 'novo') {
+        prospeccao += Number(potencial) || 0;
+      }
+
+      deals.push({
+        id: d.id || d.codigo || i + 1,
+        nome: spec.produto_nome || spec.produto || d.produto_nome || d.titulo || '-',
+        fornecedor: spec.seller || spec.fornecedor || d.fornecedor_nome || '-',
+        cliente: (spec.clientes && spec.clientes.length > 0 ? spec.clientes[0] : null) || spec.cliente || d.cliente_nome || '-',
+        status: status,
+        potencial: Number(potencial) || 0,
+        regiao: spec.regiao || d.regiao || '-'
+      });
+    }
+
+    // Add negociacoes to pipeline
+    for (var i = 0; i < negociacoes.length; i++) {
+      var n = negociacoes[i];
+      var val = n.valor || n.valor_estimado || 0;
+      totalPipeline += Number(val) || 0;
+      emNegociacao += Number(val) || 0;
+    }
+
+    // Sort by potencial desc
+    deals.sort(function(a, b) { return b.potencial - a.potencial; });
+
+    // Render metrics
+    metricsEl.innerHTML =
+      '<div class="metric-card purple">' +
+        '<div class="label">Total Pipeline</div>' +
+        '<div class="value">' + formatBRL(totalPipeline) + '</div>' +
+        '<div class="sub">' + deals.length + ' demandas + ' + negociacoes.length + ' negociacoes</div>' +
+      '</div>' +
+      '<div class="metric-card orange">' +
+        '<div class="label">Em Negociacao</div>' +
+        '<div class="value">' + formatBRL(emNegociacao) + '</div>' +
+      '</div>' +
+      '<div class="metric-card green">' +
+        '<div class="label">Pendencia Ativa</div>' +
+        '<div class="value">' + formatBRL(pendenciaAtiva) + '</div>' +
+      '</div>' +
+      '<div class="metric-card blue">' +
+        '<div class="label">Prospeccao</div>' +
+        '<div class="value">' + formatBRL(prospeccao) + '</div>' +
+      '</div>';
+
+    // Render table
+    if (deals.length === 0) {
+      showEmpty(tableEl, 'Nenhuma deal encontrada no pipeline.');
+      return;
+    }
+
+    var html = '<table class="tbl"><thead><tr>' +
+      '<th>#</th><th>Deal</th><th>Fornecedor</th><th>Cliente</th><th>Status</th><th>Potencial R$/mes</th><th>Regiao</th>' +
+      '</tr></thead><tbody>';
+
+    for (var i = 0; i < deals.length; i++) {
+      var dl = deals[i];
+      html += '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td style="font-weight:600;color:#fff">' + dl.nome + '</td>' +
+        '<td>' + dl.fornecedor + '</td>' +
+        '<td>' + dl.cliente + '</td>' +
+        '<td>' + statusBadge(dl.status) + '</td>' +
+        '<td style="font-weight:600;color:#fff;font-variant-numeric:tabular-nums">' + formatBRL(dl.potencial) + '</td>' +
+        '<td>' + dl.regiao + '</td>' +
+        '</tr>';
+    }
+
+    html += '</tbody></table>';
+    tableEl.innerHTML = html;
+
+  } catch (err) {
+    showError(metricsEl, 'Erro inesperado: ' + err.message);
+  }
+}
+
+// =============================================
+// 2. APROVACOES PENDENTES
+// =============================================
+async function loadAprovacoesBadge() {
+  try {
+    var res = await _sb.from('aprovacoes').select('id', { count: 'exact' }).eq('status', 'pendente');
+    var count = res.count || 0;
+    var badge = document.getElementById('badge-aprovacoes');
+    if (count > 0) {
+      badge.style.display = 'inline-flex';
+      badge.textContent = count;
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (e) { /* silent */ }
+}
+
+async function loadAprovacoes() {
+  var el = document.getElementById('aprovacoes-content');
+  showLoading(el);
+
+  try {
+    var res = await _sb.from('aprovacoes').select('*').eq('status', 'pendente').order('criado_em', { ascending: false });
+
+    if (res.error) { showError(el, 'Erro ao carregar aprovacoes: ' + res.error.message); return; }
+
+    var items = res.data || [];
+    loadAprovacoesBadge();
+
+    if (items.length === 0) {
+      showEmpty(el, 'Nenhuma aprovacao pendente.');
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      html += '<div class="approval-card" id="aprov-' + item.id + '">' +
+        '<div class="approval-info">' +
+          '<div class="ap-type">' + (item.tipo || 'geral') + '</div>' +
+          '<div class="ap-code">' + (item.entidade_codigo || item.entidade_id || '#' + item.id) + '</div>' +
+          '<div class="ap-date">Criado em: ' + fmtDateTime(item.criado_em) + '</div>' +
+        '</div>' +
+        '<div class="approval-actions">' +
+          '<button class="btn btn-success btn-sm" onclick="aprovar(' + item.id + ', \'' + (item.tipo || '') + '\', \'' + (item.entidade_codigo || item.entidade_id || '') + '\')">APROVAR</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="openRejectModal(' + item.id + ', \'' + (item.tipo || '') + '\', \'' + (item.entidade_codigo || item.entidade_id || '') + '\')">REJEITAR</button>' +
+        '</div>' +
+        '</div>';
+    }
+
+    el.innerHTML = html;
+
+  } catch (err) {
+    showError(el, 'Erro inesperado: ' + err.message);
+  }
+}
+
+var nextStatusMap = {
+  'membro': 'ativo',
+  'member': 'ativo',
+  'produto': 'ativo',
+  'demanda': 'ativa',
+  'negociacao': 'em_negociacao',
+  'pedido': 'confirmado'
+};
+
+var entityTableMap = {
+  'membro': 'members',
+  'member': 'members',
+  'produto': 'produtos',
+  'demanda': 'demandas_v2',
+  'negociacao': 'negociacoes_v2',
+  'pedido': 'pedidos_v2'
+};
+
+async function aprovar(id, tipo, entidadeCodigo) {
+  try {
+    var now = new Date().toISOString();
+
+    var updateRes = await _sb.from('aprovacoes').update({
+      status: 'aprovado',
+      aprovado_em: now
+    }).eq('id', id);
+
+    if (updateRes.error) { alert('Erro ao aprovar: ' + updateRes.error.message); return; }
+
+    // Update entity status
+    var table = entityTableMap[tipo.toLowerCase()];
+    var nextStatus = nextStatusMap[tipo.toLowerCase()];
+    if (table && nextStatus && entidadeCodigo) {
+      var field = 'codigo';
+      var entityRes = await _sb.from(table).update({ status: nextStatus }).eq(field, entidadeCodigo);
+      if (entityRes.error) {
+        // Try by id
+        await _sb.from(table).update({ status: nextStatus }).eq('id', entidadeCodigo);
+      }
+    }
+
+    var card = document.getElementById('aprov-' + id);
+    if (card) {
+      card.style.borderColor = 'var(--success)';
+      card.style.opacity = '0.5';
+      setTimeout(function() { card.remove(); }, 600);
+    }
+
+    loadAprovacoesBadge();
+
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+function openRejectModal(id, tipo, entidadeCodigo) {
+  rejectingId = { id: id, tipo: tipo, entidadeCodigo: entidadeCodigo };
+  document.getElementById('reject-motivo').value = '';
+  document.getElementById('reject-modal').classList.add('open');
+}
+
+function closeRejectModal() {
+  rejectingId = null;
+  document.getElementById('reject-modal').classList.remove('open');
+}
+
+async function confirmReject() {
+  if (!rejectingId) return;
+
+  var motivo = document.getElementById('reject-motivo').value.trim();
+  if (!motivo) { alert('Informe o motivo da rejeicao.'); return; }
+
+  try {
+    var now = new Date().toISOString();
+
+    var updateRes = await _sb.from('aprovacoes').update({
+      status: 'rejeitado',
+      motivo: motivo,
+      aprovado_em: now
+    }).eq('id', rejectingId.id);
+
+    if (updateRes.error) { alert('Erro ao rejeitar: ' + updateRes.error.message); return; }
+
+    // Update entity status
+    var table = entityTableMap[rejectingId.tipo.toLowerCase()];
+    if (table && rejectingId.entidadeCodigo) {
+      var entityRes = await _sb.from(table).update({ status: 'rejeitado' }).eq('codigo', rejectingId.entidadeCodigo);
+      if (entityRes.error) {
+        await _sb.from(table).update({ status: 'rejeitado' }).eq('id', rejectingId.entidadeCodigo);
+      }
+    }
+
+    var card = document.getElementById('aprov-' + rejectingId.id);
+    if (card) {
+      card.style.borderColor = 'var(--danger)';
+      card.style.opacity = '0.5';
+      setTimeout(function() { card.remove(); }, 600);
+    }
+
+    closeRejectModal();
+    loadAprovacoesBadge();
+
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+// =============================================
+// 3. FINANCEIRO
+// =============================================
+async function loadFinanceiro() {
+  var metricsEl = document.getElementById('financeiro-metrics');
+  var tableEl = document.getElementById('financeiro-table');
+  showLoading(metricsEl);
+  tableEl.innerHTML = '';
+
+  try {
+    var res = await _sb.from('financials_v2').select('*').order('criado_em', { ascending: false });
+
+    if (res.error) { showError(metricsEl, 'Erro ao carregar financeiro: ' + res.error.message); return; }
+
+    var data = res.data || [];
+
+    // Group by status
+    var groups = {};
+    var statusOrder = ['calculada', 'aprovada_mesa', 'cobrada', 'paga', 'inadimplente'];
+    var statusLabels = { calculada: 'Calculada', aprovada_mesa: 'Aprovada Mesa', cobrada: 'Cobrada', paga: 'Paga', inadimplente: 'Inadimplente' };
+    var statusColors = { calculada: 'purple', aprovada_mesa: 'blue', cobrada: 'orange', paga: 'green', inadimplente: 'red' };
+
+    for (var i = 0; i < statusOrder.length; i++) {
+      groups[statusOrder[i]] = { count: 0, total: 0 };
+    }
+
+    for (var i = 0; i < data.length; i++) {
+      var f = data[i];
+      var st = (f.status || '').toLowerCase().replace(' ', '_');
+      if (!groups[st]) groups[st] = { count: 0, total: 0 };
+      groups[st].count++;
+      groups[st].total += Number(f.valor || f.valor_comissao || 0);
+    }
+
+    // Render metrics
+    var mhtml = '';
+    for (var i = 0; i < statusOrder.length; i++) {
+      var s = statusOrder[i];
+      var g = groups[s];
+      mhtml += '<div class="metric-card ' + (statusColors[s] || '') + '">' +
+        '<div class="label">' + (statusLabels[s] || s) + '</div>' +
+        '<div class="value">' + g.count + '</div>' +
+        '<div class="sub">' + formatBRL(g.total) + '</div>' +
+        '</div>';
+    }
+    metricsEl.innerHTML = mhtml;
+
+    // Render table
+    if (data.length === 0) {
+      showEmpty(tableEl, 'Nenhum registro financeiro encontrado.');
+      return;
+    }
+
+    var thtml = '<table class="tbl"><thead><tr>' +
+      '<th>Pedido</th><th>Fornecedor</th><th>Valor</th><th>Comissao</th><th>Status</th><th>Vencimento</th>' +
+      '</tr></thead><tbody>';
+
+    for (var i = 0; i < data.length; i++) {
+      var f = data[i];
+      thtml += '<tr>' +
+        '<td style="font-weight:600;color:#fff">' + (f.pedido_codigo || f.pedido_id || '-') + '</td>' +
+        '<td>' + (f.fornecedor_nome || f.fornecedor || '-') + '</td>' +
+        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.valor) + '</td>' +
+        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.comissao || f.valor_comissao) + '</td>' +
+        '<td>' + statusBadge(f.status) + '</td>' +
+        '<td>' + fmtDate(f.vencimento || f.data_vencimento) + '</td>' +
+        '</tr>';
+    }
+
+    thtml += '</tbody></table>';
+    tableEl.innerHTML = thtml;
+
+  } catch (err) {
+    showError(metricsEl, 'Erro inesperado: ' + err.message);
+  }
+}
+
+// =============================================
+// 4. MEMBROS
+// =============================================
+async function loadMembros() {
+  var metricsEl = document.getElementById('membros-metrics');
+  var filtersEl = document.getElementById('membros-filters');
+  var tableEl = document.getElementById('membros-table');
+  showLoading(metricsEl);
+  filtersEl.innerHTML = '';
+  tableEl.innerHTML = '';
+
+  try {
+    var res = await _sb.from('members').select('*').order('criado_em', { ascending: false });
+
+    if (res.error) { showError(metricsEl, 'Erro ao carregar membros: ' + res.error.message); return; }
+
+    allMembros = res.data || [];
+
+    // Count per type
+    var counts = { total: allMembros.length, comprador: 0, fornecedor: 0, seller: 0, originador: 0 };
+    for (var i = 0; i < allMembros.length; i++) {
+      var tipo = (allMembros[i].tipo || '').toLowerCase();
+      if (tipo === 'comprador' || tipo === 'buyer') counts.comprador++;
+      else if (tipo === 'fornecedor' || tipo === 'supplier') counts.fornecedor++;
+      else if (tipo === 'seller') counts.seller++;
+      else if (tipo === 'originador') counts.originador++;
+    }
+
+    metricsEl.innerHTML =
+      '<div class="metric-card purple"><div class="label">Total</div><div class="value">' + counts.total + '</div></div>' +
+      '<div class="metric-card green"><div class="label">Compradores</div><div class="value">' + counts.comprador + '</div></div>' +
+      '<div class="metric-card orange"><div class="label">Fornecedores</div><div class="value">' + counts.fornecedor + '</div></div>' +
+      '<div class="metric-card blue"><div class="label">Sellers</div><div class="value">' + counts.seller + '</div></div>' +
+      '<div class="metric-card red"><div class="label">Originadores</div><div class="value">' + counts.originador + '</div></div>';
+
+    // Render filter tabs
+    var filters = ['todos', 'comprador', 'fornecedor', 'seller', 'originador'];
+    var filterLabels = { todos: 'Todos', comprador: 'Compradores', fornecedor: 'Fornecedores', seller: 'Sellers', originador: 'Originadores' };
+    var fhtml = '';
+    for (var i = 0; i < filters.length; i++) {
+      var f = filters[i];
+      fhtml += '<button class="filter-tab' + (currentMembrosFilter === f ? ' active' : '') + '" onclick="filterMembros(\'' + f + '\')">' + filterLabels[f] + '</button>';
+    }
+    filtersEl.innerHTML = fhtml;
+
+    renderMembrosTable();
+
+  } catch (err) {
+    showError(metricsEl, 'Erro inesperado: ' + err.message);
+  }
+}
+
+function filterMembros(filter) {
+  currentMembrosFilter = filter;
+  var tabs = document.querySelectorAll('#membros-filters .filter-tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.remove('active');
+    if (tabs[i].textContent.toLowerCase().indexOf(filter) > -1 || (filter === 'todos' && tabs[i].textContent === 'Todos')) {
+      tabs[i].classList.add('active');
+    }
+  }
+  renderMembrosTable();
+}
+
+function renderMembrosTable() {
+  var tableEl = document.getElementById('membros-table');
+  var filtered = allMembros;
+
+  if (currentMembrosFilter !== 'todos') {
+    filtered = [];
+    for (var i = 0; i < allMembros.length; i++) {
+      var tipo = (allMembros[i].tipo || '').toLowerCase();
+      if (currentMembrosFilter === 'comprador' && (tipo === 'comprador' || tipo === 'buyer')) filtered.push(allMembros[i]);
+      else if (currentMembrosFilter === 'fornecedor' && (tipo === 'fornecedor' || tipo === 'supplier')) filtered.push(allMembros[i]);
+      else if (currentMembrosFilter === 'seller' && tipo === 'seller') filtered.push(allMembros[i]);
+      else if (currentMembrosFilter === 'originador' && tipo === 'originador') filtered.push(allMembros[i]);
+    }
+  }
+
+  if (filtered.length === 0) {
+    showEmpty(tableEl, 'Nenhum membro encontrado nesta categoria.');
+    return;
+  }
+
+  var html = '<table class="tbl"><thead><tr>' +
+    '<th>Nome</th><th>Tipo</th><th>Status</th><th>CNPJ</th><th>Email</th><th>WhatsApp</th><th>Criado em</th>' +
+    '</tr></thead><tbody>';
+
+  for (var i = 0; i < filtered.length; i++) {
+    var m = filtered[i];
+    var tipoBadge = 'badge-gray';
+    var tipo = (m.tipo || '').toLowerCase();
+    if (tipo === 'comprador' || tipo === 'buyer') tipoBadge = 'badge-green';
+    else if (tipo === 'fornecedor' || tipo === 'supplier') tipoBadge = 'badge-orange';
+    else if (tipo === 'seller') tipoBadge = 'badge-blue';
+    else if (tipo === 'originador') tipoBadge = 'badge-purple';
+
+    html += '<tr>' +
+      '<td style="font-weight:600;color:#fff">' + (m.nome || m.name || '-') + '</td>' +
+      '<td><span class="badge ' + tipoBadge + '">' + (m.tipo || '-') + '</span></td>' +
+      '<td>' + statusBadge(m.status) + '</td>' +
+      '<td style="font-size:11px;font-variant-numeric:tabular-nums">' + (m.cnpj || '-') + '</td>' +
+      '<td style="font-size:11px">' + (m.email || '-') + '</td>' +
+      '<td style="font-size:11px">' + (m.whatsapp || m.telefone || '-') + '</td>' +
+      '<td style="font-size:11px;color:var(--text3)">' + fmtDate(m.criado_em) + '</td>' +
+      '</tr>';
+  }
+
+  html += '</tbody></table>';
+  tableEl.innerHTML = html;
+}
+
+// =============================================
+// 5. FEED AO VIVO
+// =============================================
+async function loadFeed() {
+  var el = document.getElementById('feed-content');
+  if (!el.querySelector('.feed-item')) {
+    showLoading(el);
+  }
+
+  try {
+    var results = await Promise.all([
+      _sb.from('ia_logs').select('*').order('criado_em', { ascending: false }).limit(20),
+      _sb.from('notificacoes_v2').select('*').order('criado_em', { ascending: false }).limit(20),
+      _sb.from('aprovacoes').select('*').order('criado_em', { ascending: false }).limit(20)
+    ]);
+
+    var allItems = [];
+
+    // IA Logs
+    var logs = results[0].data || [];
+    for (var i = 0; i < logs.length; i++) {
+      allItems.push({
+        type: 'log',
+        time: logs[i].criado_em,
+        title: logs[i].agente || logs[i].agent || 'IA Agent',
+        desc: logs[i].acao || logs[i].action || logs[i].mensagem || logs[i].message || '-',
+        icon: '🤖'
+      });
+    }
+
+    // Notificacoes
+    var notifs = results[1].data || [];
+    for (var i = 0; i < notifs.length; i++) {
+      allItems.push({
+        type: 'notif',
+        time: notifs[i].criado_em,
+        title: notifs[i].titulo || notifs[i].tipo || 'Notificacao',
+        desc: notifs[i].mensagem || notifs[i].descricao || '-',
+        icon: '🔔'
+      });
+    }
+
+    // Aprovacoes
+    var aprovs = results[2].data || [];
+    for (var i = 0; i < aprovs.length; i++) {
+      allItems.push({
+        type: 'aprov',
+        time: aprovs[i].criado_em,
+        title: 'Aprovacao: ' + (aprovs[i].tipo || 'geral'),
+        desc: (aprovs[i].entidade_codigo || '') + ' - Status: ' + (aprovs[i].status || '-'),
+        icon: '✅'
+      });
+    }
+
+    // Sort by time desc
+    allItems.sort(function(a, b) {
+      return new Date(b.time || 0) - new Date(a.time || 0);
+    });
+
+    // Limit to 50
+    allItems = allItems.slice(0, 50);
+
+    if (allItems.length === 0) {
+      showEmpty(el, 'Nenhuma atividade recente.');
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < allItems.length; i++) {
+      var item = allItems[i];
+      html += '<div class="feed-item">' +
+        '<div class="feed-icon ' + item.type + '">' + item.icon + '</div>' +
+        '<div class="feed-body">' +
+          '<div class="feed-title">' + item.title + '</div>' +
+          '<div class="feed-desc">' + item.desc + '</div>' +
+        '</div>' +
+        '<div class="feed-time">' + fmtDateTime(item.time) + '</div>' +
+        '</div>';
+    }
+
+    el.innerHTML = html;
+
+  } catch (err) {
+    showError(el, 'Erro ao carregar feed: ' + err.message);
+  }
+}
+
+// =============================================
+// 6. INTELIGENCIA
+// =============================================
+async function loadInteligencia() {
+  var el = document.getElementById('inteligencia-content');
+  showLoading(el);
+
+  try {
+    var res = await _sb.from('demandas_v2').select('*');
+
+    if (res.error) { showError(el, 'Erro ao carregar inteligencia: ' + res.error.message); return; }
+
+    var demandas = res.data || [];
+
+    if (demandas.length === 0) {
+      showEmpty(el, 'Sem dados suficientes para analise.');
+      return;
+    }
+
+    // Most demanded products
+    var productCounts = {};
+    var regionCounts = {};
+    var statusValues = {};
+
+    for (var i = 0; i < demandas.length; i++) {
+      var d = demandas[i];
+      var spec = d.especificacao || {};
+      var prodNome = spec.produto_nome || spec.produto || d.produto_nome || 'Desconhecido';
+      var regiao = spec.regiao || d.regiao || 'Desconhecida';
+      var status = d.status || 'nova';
+      var valor = Number(spec.potencial || spec.valor_estimado || d.valor_estimado || 0);
+
+      productCounts[prodNome] = (productCounts[prodNome] || 0) + 1;
+      regionCounts[regiao] = (regionCounts[regiao] || 0) + 1;
+
+      if (!statusValues[status]) statusValues[status] = 0;
+      statusValues[status] += valor;
+    }
+
+    // Sort products by count desc
+    var productArr = [];
+    for (var k in productCounts) {
+      productArr.push({ name: k, count: productCounts[k] });
+    }
+    productArr.sort(function(a, b) { return b.count - a.count; });
+    productArr = productArr.slice(0, 10);
+
+    // Sort regions by count desc
+    var regionArr = [];
+    for (var k in regionCounts) {
+      regionArr.push({ name: k, count: regionCounts[k] });
+    }
+    regionArr.sort(function(a, b) { return b.count - a.count; });
+    regionArr = regionArr.slice(0, 10);
+
+    // Sort status by value desc
+    var statusArr = [];
+    for (var k in statusValues) {
+      statusArr.push({ name: k, value: statusValues[k] });
+    }
+    statusArr.sort(function(a, b) { return b.value - a.value; });
+
+    var maxProductCount = productArr.length > 0 ? productArr[0].count : 1;
+    var maxRegionCount = regionArr.length > 0 ? regionArr[0].count : 1;
+    var maxStatusValue = statusArr.length > 0 ? statusArr[0].value : 1;
+
+    var html = '';
+
+    // Products ranking
+    html += '<div class="section-card"><h3><span>📦</span> Produtos Mais Demandados</h3>';
+    html += '<div class="rank-list">';
+    for (var i = 0; i < productArr.length; i++) {
+      var p = productArr[i];
+      var posClass = i === 0 ? 'r1' : (i === 1 ? 'r2' : (i === 2 ? 'r3' : 'rn'));
+      html += '<div class="rank-item">' +
+        '<div class="rank-pos ' + posClass + '">' + (i + 1) + '</div>' +
+        '<div class="rank-name">' + p.name + '</div>' +
+        '<div class="rank-value">' + p.count + ' demandas</div>' +
+        '</div>';
+    }
+    html += '</div></div>';
+
+    // Regions ranking
+    html += '<div class="section-card"><h3><span>🗺️</span> Regioes Mais Ativas</h3>';
+    html += '<div class="rank-list">';
+    for (var i = 0; i < regionArr.length; i++) {
+      var r = regionArr[i];
+      var posClass = i === 0 ? 'r1' : (i === 1 ? 'r2' : (i === 2 ? 'r3' : 'rn'));
+      html += '<div class="rank-item">' +
+        '<div class="rank-pos ' + posClass + '">' + (i + 1) + '</div>' +
+        '<div class="rank-name">' + r.name + '</div>' +
+        '<div class="rank-value">' + r.count + ' demandas</div>' +
+        '</div>';
+    }
+    html += '</div></div>';
+
+    // Pipeline by status (bar chart)
+    html += '<div class="section-card"><h3><span>📊</span> Pipeline por Status</h3>';
+    html += '<div class="bar-chart">';
+    var barColors = ['c1', 'c2', 'c3', 'c4', 'c5'];
+    for (var i = 0; i < statusArr.length; i++) {
+      var s = statusArr[i];
+      var pct = maxStatusValue > 0 ? Math.max((s.value / maxStatusValue) * 100, 4) : 4;
+      var colorClass = barColors[i % barColors.length];
+      html += '<div class="bar-row">' +
+        '<div class="bar-label">' + s.name + '</div>' +
+        '<div class="bar-track"><div class="bar-fill ' + colorClass + '" style="width:' + pct + '%"></div></div>' +
+        '<div class="bar-value">' + formatBRL(s.value) + '</div>' +
+        '</div>';
+    }
+    html += '</div></div>';
+
+    el.innerHTML = html;
+
+  } catch (err) {
+    showError(el, 'Erro inesperado: ' + err.message);
+  }
+}
+</script>
+</body>
+</html>
