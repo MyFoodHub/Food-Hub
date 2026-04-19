@@ -330,7 +330,10 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
       <div class="panel" id="panel-membros">
         <div class="panel-header">
           <h2>Membros</h2>
-          <button class="refresh-btn" onclick="loadMembros()">&#x21bb; Atualizar</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="openInviteModal()" style="font-size:12px;padding:6px 14px">+ Convidar membro</button>
+            <button class="refresh-btn" onclick="loadMembros()">&#x21bb; Atualizar</button>
+          </div>
         </div>
         <div id="membros-metrics" class="metrics-grid"></div>
         <div id="membros-filters" class="filter-tabs"></div>
@@ -377,6 +380,33 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
     </div>
   </div>
 </div>
+
+<!-- INVITE MODAL -->
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal-box">
+    <h3>Convidar Membro</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="invite-nome" placeholder="Nome completo" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <input id="invite-email" type="email" placeholder="Email" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <input id="invite-whatsapp" placeholder="WhatsApp (+5511...)" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <select id="invite-tipo" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Selecione o tipo...</option>
+        <option value="comprador">Comprador</option>
+        <option value="fornecedor">Fornecedor</option>
+        <option value="seller">Seller</option>
+        <option value="originador">Originador</option>
+      </select>
+      <div id="invite-error" style="color:var(--danger);font-size:12px;min-height:16px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeInviteModal()">Cancelar</button>
+      <button class="btn btn-primary" id="invite-confirm-btn" onclick="confirmInvite()">Enviar Convite</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--success);color:#000;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;z-index:2000;display:none;white-space:nowrap"></div>
 
 <!-- REJECT MODAL -->
 <div class="modal-overlay" id="reject-modal">
@@ -987,7 +1017,7 @@ function renderMembrosTable() {
   }
 
   var html = '<table class="tbl"><thead><tr>' +
-    '<th>Nome</th><th>Tipo</th><th>Status</th><th>CNPJ</th><th>Email</th><th>WhatsApp</th><th>Criado em</th>' +
+    '<th>Nome</th><th>Tipo</th><th>Status</th><th>Email</th><th>WhatsApp</th><th>Criado em</th><th>Ações</th>' +
     '</tr></thead><tbody>';
 
   for (var i = 0; i < filtered.length; i++) {
@@ -998,15 +1028,38 @@ function renderMembrosTable() {
     else if (tipo === 'fornecedor' || tipo === 'supplier') tipoBadge = 'badge-orange';
     else if (tipo === 'seller') tipoBadge = 'badge-blue';
     else if (tipo === 'originador') tipoBadge = 'badge-purple';
+    else if (tipo === 'mesa') tipoBadge = 'badge-red';
+
+    // Determine invite status
+    var statusHtml = '';
+    var actionHtml = '-';
+    var hasEmail = m.email && m.email.trim();
+    var isPendente = m.status === 'pendente' || m.status === 'aguardando_aprovacao';
+    var isAtivo = m.status === 'ativo';
+
+    if (isAtivo && hasEmail) {
+      statusHtml = '<span class="badge badge-green">Ativo</span>';
+    } else if (isAtivo && !hasEmail) {
+      statusHtml = '<span class="badge badge-orange">Sem convite</span>';
+    } else if (isPendente && hasEmail) {
+      statusHtml = '<span class="badge badge-blue">Convite pendente</span>';
+      // Check if >48h since created
+      var horasCriado = (Date.now() - new Date(m.criado_em).getTime()) / (1000*60*60);
+      if (horasCriado > 48) {
+        actionHtml = '<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="resendInvite(\'' + m.email + '\',\'' + (m.nome||'').replace(/'/g,"\\'") + '\')">Reenviar</button>';
+      }
+    } else {
+      statusHtml = statusBadge(m.status);
+    }
 
     html += '<tr>' +
       '<td style="font-weight:600;color:#fff">' + (m.nome || m.name || '-') + '</td>' +
       '<td><span class="badge ' + tipoBadge + '">' + (m.tipo || '-') + '</span></td>' +
-      '<td>' + statusBadge(m.status) + '</td>' +
-      '<td style="font-size:11px;font-variant-numeric:tabular-nums">' + (m.cnpj || '-') + '</td>' +
-      '<td style="font-size:11px">' + (m.email || '-') + '</td>' +
-      '<td style="font-size:11px">' + (m.whatsapp || m.telefone || '-') + '</td>' +
+      '<td>' + statusHtml + '</td>' +
+      '<td style="font-size:11px">' + (m.email || '<span style="color:var(--text4)">—</span>') + '</td>' +
+      '<td style="font-size:11px">' + (m.whatsapp || m.telefone || '<span style="color:var(--text4)">—</span>') + '</td>' +
       '<td style="font-size:11px;color:var(--text3)">' + fmtDate(m.criado_em) + '</td>' +
+      '<td>' + actionHtml + '</td>' +
       '</tr>';
   }
 
@@ -1218,6 +1271,111 @@ async function loadInteligencia() {
   } catch (err) {
     showError(el, 'Erro inesperado: ' + err.message);
   }
+}
+
+// =============================================
+// INVITE SYSTEM
+// =============================================
+function openInviteModal() {
+  document.getElementById('invite-nome').value = '';
+  document.getElementById('invite-email').value = '';
+  document.getElementById('invite-whatsapp').value = '';
+  document.getElementById('invite-tipo').value = '';
+  document.getElementById('invite-error').textContent = '';
+  document.getElementById('invite-modal').classList.add('open');
+}
+
+function closeInviteModal() {
+  document.getElementById('invite-modal').classList.remove('open');
+}
+
+async function confirmInvite() {
+  var nome = document.getElementById('invite-nome').value.trim();
+  var email = document.getElementById('invite-email').value.trim();
+  var whatsapp = document.getElementById('invite-whatsapp').value.trim();
+  var tipo = document.getElementById('invite-tipo').value;
+  var errEl = document.getElementById('invite-error');
+
+  if (!nome || !email || !tipo) {
+    errEl.textContent = 'Nome, email e tipo sao obrigatorios.';
+    return;
+  }
+
+  var btn = document.getElementById('invite-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  errEl.textContent = '';
+
+  try {
+    // 1. Insert member
+    var memberData = {
+      nome: nome,
+      email: email,
+      tipo: tipo,
+      status: 'pendente',
+      criado_em: new Date().toISOString(),
+      atualizado_em: new Date().toISOString()
+    };
+    if (whatsapp) memberData.whatsapp = whatsapp;
+
+    var { error: memberErr } = await _sb.from('members').insert(memberData);
+    if (memberErr) {
+      if (memberErr.message && memberErr.message.indexOf('duplicate') > -1) {
+        errEl.textContent = 'Email ou WhatsApp ja cadastrado.';
+      } else {
+        errEl.textContent = 'Erro ao criar membro: ' + memberErr.message;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Enviar Convite';
+      return;
+    }
+
+    // 2. Send invite email via Supabase Auth
+    var { error: inviteErr } = await _sb.auth.admin.inviteUserByEmail(email, {
+      redirectTo: 'https://brazilfoodhub.com/entrar.html'
+    });
+
+    if (inviteErr) {
+      // Member created but invite failed — still show partial success
+      showToast('Membro criado, mas erro no envio do email: ' + inviteErr.message);
+    } else {
+      showToast('Convite enviado para ' + nome + '!');
+    }
+
+    closeInviteModal();
+    loadMembros();
+
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Enviar Convite';
+}
+
+async function resendInvite(email, nome) {
+  try {
+    var { error } = await _sb.auth.admin.inviteUserByEmail(email, {
+      redirectTo: 'https://brazilfoodhub.com/entrar.html'
+    });
+
+    if (error) {
+      showToast('Erro ao reenviar: ' + error.message);
+    } else {
+      showToast('Convite reenviado para ' + nome + '!');
+    }
+  } catch (err) {
+    showToast('Erro: ' + err.message);
+  }
+}
+
+function showToast(msg) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  setTimeout(function() {
+    toast.style.display = 'none';
+  }, 4000);
 }
 </script>
 </body>
