@@ -877,6 +877,7 @@ function showEmpty(el, msg) {
 var _crmDeals = [];
 var _crmSelected = null;
 var _crmPlayerMap = {};
+var _crmAllPlayers = [];
 
 async function loadPipeline() {
   var metricsEl = document.getElementById('pipeline-metrics');
@@ -899,6 +900,7 @@ async function loadPipeline() {
 
     // Build lookups
     _crmPlayerMap = {};
+    _crmAllPlayers = allPlayers;
     for (var p = 0; p < allPlayers.length; p++) _crmPlayerMap[allPlayers[p].id] = allPlayers[p].razao_social;
 
     var dealByOpp = {};
@@ -1082,115 +1084,375 @@ function renderCRMDetail(id) {
   if (!deal) return;
 
   var el = document.getElementById('crm-detail-content');
-  var com = deal.comissao;
 
-  // Timeline steps
-  var steps = [
+  // Build player dropdown options helper
+  var playerOpts = function(selectedId, filterTipo) {
+    var html = '<option value="">-- Selecionar --</option>';
+    for (var p = 0; p < _crmAllPlayers.length; p++) {
+      var pl = _crmAllPlayers[p];
+      if (filterTipo && pl.tipo !== filterTipo) continue;
+      var sel = (pl.id === selectedId) ? ' selected' : '';
+      html += '<option value="' + pl.id + '"' + sel + '>' + pl.razao_social + '</option>';
+    }
+    return html;
+  };
+
+  // Dropdown style
+  var ddStyle = 'width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none;cursor:pointer;';
+
+  // Status buttons
+  var statuses = [
     { key: 'rascunho', label: 'Prospeccao' },
     { key: 'ativa', label: 'Em negociacao' },
     { key: 'fechado', label: 'Venda Realizada' },
-    { key: 'faturado', label: 'Faturado' }
+    { key: 'faturado', label: 'Faturado' },
+    { key: 'parado', label: 'Parado' }
   ];
-  var statusOrder = { rascunho: 0, aguardando_aprovacao: 0, ativa: 1, em_andamento: 1, fechado: 2, faturado: 3, parado: -1 };
-  var currentIdx = statusOrder[deal.status] !== undefined ? statusOrder[deal.status] : 0;
-
-  var timelineHtml = '';
-  for (var s = 0; s < steps.length; s++) {
-    var dotClass = s < currentIdx ? 'done' : (s === currentIdx ? 'current' : 'pending');
-    var icon = s < currentIdx ? '✓' : (s === currentIdx ? '●' : '○');
-    timelineHtml += '<div class="dt-step"><div class="dt-dot ' + dotClass + '">' + icon + '</div><span class="dt-step-label">' + steps[s].label + '</span></div>';
-  }
-  if (deal.status === 'parado') {
-    timelineHtml += '<div class="dt-step"><div class="dt-dot" style="background:var(--danger-bg);border-color:var(--danger)">⏸</div><span class="dt-step-label" style="color:var(--danger)">Parado</span></div>';
-  }
-
-  // Comissão section
-  var comHtml = '';
-  if (com) {
-    comHtml = '<div class="dt-grid">' +
-      '<div class="dt-item"><span class="dt-label">Total Comissao</span><span class="dt-value">' + formatBRL(com.total_valor) + '</span></div>' +
-      '<div class="dt-item"><span class="dt-label">Mesa</span><span class="dt-value">' + ((com.mesa_pct || 0) * 100).toFixed(1) + '% → ' + formatBRL(com.mesa_valor) + '</span></div>' +
-      '<div class="dt-item"><span class="dt-label">Seller</span><span class="dt-value">' + ((com.seller_pct || 0) * 100).toFixed(1) + '% → ' + formatBRL(com.seller_valor) + '</span></div>' +
-      '<div class="dt-item"><span class="dt-label">Originador</span><span class="dt-value">' + ((com.originador_pct || 0) * 100).toFixed(1) + '% → ' + formatBRL(com.originador_valor) + '</span></div>' +
-      '<div class="dt-item"><span class="dt-label">Status</span><span class="dt-value">' + (com.status || '-') + '</span></div>' +
-    '</div>';
-  } else {
-    comHtml = '<p style="color:var(--text3);font-size:12px">Comissao nao definida</p>';
+  var statusBtnsHtml = '';
+  for (var sb = 0; sb < statuses.length; sb++) {
+    var isActive = deal.status === statuses[sb].key;
+    var btnColor = isActive ? 'background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700' : 'background:var(--bg3);color:var(--text2);border-color:var(--border)';
+    statusBtnsHtml += '<button onclick="quickStatusBtn(\'' + statuses[sb].key + '\',\'' + deal.id + '\')" style="padding:6px 12px;border:1px solid;border-radius:7px;font-size:11px;cursor:pointer;' + btnColor + '">' + statuses[sb].label + '</button>';
   }
 
   el.innerHTML =
-    // HEADER
+    // ===== HEADER =====
     '<div class="dt-header">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
         '<span style="font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums">' + (deal.codigo || '') + '</span>' +
         statusBadge(deal.status) +
         tipoBadge(deal.tipo) +
       '</div>' +
-      '<h2>' + deal.nome + '</h2>' +
-      '<div style="font-size:22px;font-weight:700;color:#fff;margin-top:4px">' + formatBRL(deal.potencial) + '<span style="font-size:12px;color:var(--text3);font-weight:400">/mes</span></div>' +
+      '<h2 style="margin:0 0 4px 0">' + deal.nome + '</h2>' +
+      '<div style="font-size:22px;font-weight:700;color:#fff;margin-top:4px">' + formatBRL(deal.potencial) + '<span style="font-size:12px;color:var(--text3);font-weight:400"> /mes</span></div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">' + statusBtnsHtml + '</div>' +
     '</div>' +
 
-    // ACTIONS
-    '<div class="dt-actions">' +
-      '<button class="btn btn-accent" onclick="openEditOpp(' + _crmDeals.indexOf(deal) + ')" style="font-size:12px;padding:6px 14px">Editar</button>' +
-      '<select onchange="quickStatus(this.value,\'' + deal.id + '\')" style="padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none">' +
-        '<option value="">Mudar status</option>' +
-        '<option value="rascunho">Prospeccao</option><option value="ativa">Em negociacao</option><option value="fechado">Venda Realizada</option><option value="faturado">Faturado</option><option value="parado">Parado</option>' +
-      '</select>' +
-    '</div>' +
-
-    // PARTES
+    // ===== SECTION 1 — Partes Envolvidas =====
     '<div class="dt-section" style="margin-top:16px">' +
       '<h4>Partes Envolvidas</h4>' +
       '<div class="dt-grid">' +
-        '<div class="dt-item"><span class="dt-label">🏭 Vendedor (Industria)</span><span class="dt-value">' + deal.industria + '</span></div>' +
-        '<div class="dt-item"><span class="dt-label">🛒 Comprador (Cliente)</span><span class="dt-value">' + deal.cliente + '</span></div>' +
-        '<div class="dt-item"><span class="dt-label">🤝 Seller</span><span class="dt-value">' + deal.seller + '</span></div>' +
-        '<div class="dt-item"><span class="dt-label">🎯 Originador</span><span class="dt-value">' + deal.originador + '</span></div>' +
+        '<div class="dt-item">' +
+          '<span class="dt-label">Vendedor (Industria)</span>' +
+          '<select style="' + ddStyle + '" onchange="saveStakeholder(\'industria_id\',this.value,\'' + deal.id + '\',\'' + (deal.dealId || '') + '\')">' + playerOpts(deal.industriaId) + '</select>' +
+        '</div>' +
+        '<div class="dt-item">' +
+          '<span class="dt-label">Comprador (Cliente)</span>' +
+          '<select style="' + ddStyle + '" onchange="saveStakeholder(\'cliente_id\',this.value,\'' + deal.id + '\',\'' + (deal.dealId || '') + '\')">' + playerOpts(deal.clienteId) + '</select>' +
+        '</div>' +
+        '<div class="dt-item">' +
+          '<span class="dt-label">Seller</span>' +
+          '<select style="' + ddStyle + '" onchange="saveStakeholder(\'seller_id\',this.value,\'' + deal.id + '\',\'' + (deal.dealId || '') + '\')">' + playerOpts(deal.sellerId) + '</select>' +
+        '</div>' +
+        '<div class="dt-item">' +
+          '<span class="dt-label">Originador</span>' +
+          '<select style="' + ddStyle + '" onchange="saveStakeholder(\'originador_id\',this.value,\'' + deal.id + '\',\'' + (deal.dealId || '') + '\')">' + playerOpts(deal.originadorId) + '</select>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
-    // DETALHES
+    // ===== SECTION 2 — Produtos do Deal =====
     '<div class="dt-section">' +
-      '<h4>Detalhes do Negocio</h4>' +
-      '<div class="dt-grid">' +
-        '<div class="dt-item"><span class="dt-label">Produto</span><span class="dt-value">' + deal.nome + '</span></div>' +
-        '<div class="dt-item"><span class="dt-label">Regiao</span><span class="dt-value">' + deal.regiao + '</span></div>' +
-        '<div class="dt-item"><span class="dt-label">Tipo</span><span class="dt-value">' + (deal.tipo === 'oferta' ? 'Oferta da Industria' : 'Demanda do Cliente') + '</span></div>' +
-        '<div class="dt-item"><span class="dt-label">Codigo</span><span class="dt-value">' + (deal.codigo || '-') + '</span></div>' +
+      '<h4>Produtos do Deal</h4>' +
+      '<div id="dt-produtos-list"><p style="color:var(--text3);font-size:12px">Carregando produtos...</p></div>' +
+      '<div id="dt-produtos-total" style="margin-top:8px;padding:8px 12px;background:var(--bg3);border-radius:8px;display:none"></div>' +
+      '<div id="dt-produto-form" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<input id="dp-descricao" placeholder="Descricao do produto" style="grid-column:1/-1;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+          '<input id="dp-volume" type="number" placeholder="Volume" style="padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+          '<input id="dp-unidade" placeholder="Unidade (kg, ton, un)" style="padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+          '<input id="dp-preco" type="number" step="0.01" placeholder="Preco unitario R$" style="padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+          '<input id="dp-comissao" type="number" step="0.1" placeholder="Comissao %" style="padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:8px">' +
+          '<button onclick="saveProduto(\'' + (deal.dealId || '') + '\',\'' + deal.id + '\')" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:600">Salvar produto</button>' +
+          '<button onclick="document.getElementById(\'dt-produto-form\').style.display=\'none\'" style="padding:6px 14px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer">Cancelar</button>' +
+        '</div>' +
       '</div>' +
+      '<button onclick="addProduto()" style="margin-top:8px;padding:6px 14px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent);border-radius:7px;font-size:12px;cursor:pointer;font-weight:600">+ Adicionar produto</button>' +
     '</div>' +
 
-    // TIMELINE
-    '<div class="dt-section">' +
-      '<h4>Timeline</h4>' +
-      '<div class="dt-timeline">' + timelineHtml + '</div>' +
-    '</div>' +
-
-    // COMISSÃO
+    // ===== SECTION 3 — Comissao =====
     '<div class="dt-section">' +
       '<h4>Comissao</h4>' +
-      comHtml +
+      '<div id="dt-comissao-summary" style="margin-bottom:10px"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+        '<div>' +
+          '<label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Mesa %</label>' +
+          '<input id="dc-mesa" type="number" step="0.1" value="' + ((deal.comissao ? (deal.comissao.mesa_pct || 0) * 100 : 33.3)).toFixed(1) + '" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Seller %</label>' +
+          '<input id="dc-seller" type="number" step="0.1" value="' + ((deal.comissao ? (deal.comissao.seller_pct || 0) * 100 : 33.3)).toFixed(1) + '" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px">Originador %</label>' +
+          '<input id="dc-originador" type="number" step="0.1" value="' + ((deal.comissao ? (deal.comissao.originador_pct || 0) * 100 : 33.4)).toFixed(1) + '" style="width:100%;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px">' +
+        '<button onclick="calcComissao()" style="padding:6px 14px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer">Calcular (dividir igual)</button>' +
+        '<button onclick="saveComissao(\'' + (deal.dealId || '') + '\',\'' + deal.id + '\')" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:600">Salvar comissao</button>' +
+      '</div>' +
     '</div>' +
 
-    // IA INSTRUCTIONS
+    // ===== SECTION 4 — Orientacoes para a IA =====
     '<div class="dt-section">' +
       '<h4>Orientacoes para a IA</h4>' +
       '<textarea id="dt-ia-notes" rows="3" placeholder="Ex: Pressionar Cido para fechar ate dia 30..." ' +
         'style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;resize:vertical;font-family:system-ui"' +
-      '>' + (deal.raw.observacoes || '').replace(/</g,'&lt;') + '</textarea>' +
+      '>' + (deal.raw.observacoes || '').replace(/</g, '&lt;') + '</textarea>' +
       '<button onclick="saveIANotes(\'' + deal.id + '\')" style="margin-top:8px;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:600">Salvar orientacoes</button>' +
     '</div>' +
 
-    // HISTORICO DE ACOES
+    // ===== SECTION 5 — Status rapido =====
+    '<div class="dt-section">' +
+      '<h4>Status Rapido</h4>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' + statusBtnsHtml + '</div>' +
+    '</div>' +
+
+    // ===== SECTION 6 — Historico =====
     '<div class="dt-section">' +
       '<h4>Historico de Acoes</h4>' +
       '<div id="dt-history"><p style="color:var(--text3);font-size:12px">Carregando...</p></div>' +
     '</div>';
 
+  // Load async data
+  loadDealProdutos(deal.dealId, deal.id);
   loadDealHistory(deal.id);
 }
 
+// ---- Helper: saveStakeholder ----
+async function saveStakeholder(field, value, oppId, dealId) {
+  var val = value || null;
+  if (field === 'cliente_id') {
+    var { error } = await _sb.from('oportunidades').update({ cliente_id: val }).eq('id', oppId);
+    if (error) { showToast('Erro: ' + error.message); return; }
+  } else {
+    // industria_id, seller_id, originador_id -> deals table
+    if (dealId) {
+      var upd = {};
+      upd[field] = val;
+      var { error } = await _sb.from('deals').update(upd).eq('id', dealId);
+      if (error) { showToast('Erro: ' + error.message); return; }
+    } else {
+      // Create a deal entry if none exists
+      var ins = {
+        codigo: 'DEA-' + String(Date.now()).slice(-6),
+        oportunidade_id: oppId,
+        criado_em: new Date().toISOString()
+      };
+      ins[field] = val;
+      var { error } = await _sb.from('deals').insert(ins);
+      if (error) { showToast('Erro: ' + error.message); return; }
+    }
+  }
+  showToast('Parte atualizada!');
+  loadPipeline();
+}
+
+// ---- Helper: loadDealProdutos ----
+async function loadDealProdutos(dealId, oppId) {
+  var el = document.getElementById('dt-produtos-list');
+  if (!el) return;
+  try {
+    var query = _sb.from('deal_produtos').select('*');
+    if (dealId && oppId) {
+      query = query.or('deal_id.eq.' + dealId + ',oportunidade_id.eq.' + oppId);
+    } else if (dealId) {
+      query = query.eq('deal_id', dealId);
+    } else if (oppId) {
+      query = query.eq('oportunidade_id', oppId);
+    } else {
+      el.innerHTML = '<p style="color:var(--text3);font-size:12px">Nenhum deal vinculado</p>';
+      return;
+    }
+    var { data, error } = await query.order('criado_em');
+    if (error) {
+      if (error.message && error.message.indexOf('deal_produtos') !== -1) {
+        el.innerHTML = '<p style="color:var(--text3);font-size:12px">Tabela deal_produtos pendente de criacao no Supabase.</p>';
+      } else {
+        el.innerHTML = '<p style="color:var(--danger);font-size:12px">Erro: ' + error.message + '</p>';
+      }
+      return;
+    }
+    var items = data || [];
+    if (items.length === 0) {
+      el.innerHTML = '<p style="color:var(--text3);font-size:12px">Nenhum produto adicionado</p>';
+      document.getElementById('dt-produtos-total').style.display = 'none';
+      updateComissaoSummary(0);
+      return;
+    }
+    var html = '';
+    var totalValor = 0;
+    var totalComissao = 0;
+    for (var i = 0; i < items.length; i++) {
+      var pr = items[i];
+      var vt = (Number(pr.volume) || 0) * (Number(pr.preco_unitario) || 0);
+      var cv = vt * ((Number(pr.comissao_pct) || 0) / 100);
+      totalValor += vt;
+      totalComissao += cv;
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:6px">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;color:var(--text);font-weight:600">' + (pr.descricao || '-') + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:2px">' +
+            (pr.volume || 0) + ' ' + (pr.unidade || 'un') +
+            ' x ' + formatBRL(pr.preco_unitario || 0) +
+            ' = ' + formatBRL(vt) +
+            ' | Comissao: ' + (pr.comissao_pct || 0) + '% = ' + formatBRL(cv) +
+          '</div>' +
+        '</div>' +
+        '<button onclick="removeProduto(\'' + pr.id + '\',\'' + (dealId || '') + '\',\'' + (oppId || '') + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px" title="Remover">✕</button>' +
+      '</div>';
+    }
+    el.innerHTML = html;
+    var totEl = document.getElementById('dt-produtos-total');
+    totEl.style.display = 'block';
+    totEl.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600">' +
+      '<span style="color:var(--text)">TOTAL Valor: ' + formatBRL(totalValor) + '</span>' +
+      '<span style="color:var(--accent)">TOTAL Comissao: ' + formatBRL(totalComissao) + '</span>' +
+    '</div>';
+    updateComissaoSummary(totalComissao);
+  } catch (e) {
+    el.innerHTML = '<p style="color:var(--text3);font-size:12px">Tabela deal_produtos pendente de criacao no Supabase.</p>';
+  }
+}
+
+function updateComissaoSummary(totalComissao) {
+  var sumEl = document.getElementById('dt-comissao-summary');
+  if (!sumEl) return;
+  if (totalComissao > 0) {
+    sumEl.innerHTML = '<p style="font-size:13px;color:var(--accent);margin:0">Total comissao dos produtos: <strong>' + formatBRL(totalComissao) + '</strong></p>';
+  } else {
+    sumEl.innerHTML = '<p style="font-size:12px;color:var(--text3);margin:0">Sem produtos — insira % sobre o total do deal manualmente</p>';
+  }
+}
+
+// ---- Helper: addProduto ----
+function addProduto() {
+  var form = document.getElementById('dt-produto-form');
+  form.style.display = 'block';
+  document.getElementById('dp-descricao').value = '';
+  document.getElementById('dp-volume').value = '';
+  document.getElementById('dp-unidade').value = '';
+  document.getElementById('dp-preco').value = '';
+  document.getElementById('dp-comissao').value = '';
+  document.getElementById('dp-descricao').focus();
+}
+
+// ---- Helper: saveProduto ----
+async function saveProduto(dealId, oppId) {
+  var descricao = document.getElementById('dp-descricao').value.trim();
+  var volume = Number(document.getElementById('dp-volume').value) || 0;
+  var unidade = document.getElementById('dp-unidade').value.trim() || 'un';
+  var preco = Number(document.getElementById('dp-preco').value) || 0;
+  var comissaoPct = Number(document.getElementById('dp-comissao').value) || 0;
+  if (!descricao) { showToast('Informe a descricao do produto'); return; }
+  var valorTotal = volume * preco;
+  var comissaoValor = valorTotal * (comissaoPct / 100);
+  var row = {
+    descricao: descricao,
+    volume: volume,
+    unidade: unidade,
+    preco_unitario: preco,
+    valor_total: valorTotal,
+    comissao_pct: comissaoPct,
+    comissao_valor: comissaoValor,
+    criado_em: new Date().toISOString()
+  };
+  if (dealId) row.deal_id = dealId;
+  if (oppId) row.oportunidade_id = oppId;
+  var { error } = await _sb.from('deal_produtos').insert(row);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('Produto adicionado!');
+  document.getElementById('dt-produto-form').style.display = 'none';
+  loadDealProdutos(dealId || null, oppId || null);
+}
+
+// ---- Helper: removeProduto ----
+async function removeProduto(prodId, dealId, oppId) {
+  if (!confirm('Remover este produto?')) return;
+  var { error } = await _sb.from('deal_produtos').delete().eq('id', prodId);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('Produto removido');
+  loadDealProdutos(dealId || null, oppId || null);
+}
+
+// ---- Helper: calcComissao ----
+function calcComissao() {
+  var hasSeller = document.querySelector('[onchange*="seller_id"]');
+  var hasOriginador = document.querySelector('[onchange*="originador_id"]');
+  var parties = 1; // mesa always present
+  if (hasSeller && hasSeller.value) parties++;
+  if (hasOriginador && hasOriginador.value) parties++;
+  var each = (100 / parties).toFixed(1);
+  document.getElementById('dc-mesa').value = each;
+  document.getElementById('dc-seller').value = (hasSeller && hasSeller.value) ? each : '0.0';
+  document.getElementById('dc-originador').value = (hasOriginador && hasOriginador.value) ? each : '0.0';
+  showToast('Distribuido igualmente entre ' + parties + ' parte(s)');
+}
+
+// ---- Helper: saveComissao ----
+async function saveComissao(dealId, oppId) {
+  var mesaPct = Number(document.getElementById('dc-mesa').value) / 100;
+  var sellerPct = Number(document.getElementById('dc-seller').value) / 100;
+  var originadorPct = Number(document.getElementById('dc-originador').value) / 100;
+
+  // Try to get total from produtos
+  var totalComissao = 0;
+  try {
+    var query = _sb.from('deal_produtos').select('comissao_valor');
+    if (dealId && oppId) {
+      query = query.or('deal_id.eq.' + dealId + ',oportunidade_id.eq.' + oppId);
+    } else if (dealId) {
+      query = query.eq('deal_id', dealId);
+    } else if (oppId) {
+      query = query.eq('oportunidade_id', oppId);
+    }
+    var { data: prods } = await query;
+    if (prods && prods.length > 0) {
+      for (var i = 0; i < prods.length; i++) totalComissao += Number(prods[i].comissao_valor) || 0;
+    }
+  } catch(e) { /* deal_produtos may not exist */ }
+
+  // If no product comissao, use deal potencial as base
+  var deal = null;
+  for (var i = 0; i < _crmDeals.length; i++) { if (_crmDeals[i].id === oppId) { deal = _crmDeals[i]; break; } }
+  if (totalComissao === 0 && deal) totalComissao = deal.potencial * 0.05; // default 5%
+
+  var row = {
+    deal_id: dealId || null,
+    oportunidade_id: oppId,
+    total_valor: totalComissao,
+    mesa_pct: mesaPct,
+    mesa_valor: totalComissao * mesaPct,
+    seller_pct: sellerPct,
+    seller_valor: totalComissao * sellerPct,
+    originador_pct: originadorPct,
+    originador_valor: totalComissao * originadorPct,
+    status: 'calculada',
+    atualizado_em: new Date().toISOString()
+  };
+
+  // Check if comissao already exists for this deal
+  var existing = null;
+  if (dealId) {
+    var { data: ex } = await _sb.from('comissoes').select('id').eq('deal_id', dealId).limit(1).single();
+    existing = ex;
+  }
+  if (existing) {
+    var { error } = await _sb.from('comissoes').update(row).eq('id', existing.id);
+    if (error) { showToast('Erro: ' + error.message); return; }
+  } else {
+    row.criado_em = new Date().toISOString();
+    var { error } = await _sb.from('comissoes').insert(row);
+    if (error) { showToast('Erro: ' + error.message); return; }
+  }
+  showToast('Comissao salva! Total: ' + formatBRL(totalComissao));
+  loadPipeline();
+}
+
+// ---- Helper: saveIANotes ----
 async function saveIANotes(oppId) {
   var notes = document.getElementById('dt-ia-notes').value;
   var { error } = await _sb.from('oportunidades').update({ observacoes: notes }).eq('id', oppId);
@@ -1198,35 +1460,13 @@ async function saveIANotes(oppId) {
   else showToast('Orientacoes salvas!');
 }
 
-async function loadDealHistory(oppId) {
-  var el = document.getElementById('dt-history');
-  var { data } = await _sb.from('aprovacoes_v2').select('*').eq('entidade_id', oppId).order('criado_em', { ascending: false });
-  var items = data || [];
-  if (items.length === 0) {
-    el.innerHTML = '<p style="color:var(--text3);font-size:12px">Nenhuma acao registrada</p>';
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < items.length; i++) {
-    var a = items[i];
-    var dt = new Date(a.criado_em);
-    var dateStr = String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
-    var desc = a.tipo + ' — ' + a.status;
-    if (a.motivo_rejeicao) desc += ' (' + a.motivo_rejeicao + ')';
-    html += '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">' +
-      '<span style="font-size:11px;color:var(--text3);white-space:nowrap;min-width:80px">' + dateStr + '</span>' +
-      '<span style="font-size:12px;color:var(--text)">' + desc + '</span>' +
-    '</div>';
-  }
-  el.innerHTML = html;
-}
-
-async function quickStatus(newStatus, oppId) {
+// ---- Helper: quickStatusBtn ----
+async function quickStatusBtn(newStatus, oppId) {
   if (!newStatus) return;
   var { error } = await _sb.from('oportunidades').update({ status: newStatus }).eq('id', oppId);
   if (error) { showToast('Erro: ' + error.message); return; }
 
-  // If fechado, ensure deal exists
+  // If fechado/faturado, ensure deal exists
   if (newStatus === 'fechado' || newStatus === 'faturado') {
     var { data: existing } = await _sb.from('deals').select('id').eq('oportunidade_id', oppId).limit(1).single();
     if (!existing) {
@@ -1253,6 +1493,36 @@ async function quickStatus(newStatus, oppId) {
 
   showToast('Status atualizado: ' + statusLabel(newStatus));
   loadPipeline();
+}
+
+// ---- Helper: loadDealHistory ----
+async function loadDealHistory(oppId) {
+  var el = document.getElementById('dt-history');
+  if (!el) return;
+  var { data } = await _sb.from('aprovacoes_v2').select('*').eq('entidade_id', oppId).order('criado_em', { ascending: false });
+  var items = data || [];
+  if (items.length === 0) {
+    el.innerHTML = '<p style="color:var(--text3);font-size:12px">Nenhuma acao registrada</p>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var a = items[i];
+    var dt = new Date(a.criado_em);
+    var dateStr = String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    var desc = a.tipo + ' — ' + a.status;
+    if (a.motivo_rejeicao) desc += ' (' + a.motivo_rejeicao + ')';
+    html += '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:11px;color:var(--text3);white-space:nowrap;min-width:80px">' + dateStr + '</span>' +
+      '<span style="font-size:12px;color:var(--text)">' + desc + '</span>' +
+    '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// Keep old quickStatus for backward compatibility (select dropdown)
+async function quickStatus(newStatus, oppId) {
+  quickStatusBtn(newStatus, oppId);
 }
 
 // =============================================
