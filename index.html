@@ -204,6 +204,36 @@ body{background:#050810;color:#ECF0FF;font-family:sans-serif;font-size:14px}
 
 @media(max-width:640px){.sidebar{display:none}}
 
+/* ── BOTTOM NAV (mobile only) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:#080D18;border-top:1px solid rgba(255,255,255,.055);z-index:100;padding:0}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:1;height:100%;background:none;border:none;color:var(--t3);font-size:9px;font-family:var(--font);cursor:pointer;transition:color .15s;padding:0;min-height:44px}
+.bottom-nav-item .bnav-icon{font-size:20px;line-height:1}
+.bottom-nav-item.active{color:var(--ac)}
+.bottom-nav-item.active .bnav-icon{filter:drop-shadow(0 0 6px rgba(0,200,255,.4))}
+
+@media(max-width:640px){
+  .bottom-nav{display:flex;justify-content:space-around;align-items:center}
+  .main{padding-bottom:70px!important}
+  .topbar{padding:8px 12px}
+}
+
+/* ── RESPONSIVE GRID ── */
+@media(max-width:375px){
+  .metric{padding:9px 8px}.mv,.mval{font-size:14px}
+  .btn,.btn-grow{min-height:44px;font-size:13px}
+  .card,.neg-card,.mkt-card,.prod-card{min-height:44px}
+}
+@media(max-width:390px){
+  .metric{padding:10px 9px}
+}
+@media(max-width:768px){
+  .m4{grid-template-columns:repeat(2,1fr)}
+  .m3{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:1280px){
+  .main{padding:20px 28px}
+}
+
 /* SPONSORED BANNER */
 
 
@@ -7468,7 +7498,27 @@ function scanVozMostrarConfirmacao(){
   </div>
 </div>
 
+<!-- ── BOTTOM NAV (mobile) ── -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bottom-nav-item active" onclick="goBottom('s1')" data-screen="s1"><span class="bnav-icon">🏠</span>Home</button>
+  <button class="bottom-nav-item" onclick="goBottom('sDemandas')" data-screen="sDemandas"><span class="bnav-icon">📋</span>Demandas</button>
+  <button class="bottom-nav-item" onclick="goBottom('sNegocios')" data-screen="sNegocios"><span class="bnav-icon">🤝</span>Negociações</button>
+  <button class="bottom-nav-item" onclick="goBottom('sMensagens')" data-screen="sMensagens"><span class="bnav-icon">💬</span>Mensagens</button>
+  <button class="bottom-nav-item" onclick="goBottom('sPerfil')" data-screen="sPerfil"><span class="bnav-icon">👤</span>Perfil</button>
+</nav>
 </div>
+
+<script>
+/* ── Bottom nav helper ── */
+function goBottom(id){
+  go(id);
+  var items=document.querySelectorAll('.bottom-nav-item');
+  for(var i=0;i<items.length;i++){
+    items[i].classList.remove('active');
+    if(items[i].getAttribute('data-screen')===id) items[i].classList.add('active');
+  }
+}
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){ checkSession(); });

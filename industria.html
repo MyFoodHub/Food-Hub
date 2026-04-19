@@ -397,6 +397,37 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
 @keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.3}}
 .badge-nova{animation:pulse-badge 1.2s infinite;background:var(--rd);color:#fff;font-size:8px;padding:1px 6px;border-radius:3px;font-weight:700}
 
+/* ── BOTTOM NAV (mobile only) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:#08060E;border-top:1px solid rgba(255,255,255,.055);z-index:100;padding:0}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:1;height:100%;background:none;border:none;color:var(--w3);font-size:9px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:color .15s;padding:0;min-height:44px}
+.bottom-nav-item .bnav-icon{font-size:20px;line-height:1}
+.bottom-nav-item.active{color:var(--am)}
+.bottom-nav-item.active .bnav-icon{filter:drop-shadow(0 0 6px rgba(245,184,0,.4))}
+
+@media(max-width:640px){
+  .bottom-nav{display:flex;justify-content:space-around;align-items:center}
+  .sidebar{display:none}
+  .main{padding-bottom:70px!important}
+  .topbar{padding:8px 12px}
+}
+
+/* ── RESPONSIVE GRID ── */
+@media(max-width:375px){
+  .metric{padding:9px 8px}.mval{font-size:14px}
+  .btn,.btn-am,.btn-go,.btn-gh{min-height:44px;font-size:13px}
+  .card,.pack{min-height:44px}
+}
+@media(max-width:390px){
+  .metric{padding:10px 9px}
+}
+@media(max-width:768px){
+  .m4{grid-template-columns:repeat(2,1fr)}
+  .m3{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:1280px){
+  .main{padding:20px 28px}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2073,6 +2104,14 @@ body{background:#06050A;color:#F2EDFF;font-family:'DM Sans',sans-serif;font-size
   </div>
 </div>
 
+<!-- ── BOTTOM NAV (mobile) ── -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bottom-nav-item active" onclick="goBottom('s-main')" data-screen="s-main"><span class="bnav-icon">🏠</span>Home</button>
+  <button class="bottom-nav-item" onclick="goBottom('s-demandas')" data-screen="s-demandas"><span class="bnav-icon">📋</span>Oportunidades</button>
+  <button class="bottom-nav-item" onclick="goBottom('s-minhas-ofertas')" data-screen="s-minhas-ofertas"><span class="bnav-icon">📤</span>Propostas</button>
+  <button class="bottom-nav-item" onclick="goBottom('s-pipeline')" data-screen="s-pipeline"><span class="bnav-icon">📦</span>Pedidos</button>
+  <button class="bottom-nav-item" onclick="goBottom('s-mensagens')" data-screen="s-mensagens"><span class="bnav-icon">💬</span>Mensagens</button>
+</nav>
 </div><!-- /app -->
 <script>
 // ── SUPABASE CLIENT ──
@@ -2647,6 +2686,15 @@ function go(id){
   if(id==='s-minhas-ofertas'){loadMinhasOfertas();loadKpisMinhasOfertas();}
   if(id==='s-pipeline') loadPipeline();
   if(id==='s-mensagens') loadIndInbox();
+}
+/* ── Bottom nav helper ── */
+function goBottom(id){
+  go(id);
+  var items=document.querySelectorAll('.bottom-nav-item');
+  for(var i=0;i<items.length;i++){
+    items[i].classList.remove('active');
+    if(items[i].getAttribute('data-screen')===id) items[i].classList.add('active');
+  }
 }
 function goX(id){
   document.querySelectorAll('.screen,.xs').forEach(function(s){s.classList.remove('on')});

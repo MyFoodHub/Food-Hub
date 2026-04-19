@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar - FoodHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: #050810;
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .login-wrapper {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .logo {
+    text-align: center;
+    margin-bottom: 8px;
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    user-select: none;
+  }
+
+  .logo-food { color: #ffffff; }
+  .logo-hub { color: #00C8FF; }
+
+  .logo-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #00C8FF;
+    border-radius: 50%;
+    margin-left: 2px;
+    vertical-align: super;
+    animation: pulse-dot 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.35); }
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #6b7a99;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 40px;
+  }
+
+  .card {
+    background: #080D18;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 32px 28px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #8a95ad;
+    margin-bottom: 6px;
+  }
+
+  .form-group input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 16px;
+    background: #0c1322;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input::placeholder {
+    color: #3d4a63;
+  }
+
+  .form-group input:focus {
+    border-color: #00C8FF;
+  }
+
+  .btn-entrar {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 8px;
+    background: #00C8FF;
+    color: #050810;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+  }
+
+  .btn-entrar:hover { opacity: 0.9; }
+  .btn-entrar:active { transform: scale(0.98); }
+  .btn-entrar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-text { transition: opacity 0.2s; }
+  .btn-entrar.loading .btn-text { opacity: 0; }
+
+  .spinner {
+    display: none;
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 22px; height: 22px;
+    margin: -11px 0 0 -11px;
+    border: 3px solid rgba(5, 8, 16, 0.25);
+    border-top-color: #050810;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  .btn-entrar.loading .spinner { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: rgba(255, 60, 60, 0.08);
+    border: 1px solid rgba(255, 60, 60, 0.18);
+    border-radius: 8px;
+    color: #ff6b6b;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .error-msg.visible { display: block; }
+
+  .forgot-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: #6b7a99;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .forgot-link:hover { color: #00C8FF; }
+
+  .reset-success {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: rgba(0, 200, 255, 0.06);
+    border: 1px solid rgba(0, 200, 255, 0.15);
+    border-radius: 8px;
+    color: #00C8FF;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .reset-success.visible { display: block; }
+
+  @media (max-width: 400px) {
+    .card { padding: 24px 20px; }
+    .logo { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <div class="logo">
+    <span class="logo-food">Food</span><span class="logo-hub">Hub</span><span class="logo-dot"></span>
+  </div>
+  <div class="subtitle">Mesa Nacional de Oportunidades</div>
+
+  <div class="card">
+    <form id="loginForm" autocomplete="on">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="seu@email.com" autocomplete="email" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input type="password" id="password" name="password" placeholder="Sua senha" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-entrar" id="btnEntrar">
+        <span class="btn-text">Entrar</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="reset-success" id="resetMsg">Link de recuperacao enviado para seu email.</div>
+
+    <a class="forgot-link" id="forgotLink">Esqueceu a senha?</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  var _sb = supabase.createClient(
+    'https://jqbuckofiaopxwllghac.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+  );
+
+  var form = document.getElementById('loginForm');
+  var btnEntrar = document.getElementById('btnEntrar');
+  var emailInput = document.getElementById('email');
+  var passwordInput = document.getElementById('password');
+  var errorMsg = document.getElementById('errorMsg');
+  var resetMsg = document.getElementById('resetMsg');
+  var forgotLink = document.getElementById('forgotLink');
+
+  var redirectMap = {
+    comprador: 'index.html',
+    fornecedor: 'industria.html',
+    seller: 'seller.html',
+    originador: 'originador.html',
+    mesa: 'mesa.html'
+  };
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+    resetMsg.classList.remove('visible');
+  }
+
+  function clearMessages() {
+    errorMsg.classList.remove('visible');
+    resetMsg.classList.remove('visible');
+  }
+
+  function setLoading(state) {
+    if (state) {
+      btnEntrar.classList.add('loading');
+      btnEntrar.disabled = true;
+    } else {
+      btnEntrar.classList.remove('loading');
+      btnEntrar.disabled = false;
+    }
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    clearMessages();
+
+    var email = emailInput.value.trim();
+    var password = passwordInput.value;
+
+    if (!email || !password) return;
+
+    setLoading(true);
+
+    _sb.auth.signInWithPassword({ email: email, password: password })
+      .then(function(authResult) {
+        if (authResult.error) {
+          setLoading(false);
+          showError('Email ou senha incorretos.');
+          return;
+        }
+
+        var userEmail = authResult.data.user.email;
+
+        return _sb.from('members')
+          .select('tipo, status')
+          .eq('email', userEmail)
+          .single()
+          .then(function(memberResult) {
+            setLoading(false);
+
+            if (memberResult.error || !memberResult.data) {
+              showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
+              return;
+            }
+
+            var member = memberResult.data;
+
+            if (member.status !== 'ativo') {
+              showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
+              return;
+            }
+
+            var dest = redirectMap[member.tipo];
+            if (dest) {
+              window.location.href = dest;
+            } else {
+              showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
+            }
+          });
+      })
+      .catch(function() {
+        setLoading(false);
+        showError('Email ou senha incorretos.');
+      });
+  });
+
+  forgotLink.addEventListener('click', function() {
+    clearMessages();
+
+    var email = emailInput.value.trim();
+    if (!email) {
+      showError('Digite seu email acima para recuperar a senha.');
+      return;
+    }
+
+    forgotLink.style.pointerEvents = 'none';
+    forgotLink.style.opacity = '0.4';
+
+    _sb.auth.resetPasswordForEmail(email)
+      .then(function() {
+        resetMsg.classList.add('visible');
+        errorMsg.classList.remove('visible');
+      })
+      .catch(function() {
+        showError('Erro ao enviar email de recuperacao. Tente novamente.');
+      })
+      .finally(function() {
+        forgotLink.style.pointerEvents = '';
+        forgotLink.style.opacity = '';
+      });
+  });
+</script>
+</body>
+</html>

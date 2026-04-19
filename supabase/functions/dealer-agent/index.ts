@@ -192,9 +192,19 @@ function novaConversacao(): ConversationState {
 // Claude-based intent detection
 // ---------------------------------------------------------------------------
 
-async function identificarIntencaoEDados(texto: string): Promise<IntentResult> {
+async function identificarIntencaoEDados(texto: string, perfil?: string): Promise<IntentResult> {
+  const perfilContext = perfil
+    ? `\nO usuário tem perfil "${perfil}" no sistema. Considere isso ao classificar a intenção.
+- comprador: foco em compras, demandas, propostas recebidas
+- fornecedor: foco em oportunidades, propostas enviadas, pedidos, NF
+- seller: foco em clientes, pipeline, comissões
+- originador: foco em fornecedores trazidos, deals, comissões
+- mesa: foco em aprovações, pipeline geral, financeiro`
+    : "";
+
   const system = `Você é o agente de IA do FoodHub, plataforma B2B de alimentos.
 Analise a mensagem do usuário e retorne SOMENTE um JSON válido, sem markdown.
+${perfilContext}
 
 Formato:
 {
@@ -564,12 +574,638 @@ async function salvarDemanda(
 }
 
 // ---------------------------------------------------------------------------
+// Profile-specific command handlers
+// ---------------------------------------------------------------------------
+
+type UserProfile = "comprador" | "fornecedor" | "seller" | "originador" | "mesa";
+
+interface MemberInfo {
+  id: string;
+  tipo: UserProfile;
+  nome: string;
+}
+
+// ---- Comprador commands ----
+
+async function comandoCompradorMinhasDemandas(usuario_id: string): Promise<string> {
+  const { data: demandas } = await supabase
+    .from("demandas_v2")
+    .select("codigo, produto, quantidade, unidade, status, created_at")
+    .eq("usuario_id", usuario_id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!demandas?.length) {
+    return "Você ainda não tem demandas registradas. Diga *nova demanda* para criar uma!";
+  }
+
+  let msg = "*Suas demandas:*\n\n";
+  for (const d of demandas) {
+    const statusLabel = d.status.replace(/_/g, " ");
+    msg += `• *${d.codigo}* — ${d.produto} — ${d.quantidade} ${d.unidade} — _${statusLabel}_\n`;
+  }
+  return msg;
+}
+
+async function comandoCompradorAceitar(codigo: string, usuario_id: string): Promise<string> {
+  const { data: proposta } = await supabase
+    .from("propostas")
+    .select("id, demanda_id, valor, status")
+    .eq("codigo", codigo.toUpperCase())
+    .single();
+
+  if (!proposta) {
+    return `Não encontrei proposta com código *${codigo.toUpperCase()}*. Verifique e tente novamente.`;
+  }
+
+  // Verify the demand belongs to this buyer
+  const { data: demanda } = await supabase
+    .from("demandas_v2")
+    .select("id, usuario_id")
+    .eq("id", proposta.demanda_id)
+    .single();
+
+  if (!demanda || demanda.usuario_id !== usuario_id) {
+    return "Essa proposta não pertence a nenhuma das suas demandas.";
+  }
+
+  if (proposta.status !== "pendente" && proposta.status !== "enviada") {
+    return `Essa proposta já está com status _${proposta.status}_. Não é possível aceitar.`;
+  }
+
+  const { error } = await supabase
+    .from("propostas")
+    .update({ status: "aceita", atualizado_em: new Date().toISOString() })
+    .eq("id", proposta.id);
+
+  if (error) {
+    return "Erro ao aceitar proposta. Tente novamente em instantes.";
+  }
+
+  return `Proposta *${codigo.toUpperCase()}* aceita com sucesso! O fornecedor será notificado.`;
+}
+
+async function comandoCompradorMeAtualiza(usuario_id: string): Promise<string> {
+  const [resProp, resDem] = await Promise.all([
+    supabase
+      .from("propostas")
+      .select("id, codigo, demanda_id, valor, status")
+      .in("status", ["pendente", "enviada"])
+      .limit(10),
+    supabase
+      .from("demandas_v2")
+      .select("id, codigo, produto, status")
+      .eq("usuario_id", usuario_id)
+      .in("status", ["aberta", "em_negociacao"])
+      .limit(10),
+  ]);
+
+  let msg = "*Atualização — Comprador*\n\n";
+
+  const demandas = resDem.data || [];
+  if (demandas.length > 0) {
+    // Filter proposals that belong to this buyer's demands
+    const demandaIds = demandas.map((d: { id: string }) => d.id);
+    const propostasDoComprador = (resProp.data || []).filter(
+      (p: { demanda_id: string }) => demandaIds.includes(p.demanda_id)
+    );
+
+    msg += `*${demandas.length}* demanda(s) ativa(s):\n`;
+    for (const d of demandas) {
+      const props = propostasDoComprador.filter(
+        (p: { demanda_id: string }) => p.demanda_id === d.id
+      );
+      msg += `• *${d.codigo}* — ${d.produto} — _${d.status.replace(/_/g, " ")}_`;
+      if (props.length > 0) msg += ` — ${props.length} proposta(s) pendente(s)`;
+      msg += "\n";
+    }
+  } else {
+    msg += "Nenhuma demanda ativa no momento.\n";
+  }
+
+  msg += "\nDiga *nova demanda* para criar ou *minhas demandas* para ver o histórico.";
+  return msg;
+}
+
+// ---- Fornecedor commands ----
+
+async function comandoFornecedorOportunidades(usuario_id: string): Promise<string> {
+  const { data: demandas } = await supabase
+    .from("demandas_v2")
+    .select("codigo, produto, quantidade, unidade, local_entrega, status, created_at")
+    .in("status", ["aberta"])
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!demandas?.length) {
+    return "Não há demandas abertas no momento. Fique ligado — te aviso quando surgir algo!";
+  }
+
+  let msg = "*Demandas abertas (oportunidades):*\n\n";
+  for (const d of demandas) {
+    msg += `• *${d.codigo}* — ${d.produto} — ${d.quantidade} ${d.unidade}`;
+    if (d.local_entrega) msg += ` — entrega: ${d.local_entrega}`;
+    msg += "\n";
+  }
+  msg += "\nEnvie uma proposta pelo código da demanda!";
+  return msg;
+}
+
+async function comandoFornecedorMeAtualiza(usuario_id: string): Promise<string> {
+  const [resProp, resNeg] = await Promise.all([
+    supabase
+      .from("propostas")
+      .select("id, codigo, demanda_id, valor, status, created_at")
+      .eq("fornecedor_id", usuario_id)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    supabase
+      .from("demandas_v2")
+      .select("id, codigo, produto, status")
+      .in("status", ["em_negociacao"])
+      .limit(10),
+  ]);
+
+  let msg = "*Atualização — Fornecedor*\n\n";
+
+  const propostas = resProp.data || [];
+  if (propostas.length > 0) {
+    msg += `*Propostas enviadas:*\n`;
+    for (const p of propostas) {
+      msg += `• *${p.codigo || p.id.substring(0, 8)}* — R$ ${p.valor} — _${p.status}_\n`;
+    }
+  } else {
+    msg += "Nenhuma proposta enviada ainda.\n";
+  }
+
+  msg += "\nDiga *demandas* para ver oportunidades abertas.";
+  return msg;
+}
+
+async function comandoFornecedorPedidos(usuario_id: string): Promise<string> {
+  const { data: pedidos } = await supabase
+    .from("pedidos_v2")
+    .select("id, codigo, status, valor_total, created_at")
+    .eq("fornecedor_id", usuario_id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!pedidos?.length) {
+    return "Você não tem pedidos ativos no momento.";
+  }
+
+  let msg = "*Seus pedidos ativos:*\n\n";
+  for (const p of pedidos) {
+    msg += `• *${p.codigo || p.id.substring(0, 8)}* — R$ ${p.valor_total || "—"} — _${p.status}_\n`;
+  }
+  return msg;
+}
+
+async function comandoFornecedorNF(codigo: string, usuario_id: string): Promise<string> {
+  const { data: pedido } = await supabase
+    .from("pedidos_v2")
+    .select("id, codigo, fornecedor_id, status")
+    .eq("codigo", codigo.toUpperCase())
+    .single();
+
+  if (!pedido) {
+    return `Não encontrei pedido com código *${codigo.toUpperCase()}*.`;
+  }
+
+  if (pedido.fornecedor_id !== usuario_id) {
+    return "Esse pedido não pertence a você.";
+  }
+
+  const { error } = await supabase
+    .from("tracking_v2")
+    .upsert({
+      pedido_id: pedido.id,
+      etapa: "nf_emitida",
+      status: "concluido",
+      atualizado_por: usuario_id,
+      atualizado_em: new Date().toISOString(),
+    });
+
+  if (error) {
+    return "Erro ao registrar NF. Tente novamente.";
+  }
+
+  return `NF registrada para o pedido *${codigo.toUpperCase()}*! Tracking atualizado.`;
+}
+
+// ---- Seller commands ----
+
+async function comandoSellerMeAtualiza(usuario_id: string): Promise<string> {
+  // Get clients linked to this seller
+  const { data: clientes } = await supabase
+    .from("members")
+    .select("id, nome")
+    .eq("seller_id", usuario_id);
+
+  if (!clientes?.length) {
+    return "*Atualização — Seller*\n\nVocê ainda não tem clientes vinculados.";
+  }
+
+  const clienteIds = clientes.map((c: { id: string }) => c.id);
+
+  const { data: demandas } = await supabase
+    .from("demandas_v2")
+    .select("codigo, produto, quantidade, unidade, status, usuario_id")
+    .in("usuario_id", clienteIds)
+    .in("status", ["aguardando_aprovacao", "aberta", "em_negociacao"])
+    .order("created_at", { ascending: false })
+    .limit(15);
+
+  let msg = "*Atualização — Seller*\n\n";
+  msg += `*${clientes.length}* cliente(s) vinculado(s)\n\n`;
+
+  if (demandas?.length) {
+    msg += "*Pipeline de demandas:*\n";
+    for (const d of demandas) {
+      const cliente = clientes.find((c: { id: string }) => c.id === d.usuario_id);
+      msg += `• *${d.codigo}* — ${d.produto} — ${d.quantidade} ${d.unidade} — _${d.status.replace(/_/g, " ")}_ — cliente: ${cliente?.nome || "—"}\n`;
+    }
+  } else {
+    msg += "Nenhuma demanda ativa nos seus clientes.\n";
+  }
+
+  return msg;
+}
+
+async function comandoSellerComissoes(usuario_id: string): Promise<string> {
+  const { data: comissoes } = await supabase
+    .from("financials_v2")
+    .select("id, tipo, valor, status, referencia_codigo, created_at")
+    .eq("beneficiario_id", usuario_id)
+    .eq("tipo", "comissao_seller")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!comissoes?.length) {
+    return "*Comissões — Seller*\n\nNenhuma comissão registrada ainda.";
+  }
+
+  let projetado = 0;
+  let realizado = 0;
+  for (const c of comissoes) {
+    if (c.status === "pago" || c.status === "realizado") {
+      realizado += c.valor || 0;
+    } else {
+      projetado += c.valor || 0;
+    }
+  }
+
+  let msg = "*Comissões — Seller*\n\n";
+  msg += `Projetado: R$ ${projetado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+  msg += `Realizado: R$ ${realizado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n`;
+
+  msg += "*Últimas:*\n";
+  for (const c of comissoes.slice(0, 5)) {
+    msg += `• ${c.referencia_codigo || "—"} — R$ ${c.valor} — _${c.status}_\n`;
+  }
+  return msg;
+}
+
+async function comandoSellerClientes(usuario_id: string): Promise<string> {
+  const { data: clientes } = await supabase
+    .from("members")
+    .select("id, nome, tipo, created_at")
+    .eq("seller_id", usuario_id)
+    .order("created_at", { ascending: false });
+
+  if (!clientes?.length) {
+    return "Você ainda não tem clientes vinculados.";
+  }
+
+  let msg = `*Seus clientes (${clientes.length}):*\n\n`;
+  for (const c of clientes) {
+    msg += `• ${c.nome} — _${c.tipo || "comprador"}_\n`;
+  }
+  return msg;
+}
+
+// ---- Originador commands ----
+
+async function comandoOriginadorMeAtualiza(usuario_id: string): Promise<string> {
+  const { data: fornecedores } = await supabase
+    .from("members")
+    .select("id, nome")
+    .eq("originador_id", usuario_id);
+
+  if (!fornecedores?.length) {
+    return "*Atualização — Originador*\n\nVocê ainda não tem fornecedores vinculados.";
+  }
+
+  const fornecedorIds = fornecedores.map((f: { id: string }) => f.id);
+
+  const { data: propostas } = await supabase
+    .from("propostas")
+    .select("id, codigo, demanda_id, valor, status, fornecedor_id")
+    .in("fornecedor_id", fornecedorIds)
+    .order("created_at", { ascending: false })
+    .limit(15);
+
+  let msg = "*Atualização — Originador*\n\n";
+  msg += `*${fornecedores.length}* fornecedor(es) trazido(s)\n\n`;
+
+  if (propostas?.length) {
+    msg += "*Deals dos seus fornecedores:*\n";
+    for (const p of propostas) {
+      const forn = fornecedores.find((f: { id: string }) => f.id === p.fornecedor_id);
+      msg += `• *${p.codigo || p.id.substring(0, 8)}* — R$ ${p.valor} — _${p.status}_ — forn: ${forn?.nome || "—"}\n`;
+    }
+  } else {
+    msg += "Nenhum deal ativo dos seus fornecedores.\n";
+  }
+
+  return msg;
+}
+
+async function comandoOriginadorComissoes(usuario_id: string): Promise<string> {
+  const { data: comissoes } = await supabase
+    .from("financials_v2")
+    .select("id, tipo, valor, status, referencia_codigo, created_at")
+    .eq("beneficiario_id", usuario_id)
+    .eq("tipo", "comissao_originador")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (!comissoes?.length) {
+    return "*Comissões — Originador*\n\nNenhuma comissão registrada ainda.";
+  }
+
+  let projetado = 0;
+  let realizado = 0;
+  for (const c of comissoes) {
+    if (c.status === "pago" || c.status === "realizado") {
+      realizado += c.valor || 0;
+    } else {
+      projetado += c.valor || 0;
+    }
+  }
+
+  let msg = "*Comissões — Originador*\n\n";
+  msg += `Projetado: R$ ${projetado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+  msg += `Realizado: R$ ${realizado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n`;
+
+  msg += "*Últimas:*\n";
+  for (const c of comissoes.slice(0, 5)) {
+    msg += `• ${c.referencia_codigo || "—"} — R$ ${c.valor} — _${c.status}_\n`;
+  }
+  return msg;
+}
+
+async function comandoOriginadorFornecedores(usuario_id: string): Promise<string> {
+  const { data: fornecedores } = await supabase
+    .from("members")
+    .select("id, nome, tipo, created_at")
+    .eq("originador_id", usuario_id)
+    .order("created_at", { ascending: false });
+
+  if (!fornecedores?.length) {
+    return "Você ainda não tem fornecedores vinculados.";
+  }
+
+  let msg = `*Seus fornecedores (${fornecedores.length}):*\n\n`;
+  for (const f of fornecedores) {
+    msg += `• ${f.nome}\n`;
+  }
+  return msg;
+}
+
+// ---- Mesa commands ----
+
+async function comandoMesaPipeline(): Promise<string> {
+  const { data: demandas } = await supabase
+    .from("demandas_v2")
+    .select("id, status, quantidade, unidade, specs")
+    .in("status", ["aguardando_aprovacao", "aberta", "em_negociacao", "fechada"]);
+
+  if (!demandas?.length) {
+    return "*Pipeline — Mesa*\n\nNenhuma demanda no sistema.";
+  }
+
+  const byStatus: Record<string, { count: number; valorTotal: number }> = {};
+  for (const d of demandas) {
+    if (!byStatus[d.status]) byStatus[d.status] = { count: 0, valorTotal: 0 };
+    byStatus[d.status].count++;
+  }
+
+  let msg = "*Pipeline — Mesa (resumo executivo)*\n\n";
+  for (const [status, info] of Object.entries(byStatus)) {
+    msg += `• _${status.replace(/_/g, " ")}_: ${info.count} demanda(s)\n`;
+  }
+  msg += `\n*Total:* ${demandas.length} demanda(s) no sistema`;
+  return msg;
+}
+
+async function comandoMesaAprovacoes(): Promise<string> {
+  const { data: aprovacoes } = await supabase
+    .from("aprovacoes")
+    .select("id, tipo, entidade_codigo, status, created_at")
+    .eq("status", "pendente")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (!aprovacoes?.length) {
+    return "*Aprovações — Mesa*\n\nNenhuma aprovação pendente. Tudo em dia!";
+  }
+
+  let msg = `*Aprovações pendentes (${aprovacoes.length}):*\n\n`;
+  for (const a of aprovacoes) {
+    msg += `• *${a.entidade_codigo}* — ${a.tipo} — desde ${new Date(a.created_at).toLocaleDateString("pt-BR")}\n`;
+  }
+  msg += "\nUse *APROVAR [código]* ou *REJEITAR [código] [motivo]* para decidir.";
+  return msg;
+}
+
+async function comandoMesaRejeitar(codigo: string, motivo: string, usuario_id: string): Promise<string> {
+  const { data: aprovacao } = await supabase
+    .from("aprovacoes")
+    .select("*")
+    .eq("entidade_codigo", codigo.toUpperCase())
+    .eq("status", "pendente")
+    .single();
+
+  if (!aprovacao) {
+    return `Não encontrei aprovação pendente para o código *${codigo.toUpperCase()}*.`;
+  }
+
+  const { error } = await supabase
+    .from("aprovacoes")
+    .update({
+      status: "rejeitado",
+      aprovado_por: usuario_id,
+      aprovado_em: new Date().toISOString(),
+      motivo_rejeicao: motivo || "Sem motivo informado",
+    })
+    .eq("id", aprovacao.id);
+
+  if (error) {
+    return "Erro ao processar rejeição. Tente novamente.";
+  }
+
+  if (aprovacao.tipo === "demanda") {
+    await supabase
+      .from("demandas_v2")
+      .update({ status: "rejeitada" })
+      .eq("id", aprovacao.entidade_id);
+  }
+
+  return `*${codigo.toUpperCase()}* rejeitado. Motivo: _${motivo || "Sem motivo informado"}_`;
+}
+
+async function comandoMesaFinanceiro(): Promise<string> {
+  const hoje = new Date().toISOString().split("T")[0];
+
+  const { data: comissoes } = await supabase
+    .from("financials_v2")
+    .select("id, tipo, valor, status, beneficiario_id")
+    .gte("created_at", hoje + "T00:00:00")
+    .lte("created_at", hoje + "T23:59:59");
+
+  if (!comissoes?.length) {
+    return `*Financeiro — ${hoje}*\n\nNenhuma movimentação de comissões hoje.`;
+  }
+
+  let total = 0;
+  for (const c of comissoes) {
+    total += c.valor || 0;
+  }
+
+  let msg = `*Financeiro — ${hoje}*\n\n`;
+  msg += `Movimentações: ${comissoes.length}\n`;
+  msg += `Total: R$ ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n\n`;
+
+  const byTipo: Record<string, number> = {};
+  for (const c of comissoes) {
+    byTipo[c.tipo] = (byTipo[c.tipo] || 0) + (c.valor || 0);
+  }
+  for (const [tipo, valor] of Object.entries(byTipo)) {
+    msg += `• ${tipo}: R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+  }
+  return msg;
+}
+
+async function comandoMesaMeAtualiza(usuario_id: string): Promise<string> {
+  const [pipeline, aprovacoes, financeiro] = await Promise.all([
+    comandoMesaPipeline(),
+    comandoMesaAprovacoes(),
+    comandoMesaFinanceiro(),
+  ]);
+
+  return `${pipeline}\n\n---\n\n${aprovacoes}\n\n---\n\n${financeiro}`;
+}
+
+// ---------------------------------------------------------------------------
+// Profile command router
+// ---------------------------------------------------------------------------
+
+async function processarComandoPerfil(
+  texto: string,
+  usuario_id: string,
+  perfil: UserProfile,
+  memberName: string
+): Promise<string | null> {
+  const lower = texto.toLowerCase().trim();
+
+  // ---- Comprador ----
+  if (perfil === "comprador") {
+    if (lower === "minhas demandas" || lower === "listar demandas") {
+      return await comandoCompradorMinhasDemandas(usuario_id);
+    }
+    const matchAceitar = lower.match(/^aceitar\s+(.+)$/);
+    if (matchAceitar) {
+      return await comandoCompradorAceitar(matchAceitar[1].trim(), usuario_id);
+    }
+    if (lower === "me atualiza" || lower === "status") {
+      return await comandoCompradorMeAtualiza(usuario_id);
+    }
+  }
+
+  // ---- Fornecedor ----
+  if (perfil === "fornecedor") {
+    if (lower === "demandas" || lower === "oportunidades") {
+      return await comandoFornecedorOportunidades(usuario_id);
+    }
+    if (lower === "me atualiza" || lower === "status") {
+      return await comandoFornecedorMeAtualiza(usuario_id);
+    }
+    if (lower === "pedidos") {
+      return await comandoFornecedorPedidos(usuario_id);
+    }
+    const matchNF = lower.match(/^nf\s+(.+)$/);
+    if (matchNF) {
+      return await comandoFornecedorNF(matchNF[1].trim(), usuario_id);
+    }
+  }
+
+  // ---- Seller ----
+  if (perfil === "seller") {
+    if (lower === "me atualiza" || lower === "status") {
+      return await comandoSellerMeAtualiza(usuario_id);
+    }
+    if (lower === "comissões" || lower === "comissoes") {
+      return await comandoSellerComissoes(usuario_id);
+    }
+    if (lower === "clientes") {
+      return await comandoSellerClientes(usuario_id);
+    }
+  }
+
+  // ---- Originador ----
+  if (perfil === "originador") {
+    if (lower === "me atualiza" || lower === "status") {
+      return await comandoOriginadorMeAtualiza(usuario_id);
+    }
+    if (lower === "comissões" || lower === "comissoes") {
+      return await comandoOriginadorComissoes(usuario_id);
+    }
+    if (lower === "fornecedores") {
+      return await comandoOriginadorFornecedores(usuario_id);
+    }
+  }
+
+  // ---- Mesa ----
+  if (perfil === "mesa") {
+    if (lower === "pipeline") {
+      return await comandoMesaPipeline();
+    }
+    if (lower === "aprovações" || lower === "aprovacoes") {
+      return await comandoMesaAprovacoes();
+    }
+    const matchRejeitar = lower.match(/^rejeitar\s+(\S+)\s*(.*)$/);
+    if (matchRejeitar) {
+      return await comandoMesaRejeitar(matchRejeitar[1].trim(), matchRejeitar[2]?.trim() || "", usuario_id);
+    }
+    if (lower === "financeiro") {
+      return await comandoMesaFinanceiro();
+    }
+    if (lower === "me atualiza" || lower === "status") {
+      return await comandoMesaMeAtualiza(usuario_id);
+    }
+  }
+
+  // No profile-specific command matched — fall through to conversational flow
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Conversation engine
 // ---------------------------------------------------------------------------
 
 async function processarMensagem(texto: string, usuario_id: string): Promise<string> {
   const inicio = Date.now();
   const lower = texto.toLowerCase().trim();
+
+  // ---- Detect user profile ----
+  const { data: member } = await supabase
+    .from("members")
+    .select("id, tipo, nome")
+    .eq("id", usuario_id)
+    .single();
+  const perfil: UserProfile = (member?.tipo as UserProfile) || "comprador";
+  const memberName: string = member?.nome || "";
 
   // ---- Global commands ----
   if (lower === "cancelar" || lower === "sair") {
@@ -585,13 +1221,20 @@ async function processarMensagem(texto: string, usuario_id: string): Promise<str
     return resposta;
   }
 
+  // ---- Profile-specific commands (before session/intent logic) ----
+  const respostaPerfil = await processarComandoPerfil(texto, usuario_id, perfil, memberName);
+  if (respostaPerfil) {
+    await logIA(AGENTE, usuario_id, CANAL, texto, respostaPerfil, "comando_perfil", perfil, true, Date.now() - inicio);
+    return respostaPerfil;
+  }
+
   // ---- Load existing session ----
   let state = await carregarSessao(usuario_id);
 
   // ---- No session: identify intent ----
   if (!state) {
-    const parsed = await identificarIntencaoEDados(texto);
-    console.log(`[${AGENTE}] intencao=${parsed.intencao} produto=${parsed.produto}`);
+    const parsed = await identificarIntencaoEDados(texto, perfil);
+    console.log(`[${AGENTE}] intencao=${parsed.intencao} produto=${parsed.produto} perfil=${perfil}`);
 
     if (parsed.intencao === "consultar_status") {
       const resposta = await consultarStatus(usuario_id);
@@ -612,11 +1255,21 @@ async function processarMensagem(texto: string, usuario_id: string): Promise<str
     }
 
     if (parsed.intencao !== "criar_demanda") {
+      const perfilDicas: Record<string, string> = {
+        comprador: "Sugira criar uma demanda de compra ou consultar status das demandas existentes.",
+        fornecedor: "Sugira ver oportunidades abertas (demandas) ou consultar pedidos.",
+        seller: "Sugira consultar o pipeline de clientes ou ver comissões.",
+        originador: "Sugira consultar deals dos fornecedores trazidos ou ver comissões.",
+        mesa: "Sugira ver o pipeline, aprovações pendentes ou resumo financeiro.",
+      };
+      const dica = perfilDicas[perfil] || perfilDicas["comprador"];
+
       const resposta = await chamarClaude(
         `O usuário disse: "${texto}"`,
         `Você é o assistente do FoodHub, plataforma B2B de alimentos. ` +
+        `O usuário tem perfil "${perfil}"${memberName ? ` e se chama ${memberName}` : ""}. ` +
         `Responda de forma profissional e direta, no idioma "${parsed.idioma}". ` +
-        `Se possível, sugira criar uma demanda de compra. ` +
+        `${dica} ` +
         `Nunca mencione comissão, taxa ou fee. Nunca exponha outros compradores ou fornecedores. ` +
         `Máximo 2 parágrafos.`
       );

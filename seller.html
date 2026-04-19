@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FoodHub — Seller</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#050810;color:#e0e0e0;font-family:'DM Sans',system-ui,sans-serif;font-size:14px}
+
+:root{
+  --bg:#050810;--card:#080D18;
+  --b1:rgba(255,255,255,.055);--b2:rgba(255,255,255,.1);--b3:rgba(255,255,255,.18);
+  --ac:#00C8FF;--ac2:rgba(0,200,255,.1);--ac3:rgba(0,200,255,.2);
+  --gn:#00E09A;--gn2:rgba(0,224,154,.1);
+  --am:#F5A623;--am2:rgba(245,166,35,.1);
+  --rd:#FF4060;--rd2:rgba(255,64,96,.1);
+  --w:#FFFFFF;--w2:#CCCCCC;--w3:#999999;--w4:#666666;--w5:#444444;
+}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── LOGIN ── */
+#login-gate{display:flex;align-items:center;justify-content:center;height:100vh;padding:20px}
+.login-box{width:100%;max-width:360px;text-align:center}
+.login-logo{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px}
+.login-logo span{color:var(--ac)}
+.login-sub{font-size:12px;color:var(--w3);margin-bottom:24px}
+.login-badge{display:inline-block;background:var(--ac2);color:var(--ac);font-size:10px;padding:3px 10px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:20px}
+.login-input{width:100%;background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:12px 14px;font-size:14px;color:#fff;outline:none;margin-bottom:10px;font-family:'DM Sans',system-ui}
+.login-input:focus{border-color:var(--ac)}
+.login-btn{width:100%;background:var(--ac);color:#000;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',system-ui;transition:filter .15s}
+.login-btn:hover{filter:brightness(1.1)}
+#login-err{color:var(--rd);font-size:12px;margin-top:10px;display:none}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:column;overflow:hidden}
+#app.on{display:flex}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#060A14;border-bottom:1px solid var(--b1);flex-shrink:0;z-index:20}
+.tb-logo{font-size:16px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px}
+.tb-logo span{color:var(--ac)}
+.tb-badge{font-size:9px;background:var(--ac2);color:var(--ac);padding:2px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-name{font-size:12px;color:var(--w3);display:none}
+.tb-sair{background:transparent;border:1px solid var(--b2);color:var(--w3);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',system-ui;transition:all .15s}
+.tb-sair:hover{border-color:var(--rd);color:var(--rd)}
+
+/* ── MAIN AREA ── */
+.main-area{flex:1;overflow-y:auto;padding:16px;padding-bottom:90px}
+
+/* ── SECTIONS ── */
+.section{display:none;animation:fadeIn .2s ease}
+.section.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BOTTOM NAV (MOBILE) ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#060A14;border-top:1px solid var(--b1);display:flex;align-items:center;justify-content:space-around;height:60px;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 10px;border-radius:8px;transition:all .15s;color:var(--w4);font-size:10px;font-weight:500;-webkit-tap-highlight-color:transparent}
+.bnav-item:hover,.bnav-item.on{color:var(--ac)}
+.bnav-item.on{background:var(--ac2)}
+.bnav-icon{font-size:20px;line-height:1}
+.bnav-lbl{font-size:10px}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:14px}
+.kpi-lbl{font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:500}
+.kpi-val{font-size:24px;font-weight:800;color:#fff;line-height:1.1}
+.kpi-sub{font-size:11px;color:var(--w4);margin-top:4px}
+.kpi-ac .kpi-val{color:var(--ac)}
+.kpi-gn .kpi-val{color:var(--gn)}
+.kpi-am .kpi-val{color:var(--am)}
+
+/* ── SEC HEADER ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sh h2{font-size:16px;font-weight:700;color:#fff}
+.sh-sub{font-size:11px;color:var(--w3)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;margin-bottom:16px;border-radius:10px}
+.tbl{width:100%;border-collapse:separate;border-spacing:0 4px;min-width:500px}
+.tbl th{padding:6px 10px;font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:.07em;font-weight:600;text-align:left}
+.tbl td{padding:10px;font-size:12px;background:var(--card);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);color:var(--w2)}
+.tbl td:first-child{border-left:1px solid var(--b1);border-radius:8px 0 0 8px}
+.tbl td:last-child{border-right:1px solid var(--b1);border-radius:0 8px 8px 0}
+.tbl tbody tr{transition:background .1s}
+.tbl tbody tr:hover td{background:#0C1220}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.b-gn{background:var(--gn2);color:var(--gn)}
+.b-ac{background:var(--ac2);color:var(--ac)}
+.b-am{background:var(--am2);color:var(--am)}
+.b-rd{background:var(--rd2);color:var(--rd)}
+
+/* ── CLIENT CARD ── */
+.cli-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+.cli-card:hover{border-color:var(--b2);transform:translateY(-1px)}
+.cli-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cli-name{font-size:14px;font-weight:700;color:#fff}
+.cli-seg{font-size:10px;color:var(--ac);background:var(--ac2);padding:2px 8px;border-radius:4px;font-weight:600}
+.cli-stats{display:flex;gap:16px;font-size:12px;color:var(--w3)}
+.cli-stat span{font-weight:700;color:var(--w2)}
+.cli-detail{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1)}
+.cli-card.expanded .cli-detail{display:block}
+
+/* ── TIMELINE / FEED ── */
+.feed-item{display:flex;gap:10px;padding:12px;background:var(--card);border:1px solid var(--b1);border-radius:10px;margin-bottom:8px}
+.feed-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:var(--ac2)}
+.feed-body{flex:1;min-width:0}
+.feed-msg{font-size:13px;color:var(--w2);line-height:1.4}
+.feed-time{font-size:10px;color:var(--w4);margin-top:4px}
+.feed-oport .feed-icon{background:var(--gn2)}
+.feed-follow .feed-icon{background:var(--am2)}
+.feed-parado .feed-icon{background:var(--rd2)}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:76px;right:16px;background:var(--ac);color:#000;border:none;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:25;box-shadow:0 4px 20px rgba(0,200,255,.3);display:flex;align-items:center;gap:7px;font-family:'DM Sans',system-ui;transition:all .2s}
+.fab:hover{transform:scale(1.05);filter:brightness(1.1)}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--ac3);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--w3);margin-bottom:5px;font-weight:500}
+.field input{width:100%;background:#0A1020;border:1px solid var(--b1);border-radius:8px;padding:10px 12px;font-size:13px;color:#fff;outline:none;font-family:'DM Sans',system-ui}
+.field input:focus{border-color:var(--ac)}
+.modal-btns{display:flex;gap:10px;margin-top:18px}
+.btn{border:none;border-radius:9px;padding:10px 20px;font-family:'DM Sans',system-ui;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-ac{background:var(--ac);color:#000}
+.btn-ac:hover{filter:brightness(1.1)}
+.btn-gh{background:transparent;color:var(--w3);border:1px solid var(--b2);padding:10px 20px;border-radius:9px;font-size:13px;cursor:pointer;font-family:'DM Sans',system-ui}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:40px;color:var(--w4);font-size:13px}
+.empty{text-align:center;padding:40px;color:var(--w4);font-size:13px}
+
+/* ── DESKTOP ── */
+@media(min-width:769px){
+  .bnav{display:none}
+  #app.on{flex-direction:row}
+  .sidebar{display:flex !important;flex-direction:column;width:210px;background:#060A14;border-right:1px solid var(--b1);padding:14px 10px;flex-shrink:0;gap:2px;overflow-y:auto}
+  .tb-name{display:inline}
+  .main-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
+  .main-area{padding:24px 28px;padding-bottom:24px}
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .fab{bottom:24px;right:28px}
+  .topbar{padding:10px 24px}
+}
+
+/* ── SIDEBAR (desktop) ── */
+.sidebar{display:none}
+.sbar-sec{font-size:9px;color:var(--w4);text-transform:uppercase;letter-spacing:.1em;padding:12px 12px 4px;font-weight:600}
+.sbar-item{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;font-size:13px;color:var(--w3);cursor:pointer;transition:all .14s;border:1px solid transparent}
+.sbar-item:hover{background:var(--ac2);color:var(--w)}
+.sbar-item.on{background:var(--ac2);color:var(--ac);border-color:var(--ac3);font-weight:600}
+.sbar-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN GATE ═══ -->
+<div id="login-gate">
+  <div class="login-box">
+    <div class="login-logo">Food<span>Hub</span></div>
+    <div class="login-sub">Plataforma B2B de Alimentos</div>
+    <div class="login-badge">Seller Portal</div>
+    <input id="inp-email" class="login-input" type="email" placeholder="E-mail">
+    <input id="inp-pass" class="login-input" type="password" placeholder="Senha">
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div id="login-err"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">Food<span>Hub</span> <span class="tb-badge">SELLER</span></div>
+    <div class="tb-right">
+      <span class="tb-name" id="tb-seller-name"></span>
+      <button class="tb-sair" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- DESKTOP SIDEBAR -->
+  <div style="display:flex;flex:1;overflow:hidden">
+    <nav class="sidebar" id="sidebar">
+      <div class="sbar-sec">Menu</div>
+      <div class="sbar-item on" onclick="goTab('dashboard')"><span class="sbar-icon">📊</span>Dashboard</div>
+      <div class="sbar-item" onclick="goTab('clientes')"><span class="sbar-icon">👥</span>Meus Clientes</div>
+      <div class="sbar-item" onclick="goTab('pipeline')"><span class="sbar-icon">📋</span>Pipeline</div>
+      <div class="sbar-item" onclick="goTab('comissoes')"><span class="sbar-icon">💰</span>Comissões</div>
+      <div class="sbar-item" onclick="goTab('alertas')"><span class="sbar-icon">🔔</span>Alertas</div>
+    </nav>
+
+    <!-- MAIN WRAP -->
+    <div class="main-wrap" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="main-area" id="main-area">
+
+        <!-- ═══ DASHBOARD ═══ -->
+        <div class="section on" id="sec-dashboard">
+          <div class="sh"><h2>Dashboard</h2><span class="sh-sub" id="dash-date"></span></div>
+          <div class="kpi-grid" id="dash-kpis">
+            <div class="kpi kpi-ac"><div class="kpi-lbl">Comissão Projetada</div><div class="kpi-val" id="kpi-proj">R$ —</div></div>
+            <div class="kpi kpi-gn"><div class="kpi-lbl">Comissão Realizada</div><div class="kpi-val" id="kpi-real">R$ —</div></div>
+            <div class="kpi"><div class="kpi-lbl">Deals Ativos</div><div class="kpi-val" id="kpi-deals">—</div></div>
+            <div class="kpi"><div class="kpi-lbl">Clientes Vinculados</div><div class="kpi-val" id="kpi-clientes">—</div></div>
+          </div>
+          <div class="sh" style="margin-top:8px"><h2>Atividade Recente</h2></div>
+          <div id="dash-activity"><div class="loading">Carregando...</div></div>
+        </div>
+
+        <!-- ═══ MEUS CLIENTES ═══ -->
+        <div class="section" id="sec-clientes">
+          <div class="sh"><h2>Meus Clientes</h2><span class="sh-sub" id="cli-count"></span></div>
+          <div id="cli-list"><div class="loading">Carregando...</div></div>
+        </div>
+
+        <!-- ═══ PIPELINE ═══ -->
+        <div class="section" id="sec-pipeline">
+          <div class="sh"><h2>Pipeline</h2><span class="sh-sub">Deals dos meus clientes</span></div>
+          <div class="tbl-wrap">
+            <table class="tbl" id="tbl-pipeline">
+              <thead><tr><th>Deal</th><th>Cliente</th><th>Status</th><th>Potencial R$</th><th>Região</th></tr></thead>
+              <tbody id="pipe-body"><tr><td colspan="5" class="loading">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ COMISSÕES ═══ -->
+        <div class="section" id="sec-comissoes">
+          <div class="sh"><h2>Comissões</h2></div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">
+            <div class="kpi kpi-ac"><div class="kpi-lbl">Projetado</div><div class="kpi-val" id="com-proj">R$ —</div></div>
+            <div class="kpi kpi-gn"><div class="kpi-lbl">Realizado</div><div class="kpi-val" id="com-real">R$ —</div></div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl" id="tbl-comissoes">
+              <thead><tr><th>Pedido</th><th>Cliente</th><th>Valor Negócio</th><th>% Comissão</th><th>Valor Comissão</th><th>Status</th></tr></thead>
+              <tbody id="com-body"><tr><td colspan="6" class="loading">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ ALERTAS ═══ -->
+        <div class="section" id="sec-alertas">
+          <div class="sh"><h2>Alertas</h2></div>
+          <div id="alertas-feed"><div class="loading">Carregando...</div></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM NAV (MOBILE) ═══ -->
+<nav class="bnav" id="bnav" style="display:none">
+  <div class="bnav-item on" onclick="goTab('dashboard')"><span class="bnav-icon">📊</span><span class="bnav-lbl">Dashboard</span></div>
+  <div class="bnav-item" onclick="goTab('clientes')"><span class="bnav-icon">👥</span><span class="bnav-lbl">Clientes</span></div>
+  <div class="bnav-item" onclick="goTab('pipeline')"><span class="bnav-icon">📋</span><span class="bnav-lbl">Pipeline</span></div>
+  <div class="bnav-item" onclick="goTab('comissoes')"><span class="bnav-icon">💰</span><span class="bnav-lbl">Comissões</span></div>
+  <div class="bnav-item" onclick="goTab('alertas')"><span class="bnav-icon">🔔</span><span class="bnav-lbl">Alertas</span></div>
+</nav>
+
+<!-- ═══ FAB ═══ -->
+<button class="fab" id="fab-indicar" style="display:none" onclick="openIndicar()">＋ Indicar novo cliente</button>
+
+<!-- ═══ MODAL INDICAR ═══ -->
+<div class="modal-bg" id="modal-indicar" onclick="if(event.target===this)closeIndicar()">
+  <div class="modal">
+    <h3>Indicar Novo Cliente</h3>
+    <div class="field"><label>Nome da empresa</label><input id="ind-nome" placeholder="Ex: Restaurante Sabor"></div>
+    <div class="field"><label>E-mail do contato</label><input id="ind-email" type="email" placeholder="contato@empresa.com"></div>
+    <div class="field"><label>WhatsApp</label><input id="ind-whats" placeholder="(11) 99999-9999"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ac" style="flex:1" onclick="enviarIndicacao()">Enviar indicação</button>
+      <button class="btn-gh" onclick="closeIndicar()">Cancelar</button>
+    </div>
+    <div id="ind-msg" style="font-size:12px;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<script>
+var _sb = supabase.createClient(
+  'https://jqbuckofiaopxwllghac.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+);
+
+var _seller = null;   // member row
+var _sellerId = null;  // member.id
+var _clients = [];     // member rows of clients
+var _currentTab = 'dashboard';
+
+/* ── AUTH ── */
+async function doLogin() {
+  var email = document.getElementById('inp-email').value.trim();
+  var pass = document.getElementById('inp-pass').value;
+  var errEl = document.getElementById('login-err');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) {
+    errEl.textContent = 'Preencha e-mail e senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  var { data, error } = await _sb.auth.signInWithPassword({ email: email, password: pass });
+  if (error) {
+    errEl.textContent = 'Credenciais inválidas: ' + error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // verify seller in members
+  var { data: member, error: mErr } = await _sb.from('members').select('*').eq('email', email).eq('tipo', 'seller').maybeSingle();
+  if (mErr || !member) {
+    errEl.textContent = 'Acesso restrito a Sellers FoodHub.';
+    errEl.style.display = 'block';
+    await _sb.auth.signOut();
+    return;
+  }
+
+  _seller = member;
+  _sellerId = member.id;
+  initApp();
+}
+
+async function doLogout() {
+  await _sb.auth.signOut();
+  _seller = null;
+  _sellerId = null;
+  _clients = [];
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('bnav').style.display = 'none';
+  document.getElementById('fab-indicar').style.display = 'none';
+  document.getElementById('login-gate').style.display = 'flex';
+}
+
+/* ── CHECK SESSION ── */
+async function checkSession() {
+  var { data: { session } } = await _sb.auth.getSession();
+  if (!session) return;
+  var email = session.user.email;
+  var { data: member } = await _sb.from('members').select('*').eq('email', email).eq('tipo', 'seller').maybeSingle();
+  if (!member) return;
+  _seller = member;
+  _sellerId = member.id;
+  initApp();
+}
+
+/* ── INIT ── */
+function initApp() {
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('bnav').style.display = 'flex';
+  document.getElementById('fab-indicar').style.display = 'flex';
+  document.getElementById('tb-seller-name').textContent = _seller.nome || _seller.email;
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  loadAll();
+}
+
+/* ── TABS ── */
+function goTab(tab) {
+  _currentTab = tab;
+  // hide all sections
+  var secs = document.querySelectorAll('.section');
+  for (var i = 0; i < secs.length; i++) secs[i].classList.remove('on');
+  document.getElementById('sec-' + tab).classList.add('on');
+
+  // update bottom nav
+  var bnavItems = document.querySelectorAll('.bnav-item');
+  for (var i = 0; i < bnavItems.length; i++) bnavItems[i].classList.remove('on');
+  var tabs = ['dashboard', 'clientes', 'pipeline', 'comissoes', 'alertas'];
+  var idx = tabs.indexOf(tab);
+  if (idx >= 0) bnavItems[idx].classList.add('on');
+
+  // update sidebar
+  var sbarItems = document.querySelectorAll('.sbar-item');
+  for (var i = 0; i < sbarItems.length; i++) sbarItems[i].classList.remove('on');
+  if (idx >= 0) sbarItems[idx].classList.add('on');
+}
+
+/* ── LOAD ALL ── */
+async function loadAll() {
+  await loadClients();
+  loadDashboard();
+  loadPipeline();
+  loadComissoes();
+  loadAlertas();
+}
+
+/* ── CLIENTS ── */
+async function loadClients() {
+  var { data, error } = await _sb.from('members').select('*').eq('seller_id', _sellerId);
+  _clients = data || [];
+  document.getElementById('kpi-clientes').textContent = _clients.length;
+  document.getElementById('cli-count').textContent = _clients.length + ' cliente' + (_clients.length !== 1 ? 's' : '');
+  renderClients();
+}
+
+async function renderClients() {
+  var container = document.getElementById('cli-list');
+  if (_clients.length === 0) {
+    container.innerHTML = '<div class="empty">Nenhum cliente vinculado ainda.</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < _clients.length; i++) {
+    var c = _clients[i];
+    // count demandas
+    var { count: demCount } = await _sb.from('demandas_v2').select('*', { count: 'exact', head: true }).eq('comprador_id', c.id).eq('status', 'ativa');
+    var { count: dealCount } = await _sb.from('demandas_v2').select('*', { count: 'exact', head: true }).eq('comprador_id', c.id).eq('status', 'fechada');
+
+    var segmento = c.segmento || c.tipo || '—';
+    html += '<div class="cli-card" onclick="toggleClient(this, \'' + c.id + '\')">';
+    html += '<div class="cli-top"><span class="cli-name">' + esc(c.nome || c.email) + '</span><span class="cli-seg">' + esc(segmento) + '</span></div>';
+    html += '<div class="cli-stats"><span class="cli-stat">Abertas: <span>' + (demCount || 0) + '</span></span><span class="cli-stat">Fechadas: <span>' + (dealCount || 0) + '</span></span></div>';
+    html += '<div class="cli-detail" id="cli-detail-' + c.id + '"><div class="loading">Carregando detalhes...</div></div>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+async function toggleClient(el, clientId) {
+  var isExpanded = el.classList.contains('expanded');
+  // collapse all
+  var cards = document.querySelectorAll('.cli-card');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('expanded');
+
+  if (isExpanded) return;
+  el.classList.add('expanded');
+
+  var detail = document.getElementById('cli-detail-' + clientId);
+  detail.innerHTML = '<div class="loading">Carregando...</div>';
+
+  // fetch demandas for this client
+  var { data: demandas } = await _sb.from('demandas_v2').select('*').eq('comprador_id', clientId).order('created_at', { ascending: false }).limit(10);
+  demandas = demandas || [];
+
+  if (demandas.length === 0) {
+    detail.innerHTML = '<div class="empty">Nenhuma demanda encontrada.</div>';
+    return;
+  }
+
+  var h = '<div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Demandas recentes</div>';
+  for (var i = 0; i < demandas.length; i++) {
+    var d = demandas[i];
+    var st = d.status || 'rascunho';
+    var bc = st === 'ativa' ? 'b-gn' : st === 'rascunho' ? 'b-ac' : st === 'aguardando' ? 'b-am' : 'b-rd';
+    var titulo = (d.especificacao && d.especificacao.titulo) ? d.especificacao.titulo : (d.titulo || 'Demanda #' + (d.id || '').substring(0, 6));
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--b1)">';
+    h += '<span style="font-size:12px;color:var(--w2)">' + esc(titulo) + '</span>';
+    h += '<span class="badge ' + bc + '">' + esc(st) + '</span>';
+    h += '</div>';
+  }
+  detail.innerHTML = h;
+}
+
+/* ── DASHBOARD ── */
+async function loadDashboard() {
+  // commissions
+  var { data: fins } = await _sb.from('financials_v2').select('*').eq('seller_id', _sellerId);
+  fins = fins || [];
+
+  var projetado = 0, realizado = 0;
+  for (var i = 0; i < fins.length; i++) {
+    projetado += parseFloat(fins[i].comissao_projetada || fins[i].valor_projetado || 0);
+    realizado += parseFloat(fins[i].comissao_realizada || fins[i].valor_realizado || 0);
+  }
+  document.getElementById('kpi-proj').textContent = 'R$ ' + fmtNum(projetado);
+  document.getElementById('kpi-real').textContent = 'R$ ' + fmtNum(realizado);
+
+  // deals ativos — via especificacao->>'seller'
+  var clientIds = _clients.map(function(c) { return c.id; });
+  var dealsCount = 0;
+  if (clientIds.length > 0) {
+    var { count } = await _sb.from('demandas_v2').select('*', { count: 'exact', head: true }).in('comprador_id', clientIds).eq('status', 'ativa');
+    dealsCount = count || 0;
+  }
+  // also count via especificacao->>'seller'
+  var { count: sellerDeals } = await _sb.from('demandas_v2').select('*', { count: 'exact', head: true }).eq('especificacao->>seller', _sellerId).eq('status', 'ativa');
+  dealsCount = Math.max(dealsCount, sellerDeals || 0);
+  document.getElementById('kpi-deals').textContent = dealsCount;
+
+  // recent activity
+  var { data: recent } = await _sb.from('notificacoes_v2').select('*').eq('member_id', _sellerId).order('created_at', { ascending: false }).limit(5);
+  recent = recent || [];
+
+  var actEl = document.getElementById('dash-activity');
+  if (recent.length === 0) {
+    actEl.innerHTML = '<div class="empty">Nenhuma atividade recente.</div>';
+    return;
+  }
+  var h = '';
+  for (var i = 0; i < recent.length; i++) {
+    var n = recent[i];
+    var ico = n.tipo === 'oportunidade' ? '💡' : n.tipo === 'follow_up' ? '📞' : '🔔';
+    h += '<div class="feed-item">';
+    h += '<div class="feed-icon">' + ico + '</div>';
+    h += '<div class="feed-body"><div class="feed-msg">' + esc(n.mensagem || n.titulo || 'Notificação') + '</div>';
+    h += '<div class="feed-time">' + fmtDate(n.created_at) + '</div></div></div>';
+  }
+  actEl.innerHTML = h;
+}
+
+/* ── PIPELINE ── */
+async function loadPipeline() {
+  var clientIds = _clients.map(function(c) { return c.id; });
+  var body = document.getElementById('pipe-body');
+
+  if (clientIds.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum cliente vinculado.</td></tr>';
+    return;
+  }
+
+  var { data: deals, error } = await _sb.from('demandas_v2').select('*').in('comprador_id', clientIds).order('created_at', { ascending: false });
+  deals = deals || [];
+
+  if (deals.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum deal encontrado.</td></tr>';
+    return;
+  }
+
+  // map client names
+  var nameMap = {};
+  for (var i = 0; i < _clients.length; i++) nameMap[_clients[i].id] = _clients[i].nome || _clients[i].email;
+
+  var h = '';
+  for (var i = 0; i < deals.length; i++) {
+    var d = deals[i];
+    var titulo = (d.especificacao && d.especificacao.titulo) ? d.especificacao.titulo : (d.titulo || 'Demanda #' + (d.id || '').substring(0, 6));
+    var st = d.status || 'rascunho';
+    var bc = st === 'ativa' ? 'b-gn' : st === 'rascunho' ? 'b-ac' : st === 'aguardando' ? 'b-am' : 'b-rd';
+    var valor = d.valor_estimado || (d.especificacao && d.especificacao.valor) || 0;
+    var regiao = d.regiao || (d.especificacao && d.especificacao.regiao) || '—';
+    var cliente = nameMap[d.comprador_id] || '—';
+
+    h += '<tr>';
+    h += '<td style="font-weight:600;color:#fff">' + esc(titulo) + '</td>';
+    h += '<td>' + esc(cliente) + '</td>';
+    h += '<td><span class="badge ' + bc + '">' + esc(st) + '</span></td>';
+    h += '<td>R$ ' + fmtNum(valor) + '</td>';
+    h += '<td>' + esc(regiao) + '</td>';
+    h += '</tr>';
+  }
+  body.innerHTML = h;
+}
+
+/* ── COMISSOES ── */
+async function loadComissoes() {
+  var { data: fins } = await _sb.from('financials_v2').select('*').eq('seller_id', _sellerId);
+  fins = fins || [];
+
+  var projetado = 0, realizado = 0;
+  for (var i = 0; i < fins.length; i++) {
+    projetado += parseFloat(fins[i].comissao_projetada || fins[i].valor_projetado || 0);
+    realizado += parseFloat(fins[i].comissao_realizada || fins[i].valor_realizado || 0);
+  }
+  document.getElementById('com-proj').textContent = 'R$ ' + fmtNum(projetado);
+  document.getElementById('com-real').textContent = 'R$ ' + fmtNum(realizado);
+
+  var body = document.getElementById('com-body');
+  if (fins.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">Nenhum registro de comissão.</td></tr>';
+    return;
+  }
+
+  // map client names
+  var nameMap = {};
+  for (var i = 0; i < _clients.length; i++) nameMap[_clients[i].id] = _clients[i].nome || _clients[i].email;
+
+  var h = '';
+  for (var i = 0; i < fins.length; i++) {
+    var f = fins[i];
+    var pedido = f.pedido_id || f.id || '—';
+    if (typeof pedido === 'string' && pedido.length > 8) pedido = pedido.substring(0, 8) + '…';
+    var cliente = nameMap[f.comprador_id] || f.comprador_nome || '—';
+    var valorNeg = parseFloat(f.valor_negocio || f.valor_total || 0);
+    var pctCom = parseFloat(f.percentual_comissao || f.comissao_pct || 0);
+    var valorCom = parseFloat(f.comissao_realizada || f.valor_comissao || f.comissao_projetada || 0);
+    var status = f.status || 'pendente';
+    var bc = status === 'pago' ? 'b-gn' : status === 'pendente' ? 'b-am' : 'b-ac';
+
+    h += '<tr>';
+    h += '<td style="font-weight:600;color:#fff">' + esc(pedido) + '</td>';
+    h += '<td>' + esc(cliente) + '</td>';
+    h += '<td>R$ ' + fmtNum(valorNeg) + '</td>';
+    h += '<td>' + pctCom.toFixed(1) + '%</td>';
+    h += '<td style="font-weight:600;color:var(--gn)">R$ ' + fmtNum(valorCom) + '</td>';
+    h += '<td><span class="badge ' + bc + '">' + esc(status) + '</span></td>';
+    h += '</tr>';
+  }
+  body.innerHTML = h;
+}
+
+/* ── ALERTAS ── */
+async function loadAlertas() {
+  var { data: notifs } = await _sb.from('notificacoes_v2').select('*').eq('member_id', _sellerId).order('created_at', { ascending: false }).limit(30);
+  notifs = notifs || [];
+
+  var container = document.getElementById('alertas-feed');
+  if (notifs.length === 0) {
+    container.innerHTML = '<div class="empty">Nenhum alerta no momento.</div>';
+    return;
+  }
+
+  var h = '';
+  for (var i = 0; i < notifs.length; i++) {
+    var n = notifs[i];
+    var tipo = n.tipo || 'info';
+    var feedClass = '';
+    var ico = '🔔';
+    if (tipo === 'oportunidade' || tipo === 'oportunidades') {
+      feedClass = 'feed-oport'; ico = '💡';
+    } else if (tipo === 'follow_up' || tipo === 'follow-up') {
+      feedClass = 'feed-follow'; ico = '📞';
+    } else if (tipo === 'deal_parado' || tipo === 'parado') {
+      feedClass = 'feed-parado'; ico = '⚠️';
+    }
+
+    h += '<div class="feed-item ' + feedClass + '">';
+    h += '<div class="feed-icon">' + ico + '</div>';
+    h += '<div class="feed-body">';
+    h += '<div class="feed-msg">' + esc(n.mensagem || n.titulo || 'Notificação') + '</div>';
+    h += '<div class="feed-time">' + fmtDate(n.created_at) + '</div>';
+    h += '</div></div>';
+  }
+  container.innerHTML = h;
+}
+
+/* ── INDICAR CLIENTE ── */
+function openIndicar() {
+  document.getElementById('modal-indicar').classList.add('show');
+  document.getElementById('ind-nome').value = '';
+  document.getElementById('ind-email').value = '';
+  document.getElementById('ind-whats').value = '';
+  document.getElementById('ind-msg').style.display = 'none';
+}
+
+function closeIndicar() {
+  document.getElementById('modal-indicar').classList.remove('show');
+}
+
+async function enviarIndicacao() {
+  var nome = document.getElementById('ind-nome').value.trim();
+  var email = document.getElementById('ind-email').value.trim();
+  var whats = document.getElementById('ind-whats').value.trim();
+  var msgEl = document.getElementById('ind-msg');
+
+  if (!nome || !email) {
+    msgEl.textContent = 'Nome e e-mail são obrigatórios.';
+    msgEl.style.color = 'var(--rd)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  var { error } = await _sb.from('members').insert({
+    nome: nome,
+    email: email,
+    whatsapp: whats,
+    tipo: 'comprador',
+    seller_id: _sellerId,
+    status: 'pendente',
+    created_at: new Date().toISOString()
+  });
+
+  if (error) {
+    msgEl.textContent = 'Erro ao indicar: ' + error.message;
+    msgEl.style.color = 'var(--rd)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  msgEl.textContent = 'Cliente indicado com sucesso!';
+  msgEl.style.color = 'var(--gn)';
+  msgEl.style.display = 'block';
+
+  setTimeout(function() {
+    closeIndicar();
+    loadClients();
+  }, 1500);
+}
+
+/* ── UTILS ── */
+function esc(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function fmtNum(n) {
+  n = parseFloat(n) || 0;
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try {
+    var dt = new Date(d);
+    return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return '—';
+  }
+}
+
+/* ── BOOT ── */
+checkSession();
+</script>
+</body>
+</html>

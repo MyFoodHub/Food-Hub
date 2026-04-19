@@ -200,12 +200,42 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
 .empty-state .empty-icon{font-size:32px;margin-bottom:10px}
 .empty-state p{font-size:13px}
 
+/* BOTTOM NAV (mobile only) */
+.bottom-nav{display:none}
+@media(max-width:768px){
+  .bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;height:60px;
+    background:#12121a;border-top:1px solid rgba(255,255,255,.1);z-index:100;
+    align-items:center;justify-content:space-around;padding:0 4px;
+  }
+  .bottom-nav-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;flex:1;height:100%;cursor:pointer;color:var(--text3);
+    font-size:9px;font-weight:600;letter-spacing:.03em;transition:color .15s;
+    -webkit-tap-highlight-color:transparent;user-select:none;
+  }
+  .bottom-nav-item .bn-icon{font-size:20px;line-height:1}
+  .bottom-nav-item.active{color:var(--accent)}
+  .bottom-nav-item:active{opacity:.7}
+}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .sidebar{display:none}
-  .main{padding:14px}
-  .metrics-grid{grid-template-columns:1fr 1fr}
+  .main{padding:14px;padding-bottom:70px}
+  .metrics-grid{grid-template-columns:1fr}
   .topbar{padding:8px 14px}
+
+  /* Approval cards: stack actions below info */
+  .approval-card{flex-direction:column;align-items:stretch;gap:10px}
+  .approval-actions{flex-direction:column;gap:8px}
+  .approval-actions .btn{min-height:48px;width:100%;font-size:14px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+
+  /* Feed section scrollable */
+  #panel-feed .feed-list{max-height:calc(100vh - 190px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  /* Tables: horizontal scroll hint */
+  .tbl-wrap{-webkit-overflow-scrolling:touch}
 }
 </style>
 </head>
@@ -327,6 +357,25 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
 
     </div>
   </div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <div class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-item active" data-panel="pipeline" onclick="switchPanel('pipeline')">
+      <span class="bn-icon">📊</span>Pipeline
+    </div>
+    <div class="bottom-nav-item" data-panel="aprovacoes" onclick="switchPanel('aprovacoes')">
+      <span class="bn-icon">✅</span>Aprovacoes
+    </div>
+    <div class="bottom-nav-item" data-panel="financeiro" onclick="switchPanel('financeiro')">
+      <span class="bn-icon">💰</span>Financeiro
+    </div>
+    <div class="bottom-nav-item" data-panel="membros" onclick="switchPanel('membros')">
+      <span class="bn-icon">👥</span>Membros
+    </div>
+    <div class="bottom-nav-item" data-panel="feed" onclick="switchPanel('feed')">
+      <span class="bn-icon">📡</span>Feed
+    </div>
+  </div>
 </div>
 
 <!-- REJECT MODAL -->
@@ -418,6 +467,14 @@ function switchPanel(name) {
     items[i].classList.remove('active');
     if (items[i].getAttribute('data-panel') === name) {
       items[i].classList.add('active');
+    }
+  }
+  // Sync bottom nav
+  var bnItems = document.querySelectorAll('.bottom-nav-item');
+  for (var i = 0; i < bnItems.length; i++) {
+    bnItems[i].classList.remove('active');
+    if (bnItems[i].getAttribute('data-panel') === name) {
+      bnItems[i].classList.add('active');
     }
   }
   var panels = document.querySelectorAll('.panel');
