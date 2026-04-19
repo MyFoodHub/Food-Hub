@@ -329,28 +329,44 @@
         return _sb.from('members')
           .select('tipo, status')
           .eq('email', userEmail)
+          .eq('status', 'ativo')
           .single()
           .then(function(memberResult) {
-            setLoading(false);
-
-            if (memberResult.error || !memberResult.data) {
-              showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
+            if (!memberResult.error && memberResult.data) {
+              setLoading(false);
+              var dest = redirectMap[memberResult.data.tipo];
+              if (dest) {
+                window.location.href = dest;
+              } else {
+                showError('Perfil nao reconhecido. Entre em contato com a mesa FoodHub.');
+              }
               return;
             }
 
-            var member = memberResult.data;
+            // Fallback: buscar na tabela profiles antiga (compatibilidade)
+            return _sb.from('profiles')
+              .select('tipo')
+              .eq('email', userEmail)
+              .single()
+              .then(function(profileResult) {
+                setLoading(false);
 
-            if (member.status !== 'ativo') {
-              showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
-              return;
-            }
+                if (!profileResult.error && profileResult.data && profileResult.data.tipo) {
+                  var dest = redirectMap[profileResult.data.tipo];
+                  if (dest) {
+                    window.location.href = dest;
+                    return;
+                  }
+                }
 
-            var dest = redirectMap[member.tipo];
-            if (dest) {
-              window.location.href = dest;
-            } else {
-              showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
-            }
+                // Fallback final: se tem perfil antigo sem tipo, mandar para comprador
+                if (!profileResult.error && profileResult.data) {
+                  window.location.href = 'index.html';
+                  return;
+                }
+
+                showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
+              });
           });
       })
       .catch(function() {
