@@ -103,6 +103,33 @@
     border-color: #00C8FF;
   }
 
+  .password-wrapper {
+    position: relative;
+  }
+
+  .password-wrapper input {
+    padding-right: 48px;
+  }
+
+  .eye-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #3d4a63;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: color 0.2s;
+    line-height: 1;
+  }
+
+  .eye-toggle:hover {
+    color: #00C8FF;
+  }
+
   .btn-entrar {
     width: 100%;
     min-height: 48px;
@@ -205,7 +232,10 @@
       </div>
       <div class="form-group">
         <label for="password">Senha</label>
-        <input type="password" id="password" name="password" placeholder="Sua senha" autocomplete="current-password" required>
+        <div class="password-wrapper">
+          <input type="password" id="password" name="password" placeholder="Sua senha" autocomplete="current-password" required>
+          <button type="button" class="eye-toggle" id="eyeToggle" onclick="togglePassword()">👁</button>
+        </div>
       </div>
       <button type="submit" class="btn-entrar" id="btnEntrar">
         <span class="btn-text">Entrar</span>
@@ -231,6 +261,17 @@
   var btnEntrar = document.getElementById('btnEntrar');
   var emailInput = document.getElementById('email');
   var passwordInput = document.getElementById('password');
+  var eyeToggle = document.getElementById('eyeToggle');
+
+  function togglePassword() {
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      eyeToggle.textContent = '🙈';
+    } else {
+      passwordInput.type = 'password';
+      eyeToggle.textContent = '👁';
+    }
+  }
   var errorMsg = document.getElementById('errorMsg');
   var resetMsg = document.getElementById('resetMsg');
   var forgotLink = document.getElementById('forgotLink');
