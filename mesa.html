@@ -572,7 +572,8 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
             <option value="aguardando_aprovacao">Aguardando Aprovacao</option>
             <option value="ativa">Ativa</option>
             <option value="em_andamento">Em Andamento</option>
-            <option value="fechado">Fechado</option>
+            <option value="fechado">Venda Realizada</option>
+            <option value="faturado">Faturado</option>
             <option value="parado">Parado</option>
           </select>
         </div>
@@ -750,17 +751,39 @@ function fmtDateTime(d) {
     String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
 }
 
+// Status labels de negócio (técnico → humano)
+var STATUS_LABELS = {
+  'rascunho': 'Prospeccao',
+  'aguardando_aprovacao': 'Aguardando',
+  'ativa': 'Em negociacao',
+  'em_andamento': 'Em negociacao',
+  'fechado': 'Venda Realizada',
+  'faturado': 'Faturado',
+  'parado': 'Parado'
+};
+
+function statusLabel(status) {
+  if (!status) return '-';
+  return STATUS_LABELS[status.toLowerCase()] || status;
+}
+
 function statusBadge(status) {
   if (!status) return '<span class="badge badge-gray">-</span>';
   var s = String(status).toLowerCase();
+  var label = STATUS_LABELS[s] || status;
   var cls = 'badge-gray';
-  if (s === 'ativa' || s === 'ativo' || s === 'aprovado' || s === 'aprovada' || s === 'paga' || s === 'entregue' || s === 'concluida' || s === 'concluido' || s === 'fechado') cls = 'badge-green';
-  else if (s === 'pendente' || s === 'em_negociacao' || s === 'negociacao' || s === 'calculada' || s === 'em negociacao' || s === 'em_andamento') cls = 'badge-orange';
-  else if (s === 'rejeitado' || s === 'rejeitada' || s === 'cancelada' || s === 'cancelado' || s === 'inadimplente' || s === 'parado') cls = 'badge-red';
-  else if (s === 'prospeccao' || s === 'nova' || s === 'novo' || s === 'cobrada' || s === 'rascunho') cls = 'badge-purple';
-  else if (s === 'aprovada_mesa' || s === 'aprovada mesa') cls = 'badge-blue';
-  else if (s === 'aguardando_aprovacao' || s === 'aguardando aprovacao') cls = 'badge-orange';
-  return '<span class="badge ' + cls + '">' + status + '</span>';
+  if (s === 'fechado' || s === 'aprovado' || s === 'aprovada' || s === 'paga' || s === 'entregue') cls = 'badge-green';
+  else if (s === 'ativa' || s === 'em_andamento' || s === 'em_negociacao' || s === 'pendente' || s === 'calculada') cls = 'badge-orange';
+  else if (s === 'rejeitado' || s === 'rejeitada' || s === 'cancelada' || s === 'inadimplente' || s === 'parado') cls = 'badge-red';
+  else if (s === 'rascunho' || s === 'prospeccao' || s === 'nova') cls = 'badge-purple';
+  else if (s === 'faturado') cls = 'badge-blue';
+  else if (s === 'aguardando_aprovacao') cls = 'badge-orange';
+  return '<span class="badge ' + cls + '">' + label + '</span>';
+}
+
+function tipoBadge(tipo) {
+  if (tipo === 'oferta') return '<span class="badge badge-orange" style="font-size:9px">Oferta</span>';
+  return '<span class="badge badge-blue" style="font-size:9px">Demanda</span>';
 }
 
 function showLoading(el) {
@@ -781,6 +804,11 @@ function showEmpty(el, msg) {
 // =============================================
 // 1. PIPELINE EXECUTIVO
 // =============================================
+// Pipeline state
+var _pipelineSortCol = 'potencial';
+var _pipelineSortAsc = false;
+var _pipelineFilter = { status: '', originador: '', seller: '', regiao: '', tipo: '' };
+
 async function loadPipeline() {
   var metricsEl = document.getElementById('pipeline-metrics');
   var tableEl = document.getElementById('pipeline-table');
@@ -788,15 +816,31 @@ async function loadPipeline() {
   tableEl.innerHTML = '';
 
   try {
+    // Load oportunidades, deals, and all players in parallel
     var results = await Promise.all([
       _sb.from('oportunidades').select('*'),
-      _sb.from('deals').select('*')
+      _sb.from('deals').select('*'),
+      _sb.from('players').select('id, razao_social, tipo')
     ]);
 
     var oportunidades = (results[0].data || []);
     var dealsData = (results[1].data || []);
+    var allPlayers = (results[2].data || []);
 
-    if (results[0].error) { showError(metricsEl, 'Erro ao carregar oportunidades: ' + results[0].error.message); return; }
+    if (results[0].error) { showError(metricsEl, 'Erro: ' + results[0].error.message); return; }
+
+    // Build player lookup map
+    var playerMap = {};
+    for (var p = 0; p < allPlayers.length; p++) {
+      playerMap[allPlayers[p].id] = allPlayers[p].razao_social;
+    }
+
+    // Build deal lookup by oportunidade_id
+    var dealByOpp = {};
+    for (var di = 0; di < dealsData.length; di++) {
+      var dd = dealsData[di];
+      if (dd.oportunidade_id) dealByOpp[dd.oportunidade_id] = dd;
+    }
 
     // Aggregate pipeline values
     var totalPipeline = 0;
@@ -805,93 +849,144 @@ async function loadPipeline() {
     var prospeccao = 0;
 
     var deals = [];
-    // Store raw data for editing
-    var _rawOportunidades = oportunidades;
 
     for (var i = 0; i < oportunidades.length; i++) {
       var d = oportunidades[i];
       var potencial = d.preco_alvo || 0;
       var status = d.status || 'nova';
       var sl = status.toLowerCase();
+      var linkedDeal = dealByOpp[d.id];
 
       totalPipeline += Number(potencial) || 0;
 
-      if (sl === 'em_negociacao' || sl === 'em negociacao' || sl === 'negociacao' || sl === 'em_andamento') {
+      if (sl === 'em_negociacao' || sl === 'em_andamento' || sl === 'ativa') {
         emNegociacao += Number(potencial) || 0;
-      } else if (sl === 'pendente' || sl === 'ativa' || sl === 'ativo' || sl === 'aguardando_aprovacao') {
-        pendenciaAtiva += Number(potencial) || 0;
-      } else if (sl === 'prospeccao' || sl === 'nova' || sl === 'novo' || sl === 'rascunho' || sl === 'parado') {
+      } else if (sl === 'fechado' || sl === 'faturado') {
+        // Vendas realizadas — contam no total mas não nos sub-grupos ativos
+      } else if (sl === 'rascunho' || sl === 'parado' || sl === 'aguardando_aprovacao') {
         prospeccao += Number(potencial) || 0;
+      }
+
+      // Resolve names from deal or player map
+      var industriaNome = '-';
+      var clienteNome = playerMap[d.cliente_id] || '-';
+      var sellerNome = '-';
+      var originadorNome = '-';
+
+      if (linkedDeal) {
+        industriaNome = playerMap[linkedDeal.industria_id] || '-';
+        sellerNome = playerMap[linkedDeal.seller_id] || 'Mesa';
+        originadorNome = playerMap[linkedDeal.originador_id] || 'Mesa';
       }
 
       deals.push({
         id: d.id,
         codigo: d.codigo,
-        nome: d.produto_descricao || d.titulo || '-',
-        fornecedor: d.fornecedor_nome || '-',
-        cliente: d.cliente_nome || '-',
+        nome: d.produto_descricao || '-',
+        industria: industriaNome,
+        cliente: clienteNome,
+        seller: sellerNome,
+        originador: originadorNome,
         cliente_id: d.cliente_id || '',
         status: status,
+        tipo: d.tipo || 'demanda',
         potencial: Number(potencial) || 0,
         regiao: d.regiao || '-',
         raw: d
       });
     }
 
-    // Add deals to pipeline
-    for (var i = 0; i < dealsData.length; i++) {
-      var n = dealsData[i];
-      var val = n.total || 0;
-      totalPipeline += Number(val) || 0;
-      emNegociacao += Number(val) || 0;
+    // Sort
+    deals.sort(function(a, b) {
+      var va = a[_pipelineSortCol] || '';
+      var vb = b[_pipelineSortCol] || '';
+      if (typeof va === 'number') return _pipelineSortAsc ? va - vb : vb - va;
+      va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+      if (va < vb) return _pipelineSortAsc ? -1 : 1;
+      if (va > vb) return _pipelineSortAsc ? 1 : -1;
+      return 0;
+    });
+
+    // Collect unique values for filters
+    var uStatus = {}, uOrig = {}, uSeller = {}, uRegiao = {};
+    for (var i = 0; i < deals.length; i++) {
+      uStatus[deals[i].status] = true;
+      if (deals[i].originador !== '-') uOrig[deals[i].originador] = true;
+      if (deals[i].seller !== '-') uSeller[deals[i].seller] = true;
+      if (deals[i].regiao !== '-') uRegiao[deals[i].regiao] = true;
     }
 
-    // Sort by potencial desc
-    deals.sort(function(a, b) { return b.potencial - a.potencial; });
-
     // Render metrics
+    var vendas = 0;
+    for (var i = 0; i < deals.length; i++) {
+      if (deals[i].status === 'fechado' || deals[i].status === 'faturado') vendas += deals[i].potencial;
+    }
+
     metricsEl.innerHTML =
-      '<div class="metric-card purple">' +
-        '<div class="label">Total Pipeline</div>' +
-        '<div class="value">' + formatBRL(totalPipeline) + '</div>' +
-        '<div class="sub">' + deals.length + ' oportunidades + ' + dealsData.length + ' deals</div>' +
-      '</div>' +
-      '<div class="metric-card orange">' +
-        '<div class="label">Em Negociacao</div>' +
-        '<div class="value">' + formatBRL(emNegociacao) + '</div>' +
-      '</div>' +
-      '<div class="metric-card green">' +
-        '<div class="label">Pendencia Ativa</div>' +
-        '<div class="value">' + formatBRL(pendenciaAtiva) + '</div>' +
-      '</div>' +
-      '<div class="metric-card blue">' +
-        '<div class="label">Prospeccao</div>' +
-        '<div class="value">' + formatBRL(prospeccao) + '</div>' +
+      '<div class="metric-card purple"><div class="label">Total Pipeline</div><div class="value">' + formatBRL(totalPipeline) + '</div><div class="sub">' + deals.length + ' oportunidades</div></div>' +
+      '<div class="metric-card orange"><div class="label">Em Negociacao</div><div class="value">' + formatBRL(emNegociacao) + '</div></div>' +
+      '<div class="metric-card blue"><div class="label">Prospeccao</div><div class="value">' + formatBRL(prospeccao) + '</div></div>' +
+      '<div class="metric-card green"><div class="label">Vendas Realizadas</div><div class="value">' + formatBRL(vendas) + '</div></div>';
+
+    // Render filters
+    var filterHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center">' +
+      '<span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-right:4px">Filtros:</span>' +
+      buildFilterSelect('pf-status', 'Status', uStatus, _pipelineFilter.status) +
+      buildFilterSelect('pf-originador', 'Originador', uOrig, _pipelineFilter.originador) +
+      buildFilterSelect('pf-seller', 'Seller', uSeller, _pipelineFilter.seller) +
+      buildFilterSelect('pf-regiao', 'Regiao', uRegiao, _pipelineFilter.regiao) +
+      '<select id="pf-tipo" onchange="applyPipelineFilter()" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;outline:none">' +
+        '<option value="">Tipo</option><option value="demanda"' + (_pipelineFilter.tipo === 'demanda' ? ' selected' : '') + '>Demanda</option><option value="oferta"' + (_pipelineFilter.tipo === 'oferta' ? ' selected' : '') + '>Oferta</option></select>' +
       '</div>';
 
-    // Render table
-    if (deals.length === 0) {
-      showEmpty(tableEl, 'Nenhuma deal encontrada no pipeline.');
+    // Apply filters
+    var filtered = deals;
+    if (_pipelineFilter.status) filtered = filtered.filter(function(d) { return d.status === _pipelineFilter.status; });
+    if (_pipelineFilter.originador) filtered = filtered.filter(function(d) { return d.originador === _pipelineFilter.originador; });
+    if (_pipelineFilter.seller) filtered = filtered.filter(function(d) { return d.seller === _pipelineFilter.seller; });
+    if (_pipelineFilter.regiao) filtered = filtered.filter(function(d) { return d.regiao === _pipelineFilter.regiao; });
+    if (_pipelineFilter.tipo) filtered = filtered.filter(function(d) { return d.tipo === _pipelineFilter.tipo; });
+
+    // Store deals globally for edit access
+    window._pipelineDeals = filtered;
+
+    if (filtered.length === 0) {
+      tableEl.innerHTML = filterHtml;
+      showEmpty(tableEl, 'Nenhum deal encontrado com esses filtros.');
       return;
     }
 
-    var html = '<table class="tbl"><thead><tr>' +
-      '<th>#</th><th>Deal</th><th>Fornecedor</th><th>Cliente</th><th>Status</th><th>Potencial R$/mes</th><th>Regiao</th>' +
+    var sortArrow = function(col) {
+      var arrow = _pipelineSortCol === col ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '';
+      return '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'' + col + '\')">' + col.charAt(0).toUpperCase() + col.slice(1) + arrow + '</th>';
+    };
+
+    var html = filterHtml + '<table class="tbl"><thead><tr>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'codigo\')">Cod' + (_pipelineSortCol === 'codigo' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'tipo\')">Tipo' + (_pipelineSortCol === 'tipo' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'nome\')">Deal' + (_pipelineSortCol === 'nome' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'industria\')">Industria' + (_pipelineSortCol === 'industria' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'cliente\')">Cliente' + (_pipelineSortCol === 'cliente' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'status\')">Status' + (_pipelineSortCol === 'status' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'potencial\')">R$/mes' + (_pipelineSortCol === 'potencial' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'regiao\')">Regiao' + (_pipelineSortCol === 'regiao' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'originador\')">Originador' + (_pipelineSortCol === 'originador' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
+      '<th style="cursor:pointer;user-select:none" onclick="sortPipeline(\'seller\')">Seller' + (_pipelineSortCol === 'seller' ? (_pipelineSortAsc ? ' ▲' : ' ▼') : '') + '</th>' +
       '</tr></thead><tbody>';
 
-    // Store deals globally for edit access
-    window._pipelineDeals = deals;
-
-    for (var i = 0; i < deals.length; i++) {
-      var dl = deals[i];
+    for (var i = 0; i < filtered.length; i++) {
+      var dl = filtered[i];
       html += '<tr onclick="openEditOpp(' + i + ')" style="cursor:pointer">' +
-        '<td>' + (dl.codigo || i + 1) + '</td>' +
+        '<td style="font-size:11px;color:var(--text3)">' + (dl.codigo || '-') + '</td>' +
+        '<td>' + tipoBadge(dl.tipo) + '</td>' +
         '<td style="font-weight:600;color:#fff">' + dl.nome + '</td>' +
-        '<td>' + dl.fornecedor + '</td>' +
+        '<td>' + dl.industria + '</td>' +
         '<td>' + dl.cliente + '</td>' +
         '<td>' + statusBadge(dl.status) + '</td>' +
         '<td style="font-weight:600;color:#fff;font-variant-numeric:tabular-nums">' + formatBRL(dl.potencial) + '</td>' +
         '<td>' + dl.regiao + '</td>' +
+        '<td style="font-size:11px">' + dl.originador + '</td>' +
+        '<td style="font-size:11px">' + dl.seller + '</td>' +
         '</tr>';
     }
 
@@ -901,6 +996,38 @@ async function loadPipeline() {
   } catch (err) {
     showError(metricsEl, 'Erro inesperado: ' + err.message);
   }
+}
+
+function buildFilterSelect(id, label, values, current) {
+  var keys = Object.keys(values).sort();
+  var html = '<select id="' + id + '" onchange="applyPipelineFilter()" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;outline:none">';
+  html += '<option value="">' + label + '</option>';
+  for (var i = 0; i < keys.length; i++) {
+    var sel = keys[i] === current ? ' selected' : '';
+    var lbl = label === 'Status' ? statusLabel(keys[i]) : keys[i];
+    html += '<option value="' + keys[i] + '"' + sel + '>' + lbl + '</option>';
+  }
+  html += '</select>';
+  return html;
+}
+
+function applyPipelineFilter() {
+  _pipelineFilter.status = document.getElementById('pf-status').value;
+  _pipelineFilter.originador = document.getElementById('pf-originador').value;
+  _pipelineFilter.seller = document.getElementById('pf-seller').value;
+  _pipelineFilter.regiao = document.getElementById('pf-regiao').value;
+  _pipelineFilter.tipo = document.getElementById('pf-tipo').value;
+  loadPipeline();
+}
+
+function sortPipeline(col) {
+  if (_pipelineSortCol === col) {
+    _pipelineSortAsc = !_pipelineSortAsc;
+  } else {
+    _pipelineSortCol = col;
+    _pipelineSortAsc = col === 'potencial' ? false : true;
+  }
+  loadPipeline();
 }
 
 // =============================================
