@@ -818,6 +818,59 @@ function calcScore(opTags, prodTags) {
   return Math.round((overlap / opTags.length) * 100);
 }
 
+// ── PRIORITY SCORE (client-defined weights) ──
+function calcularScore(proposta, oportunidade, prioridades) {
+  var p = prioridades || { preco: 50, prazo_embarque: 30, prazo_pagamento: 20 };
+  var score = 0;
+
+  // Preco
+  var precoAlvo = Number(oportunidade.preco_alvo) || 0;
+  var precoP = Number(proposta.preco) || 0;
+  if (precoAlvo > 0 && precoP > 0) {
+    if (precoP <= precoAlvo) {
+      score += p.preco;
+    } else {
+      var diff = (precoP - precoAlvo) / precoAlvo;
+      score += Math.max(0, p.preco - (diff * p.preco * 2));
+    }
+  } else if (precoP > 0) {
+    score += p.preco * 0.5;
+  }
+
+  // Prazo embarque (lower is better)
+  var prazoAlvo = parseInt(oportunidade.prazo_expedicao) || 999;
+  var prazoP = parseInt(proposta.prazo_expedicao || proposta.prazo) || 999;
+  if (prazoP <= prazoAlvo) {
+    score += p.prazo_embarque;
+  } else if (prazoAlvo < 999) {
+    var prazoDiff = (prazoP - prazoAlvo) / prazoAlvo;
+    score += Math.max(0, p.prazo_embarque - (prazoDiff * p.prazo_embarque * 2));
+  } else {
+    score += p.prazo_embarque * 0.5;
+  }
+
+  // Prazo pagamento (higher accepted by supplier is better)
+  var pagAlvo = parseInt(oportunidade.prazo_pagamento) || 0;
+  var pagP = parseInt(proposta.condicao_pagamento || proposta.condicao) || 0;
+  if (pagP >= pagAlvo) {
+    score += p.prazo_pagamento;
+  } else if (pagAlvo > 0) {
+    score += Math.max(0, p.prazo_pagamento * (pagP / pagAlvo));
+  } else {
+    score += p.prazo_pagamento * 0.5;
+  }
+
+  return Math.round(score);
+}
+
+function getPrioridades(oportunidadeId) {
+  try {
+    var stored = sessionStorage.getItem('prioridades_' + oportunidadeId);
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return { preco: 50, prazo_embarque: 30, prazo_pagamento: 20 };
+}
+
 function getOverlappingTags(opTags, prodTags) {
   if (!opTags || !prodTags) return [];
   var result = [];
@@ -1075,7 +1128,19 @@ function buildCardHTML(item, idx) {
   var prod = item.bestProduct;
   var score = item.bestScore;
 
+  // Calculate priority-based score for this opportunity
+  var oppPrioridades = getPrioridades(opp.id);
+  var priorityScore = 0;
+  if (prod) {
+    priorityScore = calcularScore(
+      { preco: prod.preco || 0, prazo_expedicao: prod.prazo_entrega || '', condicao_pagamento: prod.condicao_pagamento || '' },
+      opp,
+      oppPrioridades
+    );
+  }
+
   var scoreClass = score > 70 ? 'high' : (score >= 40 ? 'mid' : 'low');
+  var prioClass = priorityScore >= 80 ? 'high' : (priorityScore >= 60 ? 'mid' : 'low');
 
   // Tags HTML
   var opTags = opp.tags || [];
@@ -1150,6 +1215,9 @@ function buildCardHTML(item, idx) {
           '<div class="score-pct ' + scoreClass + '">' + score + '%</div>' +
           '<div class="score-label">match</div>' +
           '<div class="score-bar-track"><div class="score-bar-fill ' + scoreClass + '" style="width:' + score + '%"></div></div>' +
+          (prod ? '<div class="score-pct ' + prioClass + '" style="font-size:16px;margin-top:8px">' + priorityScore + '</div>' +
+          '<div class="score-label">score</div>' +
+          '<div class="score-bar-track"><div class="score-bar-fill ' + prioClass + '" style="width:' + priorityScore + '%"></div></div>' : '') +
         '</div>' +
         '<div class="opp-info">' +
           '<div class="opp-header">' +

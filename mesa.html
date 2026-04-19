@@ -286,6 +286,9 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
       <div class="nav-item" data-panel="membros" onclick="switchPanel('membros')">
         <span class="ni">👥</span> Players
       </div>
+      <div class="nav-item" data-panel="produtos" onclick="switchPanel('produtos')">
+        <span class="ni">📦</span> Produtos
+      </div>
       <div class="nav-item" data-panel="feed" onclick="switchPanel('feed')">
         <span class="ni">📡</span> Feed ao Vivo
       </div>
@@ -301,7 +304,10 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
       <div class="panel active" id="panel-pipeline">
         <div class="panel-header">
           <h2>Pipeline Executivo</h2>
-          <button class="refresh-btn" onclick="loadPipeline()">&#x21bb; Atualizar</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-accent" onclick="openDealModal()" style="font-size:12px;padding:6px 14px">+ Registrar Deal</button>
+            <button class="refresh-btn" onclick="loadPipeline()">&#x21bb; Atualizar</button>
+          </div>
         </div>
         <div id="pipeline-metrics" class="metrics-grid"></div>
         <div id="pipeline-table" class="tbl-wrap"></div>
@@ -340,7 +346,19 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
         <div id="membros-table" class="tbl-wrap"></div>
       </div>
 
-      <!-- 5. FEED AO VIVO -->
+      <!-- 5. PRODUTOS -->
+      <div class="panel" id="panel-produtos">
+        <div class="panel-header">
+          <h2>Produtos</h2>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-accent" onclick="openProdutoModal()" style="font-size:12px;padding:6px 14px">+ Cadastrar Produto</button>
+            <button class="refresh-btn" onclick="loadProdutos()">&#x21bb;</button>
+          </div>
+        </div>
+        <div id="produtos-table" class="tbl-wrap"></div>
+      </div>
+
+      <!-- 6. FEED AO VIVO -->
       <div class="panel" id="panel-feed">
         <div class="panel-header">
           <h2>Feed ao Vivo</h2>
@@ -375,8 +393,8 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
     <div class="bottom-nav-item" data-panel="membros" onclick="switchPanel('membros')">
       <span class="bn-icon">👥</span>Players
     </div>
-    <div class="bottom-nav-item" data-panel="feed" onclick="switchPanel('feed')">
-      <span class="bn-icon">📡</span>Feed
+    <div class="bottom-nav-item" data-panel="produtos" onclick="switchPanel('produtos')">
+      <span class="bn-icon">📦</span>Produtos
     </div>
   </div>
 </div>
@@ -405,6 +423,100 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeInviteModal()">Cancelar</button>
       <button class="btn btn-primary" id="invite-confirm-btn" onclick="confirmInvite()">Enviar Convite</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUTO MODAL -->
+<div class="modal-overlay" id="produto-modal">
+  <div class="modal-box" style="width:520px">
+    <h3>Cadastrar Produto (em nome da Industria)</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <select id="prod-industria" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Selecione a industria...</option>
+      </select>
+      <textarea id="prod-descricao" placeholder="Descreva o produto como quiser..." style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;resize:vertical;min-height:100px;font-family:system-ui"></textarea>
+      <input id="prod-tags" placeholder="Tags (separadas por virgula)" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Canais</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-canal" value="atacado"> Atacado</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-canal" value="varejo"> Varejo</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-canal" value="food_service"> Food Service</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-canal" value="exportacao"> Exportacao</label>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Regioes</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-regiao" value="Sul"> Sul</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-regiao" value="Sudeste"> Sudeste</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-regiao" value="Centro-Oeste"> Centro-Oeste</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-regiao" value="Nordeste"> Nordeste</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-regiao" value="Norte"> Norte</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-regiao" value="Todo Brasil"> Todo Brasil</label>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Frete</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-frete" value="CIF"> CIF</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-frete" value="FOB"> FOB</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px"><input type="checkbox" class="prod-frete" value="Flexivel"> Flexivel</label>
+        </div>
+      </div>
+      <div id="prod-error" style="color:var(--danger);font-size:12px;min-height:16px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProdutoModal()">Cancelar</button>
+      <button class="btn btn-accent" id="prod-confirm-btn" onclick="confirmProduto()">Cadastrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEAL MODAL -->
+<div class="modal-overlay" id="deal-modal">
+  <div class="modal-box" style="width:520px">
+    <h3>Registrar Deal</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <select id="deal-oportunidade" onchange="onDealOportunidadeChange()" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Selecione a oportunidade...</option>
+      </select>
+      <select id="deal-proposta" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Selecione a proposta vencedora...</option>
+      </select>
+      <select id="deal-seller" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Selecione o seller...</option>
+      </select>
+      <select id="deal-originador" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Selecione o originador...</option>
+      </select>
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Comissao % Total</label>
+        <input id="deal-comissao-total" type="number" min="0" max="100" step="0.1" placeholder="Ex: 5" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Split (deve somar 100%)</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <div style="flex:1">
+            <label style="font-size:10px;color:var(--text4)">Seller %</label>
+            <input id="deal-split-seller" type="number" min="0" max="100" step="0.1" placeholder="40" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:10px;color:var(--text4)">Originador %</label>
+            <input id="deal-split-originador" type="number" min="0" max="100" step="0.1" placeholder="30" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:10px;color:var(--text4)">Mesa %</label>
+            <input id="deal-split-mesa" type="number" min="0" max="100" step="0.1" placeholder="30" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          </div>
+        </div>
+      </div>
+      <div id="deal-error" style="color:var(--danger);font-size:12px;min-height:16px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDealModal()">Cancelar</button>
+      <button class="btn btn-accent" id="deal-confirm-btn" onclick="confirmDeal()">Registrar Deal</button>
     </div>
   </div>
 </div>
@@ -523,6 +635,7 @@ function switchPanel(name) {
   else if (name === 'aprovacoes') loadAprovacoes();
   else if (name === 'financeiro') loadFinanceiro();
   else if (name === 'membros') loadMembros();
+  else if (name === 'produtos') loadProdutos();
   else if (name === 'feed') { loadFeed(); feedInterval = setInterval(loadFeed, 30000); }
   else if (name === 'inteligencia') loadInteligencia();
 }
@@ -557,6 +670,8 @@ function statusBadge(status) {
   else if (s === 'rejeitado' || s === 'rejeitada' || s === 'cancelada' || s === 'cancelado' || s === 'inadimplente') cls = 'badge-red';
   else if (s === 'prospeccao' || s === 'nova' || s === 'novo' || s === 'cobrada') cls = 'badge-purple';
   else if (s === 'aprovada_mesa' || s === 'aprovada mesa') cls = 'badge-blue';
+  else if (s === 'aguardando_aprovacao' || s === 'aguardando aprovacao') cls = 'badge-orange';
+  else if (s === 'fechado') cls = 'badge-green';
   return '<span class="badge ' + cls + '">' + status + '</span>';
 }
 
@@ -1429,6 +1544,372 @@ function showToast(msg) {
   setTimeout(function() {
     toast.style.display = 'none';
   }, 4000);
+}
+
+// =============================================
+// PRODUTOS (Hybrid Product Registration)
+// =============================================
+async function loadProdutos() {
+  var tableEl = document.getElementById('produtos-table');
+  showLoading(tableEl);
+
+  try {
+    var res = await _sb.from('produtos_v2').select('*, players!produtos_v2_industria_id_fkey(razao_social)').order('criado_em', { ascending: false });
+
+    if (res.error) {
+      // Fallback without join
+      res = await _sb.from('produtos_v2').select('*').order('criado_em', { ascending: false });
+      if (res.error) { showError(tableEl, 'Erro ao carregar produtos: ' + res.error.message); return; }
+    }
+
+    var data = res.data || [];
+
+    if (data.length === 0) {
+      showEmpty(tableEl, 'Nenhum produto cadastrado.');
+      return;
+    }
+
+    var html = '<table class="tbl"><thead><tr>' +
+      '<th>Produto</th><th>Industria</th><th>Tags</th><th>Canais</th><th>Regioes</th><th>Status</th><th>Acoes</th>' +
+      '</tr></thead><tbody>';
+
+    for (var i = 0; i < data.length; i++) {
+      var p = data[i];
+      var industriaNome = (p.players && p.players.razao_social) ? p.players.razao_social : (p.industria_nome || '-');
+      var tags = Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || '-');
+      var canais = Array.isArray(p.canais) ? p.canais.join(', ') : (p.canais || '-');
+      var regioes = Array.isArray(p.regioes) ? p.regioes.join(', ') : (p.regioes || '-');
+
+      var acoes = '';
+      if (p.status === 'aguardando_aprovacao') {
+        acoes = '<button class="btn btn-success btn-sm" onclick="aprovarProduto(\'' + p.id + '\')">Aprovar</button> ' +
+                '<button class="btn btn-danger btn-sm" onclick="rejeitarProduto(\'' + p.id + '\')">Rejeitar</button>';
+      } else {
+        acoes = '<span style="color:var(--text4)">—</span>';
+      }
+
+      html += '<tr>' +
+        '<td style="font-weight:600;color:#fff;max-width:250px;white-space:normal">' + (p.descricao || p.nome || '-') + '</td>' +
+        '<td>' + industriaNome + '</td>' +
+        '<td style="font-size:11px">' + tags + '</td>' +
+        '<td style="font-size:11px">' + canais + '</td>' +
+        '<td style="font-size:11px">' + regioes + '</td>' +
+        '<td>' + statusBadge(p.status) + '</td>' +
+        '<td>' + acoes + '</td>' +
+        '</tr>';
+    }
+
+    html += '</tbody></table>';
+    tableEl.innerHTML = html;
+
+  } catch (err) {
+    showError(tableEl, 'Erro inesperado: ' + err.message);
+  }
+}
+
+async function aprovarProduto(id) {
+  try {
+    var res = await _sb.from('produtos_v2').update({ status: 'ativo' }).eq('id', id);
+    if (res.error) { alert('Erro ao aprovar: ' + res.error.message); return; }
+    showToast('Produto aprovado!');
+    loadProdutos();
+  } catch (err) { alert('Erro: ' + err.message); }
+}
+
+async function rejeitarProduto(id) {
+  try {
+    var res = await _sb.from('produtos_v2').update({ status: 'rejeitado' }).eq('id', id);
+    if (res.error) { alert('Erro ao rejeitar: ' + res.error.message); return; }
+    showToast('Produto rejeitado.');
+    loadProdutos();
+  } catch (err) { alert('Erro: ' + err.message); }
+}
+
+async function openProdutoModal() {
+  document.getElementById('prod-descricao').value = '';
+  document.getElementById('prod-tags').value = '';
+  document.getElementById('prod-error').textContent = '';
+
+  // Clear checkboxes
+  var cbs = document.querySelectorAll('.prod-canal, .prod-regiao, .prod-frete');
+  for (var i = 0; i < cbs.length; i++) cbs[i].checked = false;
+
+  // Load industries
+  var sel = document.getElementById('prod-industria');
+  sel.innerHTML = '<option value="">Selecione a industria...</option>';
+  try {
+    var res = await _sb.from('players').select('id, razao_social, tipo');
+    var players = res.data || [];
+    for (var i = 0; i < players.length; i++) {
+      var p = players[i];
+      var tipos = p.tipo || [];
+      if (!Array.isArray(tipos)) tipos = [tipos];
+      var isIndustria = tipos.some(function(t) { return t && (t.toLowerCase() === 'industria' || t.toLowerCase() === 'fornecedor' || t.toLowerCase() === 'supplier'); });
+      if (isIndustria) {
+        sel.innerHTML += '<option value="' + p.id + '">' + (p.razao_social || 'Player #' + p.id) + '</option>';
+      }
+    }
+  } catch (e) { /* silent */ }
+
+  document.getElementById('produto-modal').classList.add('open');
+}
+
+function closeProdutoModal() {
+  document.getElementById('produto-modal').classList.remove('open');
+}
+
+async function confirmProduto() {
+  var industriaId = document.getElementById('prod-industria').value;
+  var descricao = document.getElementById('prod-descricao').value.trim();
+  var tagsRaw = document.getElementById('prod-tags').value.trim();
+  var errEl = document.getElementById('prod-error');
+
+  if (!industriaId || !descricao) {
+    errEl.textContent = 'Industria e descricao sao obrigatorios.';
+    return;
+  }
+
+  // Gather checkboxes
+  var canais = [];
+  var canalCbs = document.querySelectorAll('.prod-canal:checked');
+  for (var i = 0; i < canalCbs.length; i++) canais.push(canalCbs[i].value);
+
+  var regioes = [];
+  var regiaoCbs = document.querySelectorAll('.prod-regiao:checked');
+  for (var i = 0; i < regiaoCbs.length; i++) regioes.push(regiaoCbs[i].value);
+
+  var frete = [];
+  var freteCbs = document.querySelectorAll('.prod-frete:checked');
+  for (var i = 0; i < freteCbs.length; i++) frete.push(freteCbs[i].value);
+
+  var tags = tagsRaw ? tagsRaw.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }) : [];
+
+  var btn = document.getElementById('prod-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Cadastrando...';
+  errEl.textContent = '';
+
+  try {
+    var insertData = {
+      industria_id: industriaId,
+      descricao: descricao,
+      tags: tags,
+      canais: canais,
+      regioes: regioes,
+      frete: frete,
+      status: 'aguardando_aprovacao',
+      criado_em: new Date().toISOString()
+    };
+
+    var res = await _sb.from('produtos_v2').insert(insertData).select('id');
+    if (res.error) {
+      errEl.textContent = 'Erro ao cadastrar: ' + res.error.message;
+      btn.disabled = false;
+      btn.textContent = 'Cadastrar';
+      return;
+    }
+
+    showToast('Produto cadastrado! Aguardando aprovacao.');
+    closeProdutoModal();
+    loadProdutos();
+
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Cadastrar';
+}
+
+// =============================================
+// DEAL REGISTRATION
+// =============================================
+var dealOportunidades = [];
+var dealPropostas = [];
+
+async function openDealModal() {
+  document.getElementById('deal-comissao-total').value = '';
+  document.getElementById('deal-split-seller').value = '';
+  document.getElementById('deal-split-originador').value = '';
+  document.getElementById('deal-split-mesa').value = '';
+  document.getElementById('deal-error').textContent = '';
+
+  var opSel = document.getElementById('deal-oportunidade');
+  var propSel = document.getElementById('deal-proposta');
+  var sellerSel = document.getElementById('deal-seller');
+  var origSel = document.getElementById('deal-originador');
+
+  opSel.innerHTML = '<option value="">Selecione a oportunidade...</option>';
+  propSel.innerHTML = '<option value="">Selecione a proposta vencedora...</option>';
+  sellerSel.innerHTML = '<option value="">Selecione o seller...</option>';
+  origSel.innerHTML = '<option value="">Selecione o originador...</option>';
+
+  try {
+    // Load oportunidades
+    var opRes = await _sb.from('oportunidades').select('*').order('criado_em', { ascending: false });
+    dealOportunidades = opRes.data || [];
+    for (var i = 0; i < dealOportunidades.length; i++) {
+      var o = dealOportunidades[i];
+      var label = (o.codigo || o.id) + ' - ' + (o.produto_descricao || o.titulo || 'Sem titulo');
+      opSel.innerHTML += '<option value="' + o.id + '">' + label + '</option>';
+    }
+
+    // Load all propostas
+    var propRes = await _sb.from('propostas_v3').select('*').order('criado_em', { ascending: false });
+    dealPropostas = propRes.data || [];
+
+    // Load sellers and originadores
+    var playersRes = await _sb.from('players').select('id, razao_social, tipo');
+    var players = playersRes.data || [];
+
+    // Add "Mesa" option first
+    sellerSel.innerHTML += '<option value="mesa">Mesa</option>';
+    origSel.innerHTML += '<option value="mesa">Mesa</option>';
+
+    for (var i = 0; i < players.length; i++) {
+      var p = players[i];
+      var tipos = p.tipo || [];
+      if (!Array.isArray(tipos)) tipos = [tipos];
+      var tiposLower = tipos.map(function(t) { return (t || '').toLowerCase(); });
+
+      if (tiposLower.indexOf('seller') > -1) {
+        sellerSel.innerHTML += '<option value="' + p.id + '">' + (p.razao_social || 'Player #' + p.id) + '</option>';
+      }
+      if (tiposLower.indexOf('originador') > -1) {
+        origSel.innerHTML += '<option value="' + p.id + '">' + (p.razao_social || 'Player #' + p.id) + '</option>';
+      }
+    }
+  } catch (e) { /* silent */ }
+
+  document.getElementById('deal-modal').classList.add('open');
+}
+
+function onDealOportunidadeChange() {
+  var opId = document.getElementById('deal-oportunidade').value;
+  var propSel = document.getElementById('deal-proposta');
+  propSel.innerHTML = '<option value="">Selecione a proposta vencedora...</option>';
+
+  if (!opId) return;
+
+  var filtered = dealPropostas.filter(function(p) {
+    return String(p.oportunidade_id) === String(opId);
+  });
+
+  for (var i = 0; i < filtered.length; i++) {
+    var pr = filtered[i];
+    var label = (pr.codigo || pr.id) + ' - ' + (pr.fornecedor_nome || pr.industria_nome || 'Proposta') + ' - ' + formatBRL(pr.preco || pr.valor || 0);
+    propSel.innerHTML += '<option value="' + pr.id + '">' + label + '</option>';
+  }
+}
+
+function closeDealModal() {
+  document.getElementById('deal-modal').classList.remove('open');
+}
+
+async function confirmDeal() {
+  var oportunidadeId = document.getElementById('deal-oportunidade').value;
+  var propostaId = document.getElementById('deal-proposta').value;
+  var sellerId = document.getElementById('deal-seller').value;
+  var originadorId = document.getElementById('deal-originador').value;
+  var comissaoTotal = parseFloat(document.getElementById('deal-comissao-total').value);
+  var splitSeller = parseFloat(document.getElementById('deal-split-seller').value);
+  var splitOriginador = parseFloat(document.getElementById('deal-split-originador').value);
+  var splitMesa = parseFloat(document.getElementById('deal-split-mesa').value);
+  var errEl = document.getElementById('deal-error');
+
+  if (!oportunidadeId || !propostaId) {
+    errEl.textContent = 'Oportunidade e proposta sao obrigatorios.';
+    return;
+  }
+
+  if (isNaN(comissaoTotal) || comissaoTotal <= 0) {
+    errEl.textContent = 'Informe a comissao % total.';
+    return;
+  }
+
+  if (isNaN(splitSeller) || isNaN(splitOriginador) || isNaN(splitMesa)) {
+    errEl.textContent = 'Preencha todos os campos de split.';
+    return;
+  }
+
+  var splitSum = splitSeller + splitOriginador + splitMesa;
+  if (Math.abs(splitSum - 100) > 0.5) {
+    errEl.textContent = 'O split deve somar 100%. Atual: ' + splitSum.toFixed(1) + '%';
+    return;
+  }
+
+  var btn = document.getElementById('deal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  errEl.textContent = '';
+
+  try {
+    var now = new Date().toISOString();
+
+    // Find oportunidade and proposta details
+    var opData = dealOportunidades.find(function(o) { return String(o.id) === String(oportunidadeId); });
+    var propData = dealPropostas.find(function(p) { return String(p.id) === String(propostaId); });
+
+    var dealTotal = propData ? (propData.preco || propData.valor || 0) : 0;
+
+    // 1. Insert deal
+    var dealInsert = {
+      oportunidade_id: oportunidadeId,
+      proposta_id: propostaId,
+      seller_id: sellerId === 'mesa' ? null : sellerId,
+      originador_id: originadorId === 'mesa' ? null : originadorId,
+      seller_nome: sellerId === 'mesa' ? 'Mesa' : null,
+      originador_nome: originadorId === 'mesa' ? 'Mesa' : null,
+      comissao_pct: comissaoTotal,
+      total: dealTotal,
+      status: 'fechado',
+      fechado_em: now,
+      criado_em: now
+    };
+
+    var dealRes = await _sb.from('deals').insert(dealInsert).select('id, codigo');
+    if (dealRes.error) {
+      errEl.textContent = 'Erro ao criar deal: ' + dealRes.error.message;
+      btn.disabled = false;
+      btn.textContent = 'Registrar Deal';
+      return;
+    }
+
+    var dealId = dealRes.data[0].id;
+    var dealCodigo = dealRes.data[0].codigo || dealId;
+
+    // 2. Insert comissoes splits
+    var comissaoValorTotal = dealTotal * (comissaoTotal / 100);
+    var comissaoData = {
+      deal_id: dealId,
+      total_valor: comissaoValorTotal,
+      seller_pct: splitSeller,
+      seller_valor: comissaoValorTotal * (splitSeller / 100),
+      seller_id: sellerId === 'mesa' ? null : sellerId,
+      originador_pct: splitOriginador,
+      originador_valor: comissaoValorTotal * (splitOriginador / 100),
+      originador_id: originadorId === 'mesa' ? null : originadorId,
+      mesa_pct: splitMesa,
+      mesa_valor: comissaoValorTotal * (splitMesa / 100),
+      status: 'calculada',
+      criado_em: now
+    };
+
+    var comRes = await _sb.from('comissoes').insert(comissaoData);
+    if (comRes.error) {
+      showToast('Deal criado, mas erro na comissao: ' + comRes.error.message);
+    }
+
+    showToast('Deal registrado: ' + dealCodigo);
+    closeDealModal();
+    loadPipeline();
+
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Registrar Deal';
 }
 </script>
 </body>

@@ -368,6 +368,30 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
           </select>
         </div>
       </div>
+      <div style="margin-top:16px">
+        <div style="font-size:13px;font-weight:600;color:#8a95ad;margin-bottom:10px">O que voce prioriza nessa compra?</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7a99;margin-bottom:4px">
+              <span>Preco</span><span id="peso-preco-val">50%</span>
+            </div>
+            <input type="range" id="peso-preco" min="0" max="100" value="50" oninput="updatePesos()" style="width:100%;accent-color:#00C8FF">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7a99;margin-bottom:4px">
+              <span>Prazo de embarque</span><span id="peso-prazo-val">30%</span>
+            </div>
+            <input type="range" id="peso-prazo" min="0" max="100" value="30" oninput="updatePesos()" style="width:100%;accent-color:#00C8FF">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7a99;margin-bottom:4px">
+              <span>Prazo de pagamento</span><span id="peso-pagamento-val">20%</span>
+            </div>
+            <input type="range" id="peso-pagamento" min="0" max="100" value="20" oninput="updatePesos()" style="width:100%;accent-color:#00C8FF">
+          </div>
+          <div style="text-align:center;font-size:11px;color:#3d4a63" id="peso-total">Total: 100%</div>
+        </div>
+      </div>
       <button type="submit" class="btn" id="btnSubmitDemanda" style="width:100%;margin-top:6px">Publicar Demanda</button>
     </form>
   </div>
@@ -559,6 +583,103 @@ function generateCodigo() {
 }
 
 // ═══════════════════════════════════════
+// PRIORITY WEIGHTS
+// ═══════════════════════════════════════
+function updatePesos() {
+  var raw1 = Number(document.getElementById('peso-preco').value) || 0;
+  var raw2 = Number(document.getElementById('peso-prazo').value) || 0;
+  var raw3 = Number(document.getElementById('peso-pagamento').value) || 0;
+  var total = raw1 + raw2 + raw3;
+  var p1 = total > 0 ? Math.round((raw1 / total) * 100) : 0;
+  var p2 = total > 0 ? Math.round((raw2 / total) * 100) : 0;
+  var p3 = total > 0 ? 100 - p1 - p2 : 0;
+  document.getElementById('peso-preco-val').textContent = p1 + '%';
+  document.getElementById('peso-prazo-val').textContent = p2 + '%';
+  document.getElementById('peso-pagamento-val').textContent = p3 + '%';
+  document.getElementById('peso-total').textContent = 'Total: ' + (p1 + p2 + p3) + '%';
+}
+
+function getNormalizedPesos() {
+  var raw1 = Number(document.getElementById('peso-preco').value) || 0;
+  var raw2 = Number(document.getElementById('peso-prazo').value) || 0;
+  var raw3 = Number(document.getElementById('peso-pagamento').value) || 0;
+  var total = raw1 + raw2 + raw3;
+  if (total === 0) return { preco: 50, prazo_embarque: 30, prazo_pagamento: 20 };
+  return {
+    preco: Math.round((raw1 / total) * 100),
+    prazo_embarque: Math.round((raw2 / total) * 100),
+    prazo_pagamento: 100 - Math.round((raw1 / total) * 100) - Math.round((raw2 / total) * 100)
+  };
+}
+
+function getPrioridades(oportunidadeId) {
+  try {
+    var stored = sessionStorage.getItem('prioridades_' + oportunidadeId);
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return { preco: 50, prazo_embarque: 30, prazo_pagamento: 20 };
+}
+
+// ═══════════════════════════════════════
+// PRIORITY SCORE CALCULATOR
+// ═══════════════════════════════════════
+function calcularScore(proposta, oportunidade, prioridades) {
+  var p = prioridades || { preco: 50, prazo_embarque: 30, prazo_pagamento: 20 };
+  var score = 0;
+
+  // Preco
+  var precoAlvo = Number(oportunidade.preco_alvo) || 0;
+  var precoP = Number(proposta.preco) || 0;
+  if (precoAlvo > 0 && precoP > 0) {
+    if (precoP <= precoAlvo) {
+      score += p.preco;
+    } else {
+      var diff = (precoP - precoAlvo) / precoAlvo;
+      score += Math.max(0, p.preco - (diff * p.preco * 2));
+    }
+  } else if (precoP > 0) {
+    score += p.preco * 0.5;
+  }
+
+  // Prazo embarque (lower is better)
+  var prazoAlvo = parseInt(oportunidade.prazo_expedicao) || 999;
+  var prazoP = parseInt(proposta.prazo_expedicao || proposta.prazo) || 999;
+  if (prazoP <= prazoAlvo) {
+    score += p.prazo_embarque;
+  } else if (prazoAlvo < 999) {
+    var prazoDiff = (prazoP - prazoAlvo) / prazoAlvo;
+    score += Math.max(0, p.prazo_embarque - (prazoDiff * p.prazo_embarque * 2));
+  } else {
+    score += p.prazo_embarque * 0.5;
+  }
+
+  // Prazo pagamento (higher accepted by supplier is better)
+  var pagAlvo = parseInt(oportunidade.prazo_pagamento) || 0;
+  var pagP = parseInt(proposta.condicao_pagamento || proposta.condicao) || 0;
+  if (pagP >= pagAlvo) {
+    score += p.prazo_pagamento;
+  } else if (pagAlvo > 0) {
+    score += Math.max(0, p.prazo_pagamento * (pagP / pagAlvo));
+  } else {
+    score += p.prazo_pagamento * 0.5;
+  }
+
+  return Math.round(score);
+}
+
+function scoreBadgeColor(score) {
+  if (score >= 80) return 'var(--gn)';
+  if (score >= 60) return 'var(--am)';
+  return 'var(--rd)';
+}
+
+function scoreBadgeClass(score) {
+  if (score >= 80) return 'badge-green';
+  if (score >= 60) return 'badge-amber';
+  return 'badge-red';
+}
+
+// ═══════════════════════════════════════
 // SECTION: HOME
 // ═══════════════════════════════════════
 async function loadHome() {
@@ -687,9 +808,19 @@ async function openDemandaDetail(demandaId) {
     if (demRes.error) throw demRes.error;
     var dem = demRes.data;
 
-    // Get proposals for this demanda, sorted by score
+    // Get proposals for this demanda
     var propRes = await _sb.from('propostas_v3').select('*, players(razao_social, contato_nome)')
-      .eq('oportunidade_id', demandaId).order('score', { ascending: false });
+      .eq('oportunidade_id', demandaId);
+
+    // Get client-defined priorities for this oportunidade
+    var prioridades = getPrioridades(demandaId);
+
+    // Calculate scores and sort by score DESC
+    var propostas = propRes.data || [];
+    for (var s = 0; s < propostas.length; s++) {
+      propostas[s]._clientScore = calcularScore(propostas[s], dem, prioridades);
+    }
+    propostas.sort(function(a, b) { return b._clientScore - a._clientScore; });
 
     var html = '';
     html += '<div class="detail-header">';
@@ -698,21 +829,24 @@ async function openDemandaDetail(demandaId) {
     html += '</div>';
 
     // Proposals
-    html += '<div style="margin-top:16px"><div class="sh"><h3>Propostas (' + (propRes.data ? propRes.data.length : 0) + ')</h3></div>';
+    html += '<div style="margin-top:16px"><div class="sh"><h3>Propostas (' + propostas.length + ')</h3></div>';
 
-    if (!propRes.data || propRes.data.length === 0) {
+    if (propostas.length === 0) {
       html += '<div class="empty-state"><div class="empty-icon">&#128202;</div><p>Nenhuma proposta recebida ainda.</p></div>';
     } else {
-      for (var i = 0; i < propRes.data.length; i++) {
-        var pr = propRes.data[i];
+      for (var i = 0; i < propostas.length; i++) {
+        var pr = propostas[i];
         var indName = (pr.players && (pr.players.razao_social || pr.players.contato_nome)) || 'Ind\u00FAstria';
-        var scoreVal = pr.score || 0;
-        var scoreColor = scoreVal >= 80 ? 'var(--gn)' : scoreVal >= 50 ? 'var(--am)' : 'var(--rd)';
+        var scoreVal = pr._clientScore;
+        var scoreColor = scoreBadgeColor(scoreVal);
 
         html += '<div class="prop-card">';
         html += '<div class="prop-header">';
         html += '<span class="prop-industry">' + indName + '</span>';
+        html += '<div style="display:flex;align-items:center;gap:8px">';
+        html += '<span class="badge ' + scoreBadgeClass(scoreVal) + '" style="font-size:11px">' + scoreVal + ' pts</span>';
         html += statusBadge(pr.status);
+        html += '</div>';
         html += '</div>';
 
         // Score bar
@@ -757,6 +891,11 @@ function openNewDemandModal() {
 function closeNewDemandModal() {
   document.getElementById('modalNovaDemanda').classList.remove('open');
   document.getElementById('formNovaDemanda').reset();
+  // Reset priority slider labels after form reset
+  document.getElementById('peso-preco-val').textContent = '50%';
+  document.getElementById('peso-prazo-val').textContent = '30%';
+  document.getElementById('peso-pagamento-val').textContent = '20%';
+  document.getElementById('peso-total').textContent = 'Total: 100%';
 }
 
 async function submitNovaDemanda(e) {
@@ -773,6 +912,8 @@ async function submitNovaDemanda(e) {
     var frete = document.getElementById('ndFrete').value;
     var codigo = generateCodigo();
 
+    var pesos = getNormalizedPesos();
+
     var insertData = {
       cliente_id: player.id,
       produto_descricao: descricao,
@@ -784,8 +925,14 @@ async function submitNovaDemanda(e) {
       status: 'aguardando_aprovacao'
     };
 
-    var res = await _sb.from('oportunidades').insert(insertData);
+    var res = await _sb.from('oportunidades').insert(insertData).select('id');
     if (res.error) throw res.error;
+
+    // Store priorities in sessionStorage keyed by oportunidade ID
+    if (res.data && res.data.length > 0) {
+      var newId = res.data[0].id;
+      sessionStorage.setItem('prioridades_' + newId, JSON.stringify(pesos));
+    }
 
     closeNewDemandModal();
     showToast('Demanda ' + codigo + ' publicada com sucesso!', 'success');
