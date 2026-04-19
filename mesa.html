@@ -179,6 +179,16 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
 .error-msg{background:var(--danger-bg);border:1px solid rgba(225,112,85,.25);color:var(--danger);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
 
 /* APPROVAL CARD */
+.approval-card-v2{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px}
+.approval-card-v2 .acv2-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.approval-card-v2 .acv2-icon{font-size:20px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0}
+.approval-card-v2 .acv2-title{font-size:14px;font-weight:600;color:#fff}
+.approval-card-v2 .acv2-subtitle{font-size:11px;color:var(--text3)}
+.approval-card-v2 .acv2-body{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6}
+.approval-card-v2 .acv2-body .acv2-field{display:flex;gap:6px;padding:2px 0}
+.approval-card-v2 .acv2-body .acv2-field-label{color:var(--text3);min-width:90px;font-size:11px}
+.approval-card-v2 .acv2-actions{display:flex;gap:8px;flex-wrap:wrap}
+.approval-card-v2 .acv2-actions .btn{min-height:40px;padding:8px 18px;font-size:13px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:4px}
 .approval-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:border-color .15s}
 .approval-card:hover{border-color:var(--accent-border)}
 .approval-info{flex:1;min-width:0}
@@ -1161,7 +1171,54 @@ function renderCRMDetail(id) {
     '<div class="dt-section">' +
       '<h4>Comissao</h4>' +
       comHtml +
+    '</div>' +
+
+    // IA INSTRUCTIONS
+    '<div class="dt-section">' +
+      '<h4>Orientacoes para a IA</h4>' +
+      '<textarea id="dt-ia-notes" rows="3" placeholder="Ex: Pressionar Cido para fechar ate dia 30..." ' +
+        'style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;resize:vertical;font-family:system-ui"' +
+      '>' + (deal.raw.observacoes || '').replace(/</g,'&lt;') + '</textarea>' +
+      '<button onclick="saveIANotes(\'' + deal.id + '\')" style="margin-top:8px;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:600">Salvar orientacoes</button>' +
+    '</div>' +
+
+    // HISTORICO DE ACOES
+    '<div class="dt-section">' +
+      '<h4>Historico de Acoes</h4>' +
+      '<div id="dt-history"><p style="color:var(--text3);font-size:12px">Carregando...</p></div>' +
     '</div>';
+
+  loadDealHistory(deal.id);
+}
+
+async function saveIANotes(oppId) {
+  var notes = document.getElementById('dt-ia-notes').value;
+  var { error } = await _sb.from('oportunidades').update({ observacoes: notes }).eq('id', oppId);
+  if (error) showToast('Erro: ' + error.message);
+  else showToast('Orientacoes salvas!');
+}
+
+async function loadDealHistory(oppId) {
+  var el = document.getElementById('dt-history');
+  var { data } = await _sb.from('aprovacoes_v2').select('*').eq('entidade_id', oppId).order('criado_em', { ascending: false });
+  var items = data || [];
+  if (items.length === 0) {
+    el.innerHTML = '<p style="color:var(--text3);font-size:12px">Nenhuma acao registrada</p>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var a = items[i];
+    var dt = new Date(a.criado_em);
+    var dateStr = String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    var desc = a.tipo + ' — ' + a.status;
+    if (a.motivo_rejeicao) desc += ' (' + a.motivo_rejeicao + ')';
+    html += '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:11px;color:var(--text3);white-space:nowrap;min-width:80px">' + dateStr + '</span>' +
+      '<span style="font-size:12px;color:var(--text)">' + desc + '</span>' +
+    '</div>';
+  }
+  el.innerHTML = html;
 }
 
 async function quickStatus(newStatus, oppId) {
@@ -1232,18 +1289,107 @@ async function loadAprovacoes() {
       return;
     }
 
+    // Group by tipo to batch-query entities
+    var byTipo = {};
+    for (var i = 0; i < items.length; i++) {
+      var t = (items[i].tipo || 'geral').toLowerCase();
+      if (!byTipo[t]) byTipo[t] = [];
+      byTipo[t].push(items[i]);
+    }
+
+    var entityMap = {};
+    var tipoConfig = {
+      'player':       { table: 'players',        icon: '\uD83D\uDD35', iconBg: 'var(--info-bg)' },
+      'produto':      { table: 'produtos_v2',    icon: '\uD83D\uDCE6', iconBg: 'var(--warning-bg)' },
+      'oportunidade': { table: 'oportunidades',  icon: '\uD83D\uDCCB', iconBg: 'var(--accent-bg)' },
+      'deal':         { table: 'deals',           icon: '\uD83E\uDD1D', iconBg: 'var(--success-bg)' },
+      'comissao':     { table: 'comissoes',       icon: '\uD83D\uDCB0', iconBg: 'var(--warning-bg)' }
+    };
+
+    // Batch-query entities
+    var tipoKeys = Object.keys(byTipo);
+    for (var ti = 0; ti < tipoKeys.length; ti++) {
+      var tk = tipoKeys[ti];
+      var cfg = tipoConfig[tk];
+      if (!cfg) continue;
+      var ids = [];
+      for (var bi = 0; bi < byTipo[tk].length; bi++) {
+        if (byTipo[tk][bi].entidade_id) ids.push(byTipo[tk][bi].entidade_id);
+      }
+      if (ids.length === 0) continue;
+      var entRes = await _sb.from(cfg.table).select('*').in('id', ids);
+      if (entRes.data) {
+        for (var ei = 0; ei < entRes.data.length; ei++) {
+          entityMap[entRes.data[ei].id] = entRes.data[ei];
+        }
+      }
+    }
+
     var html = '';
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      html += '<div class="approval-card" id="aprov-' + item.id + '">' +
-        '<div class="approval-info">' +
-          '<div class="ap-type">' + (item.tipo || 'geral') + '</div>' +
-          '<div class="ap-code">' + (item.entidade_codigo || item.entidade_id || '#' + item.id) + '</div>' +
-          '<div class="ap-date">Criado em: ' + fmtDateTime(item.criado_em) + '</div>' +
+      var tipo = (item.tipo || 'geral').toLowerCase();
+      var cfg = tipoConfig[tipo] || { icon: '\u2753', iconBg: 'var(--bg3)' };
+      var entity = entityMap[item.entidade_id] || null;
+
+      // Build entity details
+      var detailHtml = '';
+      if (entity) {
+        if (tipo === 'player') {
+          detailHtml =
+            '<div class="acv2-field"><span class="acv2-field-label">Razao Social</span><span>' + (entity.razao_social || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Tipo</span><span>' + (entity.tipo || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Email</span><span>' + (entity.email || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">CNPJ</span><span>' + (entity.cnpj || '-') + '</span></div>';
+          if (entity.intermediario_id) {
+            detailHtml += '<div class="acv2-field"><span class="acv2-field-label">Intermediario</span><span>' + (entity.intermediario_id || '-') + '</span></div>';
+          }
+          if (entity.vinculo) {
+            detailHtml += '<div class="acv2-field"><span class="acv2-field-label">Vinculo</span><span>' + (entity.vinculo || '-') + '</span></div>';
+          }
+        } else if (tipo === 'produto') {
+          detailHtml =
+            '<div class="acv2-field"><span class="acv2-field-label">Descricao</span><span>' + (entity.descricao_livre || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Tags</span><span>' + (entity.tags || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Canais</span><span>' + (entity.canais || '-') + '</span></div>';
+        } else if (tipo === 'oportunidade') {
+          detailHtml =
+            '<div class="acv2-field"><span class="acv2-field-label">Produto</span><span>' + (entity.produto_descricao || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Preco Alvo</span><span>' + (entity.preco_alvo ? formatBRL(entity.preco_alvo) : '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Regiao</span><span>' + (entity.regiao || '-') + '</span></div>';
+        } else if (tipo === 'deal') {
+          detailHtml =
+            '<div class="acv2-field"><span class="acv2-field-label">Codigo</span><span>' + (entity.codigo || '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Total</span><span>' + (entity.total ? formatBRL(entity.total) : '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Status</span><span>' + (entity.status || '-') + '</span></div>';
+        } else if (tipo === 'comissao') {
+          detailHtml =
+            '<div class="acv2-field"><span class="acv2-field-label">Valor Total</span><span>' + (entity.total_valor ? formatBRL(entity.total_valor) : '-') + '</span></div>' +
+            '<div class="acv2-field"><span class="acv2-field-label">Status</span><span>' + (entity.status || '-') + '</span></div>';
+        }
+      } else {
+        detailHtml = '<p style="color:var(--text4);font-size:11px">Detalhes nao disponiveis</p>';
+      }
+
+      // Navigation target for "Ver completo"
+      var viewAction = '';
+      if (tipo === 'oportunidade' && item.entidade_id) {
+        viewAction = 'switchPanel(\'pipeline\');setTimeout(function(){renderCRMDetail(\'' + item.entidade_id + '\')},300)';
+      }
+
+      html += '<div class="approval-card-v2" id="aprov-' + item.id + '">' +
+        '<div class="acv2-header">' +
+          '<div class="acv2-icon" style="background:' + cfg.iconBg + '">' + cfg.icon + '</div>' +
+          '<div>' +
+            '<div class="acv2-title">' + (item.entidade_codigo || item.entidade_id || '#' + item.id) + '</div>' +
+            '<div class="acv2-subtitle">' + (tipo.charAt(0).toUpperCase() + tipo.slice(1)) + ' &middot; ' + fmtDateTime(item.criado_em) + '</div>' +
+          '</div>' +
         '</div>' +
-        '<div class="approval-actions">' +
-          '<button class="btn btn-success btn-sm" onclick="aprovar(' + item.id + ', \'' + (item.tipo || '') + '\', \'' + (item.entidade_codigo || item.entidade_id || '') + '\')">APROVAR</button>' +
-          '<button class="btn btn-danger btn-sm" onclick="openRejectModal(' + item.id + ', \'' + (item.tipo || '') + '\', \'' + (item.entidade_codigo || item.entidade_id || '') + '\')">REJEITAR</button>' +
+        '<div class="acv2-body">' + detailHtml + '</div>' +
+        '<div class="acv2-actions">' +
+          '<button class="btn btn-success" onclick="aprovar(' + item.id + ', \'' + (item.tipo || '') + '\', \'' + (item.entidade_codigo || item.entidade_id || '') + '\')">&#x2705; Aprovar</button>' +
+          '<button class="btn btn-danger" onclick="openRejectModal(' + item.id + ', \'' + (item.tipo || '') + '\', \'' + (item.entidade_codigo || item.entidade_id || '') + '\')">&#x274C; Rejeitar</button>' +
+          (viewAction ? '<button class="btn btn-ghost" onclick="' + viewAction + '">Ver completo</button>' : '') +
         '</div>' +
         '</div>';
     }
