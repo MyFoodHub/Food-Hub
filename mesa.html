@@ -284,7 +284,7 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
       </div>
       <div class="nav-section">Gestao</div>
       <div class="nav-item" data-panel="membros" onclick="switchPanel('membros')">
-        <span class="ni">👥</span> Membros
+        <span class="ni">👥</span> Players
       </div>
       <div class="nav-item" data-panel="feed" onclick="switchPanel('feed')">
         <span class="ni">📡</span> Feed ao Vivo
@@ -326,12 +326,12 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
         <div id="financeiro-table" class="tbl-wrap"></div>
       </div>
 
-      <!-- 4. MEMBROS -->
+      <!-- 4. PLAYERS -->
       <div class="panel" id="panel-membros">
         <div class="panel-header">
-          <h2>Membros</h2>
+          <h2>Players</h2>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" onclick="openInviteModal()" style="font-size:12px;padding:6px 14px">+ Convidar membro</button>
+            <button class="btn btn-primary" onclick="openInviteModal()" style="font-size:12px;padding:6px 14px">+ Convidar player</button>
             <button class="refresh-btn" onclick="loadMembros()">&#x21bb; Atualizar</button>
           </div>
         </div>
@@ -373,7 +373,7 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
       <span class="bn-icon">💰</span>Financeiro
     </div>
     <div class="bottom-nav-item" data-panel="membros" onclick="switchPanel('membros')">
-      <span class="bn-icon">👥</span>Membros
+      <span class="bn-icon">👥</span>Players
     </div>
     <div class="bottom-nav-item" data-panel="feed" onclick="switchPanel('feed')">
       <span class="bn-icon">📡</span>Feed
@@ -384,17 +384,21 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
 <!-- INVITE MODAL -->
 <div class="modal-overlay" id="invite-modal">
   <div class="modal-box">
-    <h3>Convidar Membro</h3>
+    <h3>Convidar Player</h3>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <input id="invite-nome" placeholder="Nome completo" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <input id="invite-nome" placeholder="Razao Social" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <input id="invite-contato" placeholder="Nome do contato" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
       <input id="invite-email" type="email" placeholder="Email" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
       <input id="invite-whatsapp" placeholder="WhatsApp (+5511...)" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
       <select id="invite-tipo" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
         <option value="">Selecione o tipo...</option>
-        <option value="comprador">Comprador</option>
-        <option value="fornecedor">Fornecedor</option>
+        <option value="industria">Industria</option>
+        <option value="cliente">Cliente</option>
         <option value="seller">Seller</option>
         <option value="originador">Originador</option>
+      </select>
+      <select id="invite-intermediario" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="">Intermediario (opcional)</option>
       </select>
       <div id="invite-error" style="color:var(--danger);font-size:12px;min-height:16px"></div>
     </div>
@@ -582,16 +586,14 @@ async function loadPipeline() {
 
   try {
     var results = await Promise.all([
-      _sb.from('demandas_v2').select('*'),
-      _sb.from('negociacoes_v2').select('*'),
-      _sb.from('pedidos_v2').select('*')
+      _sb.from('oportunidades').select('*'),
+      _sb.from('deals').select('*')
     ]);
 
-    var demandas = (results[0].data || []);
-    var negociacoes = (results[1].data || []);
-    var pedidos = (results[2].data || []);
+    var oportunidades = (results[0].data || []);
+    var dealsData = (results[1].data || []);
 
-    if (results[0].error) { showError(metricsEl, 'Erro ao carregar demandas: ' + results[0].error.message); return; }
+    if (results[0].error) { showError(metricsEl, 'Erro ao carregar oportunidades: ' + results[0].error.message); return; }
 
     // Aggregate pipeline values
     var totalPipeline = 0;
@@ -601,10 +603,9 @@ async function loadPipeline() {
 
     var deals = [];
 
-    for (var i = 0; i < demandas.length; i++) {
-      var d = demandas[i];
-      var spec = d.especificacao || {};
-      var potencial = spec.potencial || spec.valor_estimado || d.valor_estimado || 0;
+    for (var i = 0; i < oportunidades.length; i++) {
+      var d = oportunidades[i];
+      var potencial = d.preco_alvo || 0;
       var status = d.status || 'nova';
       var sl = status.toLowerCase();
 
@@ -620,19 +621,19 @@ async function loadPipeline() {
 
       deals.push({
         id: d.id || d.codigo || i + 1,
-        nome: spec.produto_nome || spec.produto || d.produto_nome || d.titulo || '-',
-        fornecedor: spec.seller || spec.fornecedor || d.fornecedor_nome || '-',
-        cliente: (spec.clientes && spec.clientes.length > 0 ? spec.clientes[0] : null) || spec.cliente || d.cliente_nome || '-',
+        nome: d.produto_descricao || d.titulo || '-',
+        fornecedor: d.fornecedor_nome || '-',
+        cliente: d.cliente_nome || '-',
         status: status,
         potencial: Number(potencial) || 0,
-        regiao: spec.regiao || d.regiao || '-'
+        regiao: d.regiao || '-'
       });
     }
 
-    // Add negociacoes to pipeline
-    for (var i = 0; i < negociacoes.length; i++) {
-      var n = negociacoes[i];
-      var val = n.valor || n.valor_estimado || 0;
+    // Add deals to pipeline
+    for (var i = 0; i < dealsData.length; i++) {
+      var n = dealsData[i];
+      var val = n.total || 0;
       totalPipeline += Number(val) || 0;
       emNegociacao += Number(val) || 0;
     }
@@ -645,7 +646,7 @@ async function loadPipeline() {
       '<div class="metric-card purple">' +
         '<div class="label">Total Pipeline</div>' +
         '<div class="value">' + formatBRL(totalPipeline) + '</div>' +
-        '<div class="sub">' + deals.length + ' demandas + ' + negociacoes.length + ' negociacoes</div>' +
+        '<div class="sub">' + deals.length + ' oportunidades + ' + dealsData.length + ' deals</div>' +
       '</div>' +
       '<div class="metric-card orange">' +
         '<div class="label">Em Negociacao</div>' +
@@ -696,7 +697,7 @@ async function loadPipeline() {
 // =============================================
 async function loadAprovacoesBadge() {
   try {
-    var res = await _sb.from('aprovacoes').select('id', { count: 'exact' }).eq('status', 'pendente');
+    var res = await _sb.from('aprovacoes_v2').select('id', { count: 'exact' }).eq('status', 'pendente');
     var count = res.count || 0;
     var badge = document.getElementById('badge-aprovacoes');
     if (count > 0) {
@@ -713,7 +714,7 @@ async function loadAprovacoes() {
   showLoading(el);
 
   try {
-    var res = await _sb.from('aprovacoes').select('*').eq('status', 'pendente').order('criado_em', { ascending: false });
+    var res = await _sb.from('aprovacoes_v2').select('*').eq('status', 'pendente').order('criado_em', { ascending: false });
 
     if (res.error) { showError(el, 'Erro ao carregar aprovacoes: ' + res.error.message); return; }
 
@@ -749,28 +750,26 @@ async function loadAprovacoes() {
 }
 
 var nextStatusMap = {
-  'membro': 'ativo',
-  'member': 'ativo',
+  'player': 'ativo',
   'produto': 'ativo',
-  'demanda': 'ativa',
-  'negociacao': 'em_negociacao',
-  'pedido': 'confirmado'
+  'oportunidade': 'ativa',
+  'deal': 'confirmado',
+  'comissao': 'aprovada_mesa'
 };
 
 var entityTableMap = {
-  'membro': 'members',
-  'member': 'members',
-  'produto': 'produtos',
-  'demanda': 'demandas_v2',
-  'negociacao': 'negociacoes_v2',
-  'pedido': 'pedidos_v2'
+  'player': 'players',
+  'produto': 'produtos_v2',
+  'oportunidade': 'oportunidades',
+  'deal': 'deals',
+  'comissao': 'comissoes'
 };
 
 async function aprovar(id, tipo, entidadeCodigo) {
   try {
     var now = new Date().toISOString();
 
-    var updateRes = await _sb.from('aprovacoes').update({
+    var updateRes = await _sb.from('aprovacoes_v2').update({
       status: 'aprovado',
       aprovado_em: now
     }).eq('id', id);
@@ -823,7 +822,7 @@ async function confirmReject() {
   try {
     var now = new Date().toISOString();
 
-    var updateRes = await _sb.from('aprovacoes').update({
+    var updateRes = await _sb.from('aprovacoes_v2').update({
       status: 'rejeitado',
       motivo: motivo,
       aprovado_em: now
@@ -865,7 +864,7 @@ async function loadFinanceiro() {
   tableEl.innerHTML = '';
 
   try {
-    var res = await _sb.from('financials_v2').select('*').order('criado_em', { ascending: false });
+    var res = await _sb.from('comissoes').select('*').order('criado_em', { ascending: false });
 
     if (res.error) { showError(metricsEl, 'Erro ao carregar financeiro: ' + res.error.message); return; }
 
@@ -886,7 +885,7 @@ async function loadFinanceiro() {
       var st = (f.status || '').toLowerCase().replace(' ', '_');
       if (!groups[st]) groups[st] = { count: 0, total: 0 };
       groups[st].count++;
-      groups[st].total += Number(f.valor || f.valor_comissao || 0);
+      groups[st].total += Number(f.total_valor || f.valor || 0);
     }
 
     // Render metrics
@@ -909,16 +908,18 @@ async function loadFinanceiro() {
     }
 
     var thtml = '<table class="tbl"><thead><tr>' +
-      '<th>Pedido</th><th>Fornecedor</th><th>Valor</th><th>Comissao</th><th>Status</th><th>Vencimento</th>' +
+      '<th>Deal</th><th>Fornecedor</th><th>Total Comissao</th><th>Seller</th><th>Originador</th><th>Mesa</th><th>Status</th><th>Vencimento</th>' +
       '</tr></thead><tbody>';
 
     for (var i = 0; i < data.length; i++) {
       var f = data[i];
       thtml += '<tr>' +
-        '<td style="font-weight:600;color:#fff">' + (f.pedido_codigo || f.pedido_id || '-') + '</td>' +
+        '<td style="font-weight:600;color:#fff">' + (f.deal_id || f.pedido_codigo || '-') + '</td>' +
         '<td>' + (f.fornecedor_nome || f.fornecedor || '-') + '</td>' +
-        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.valor) + '</td>' +
-        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.comissao || f.valor_comissao) + '</td>' +
+        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.total_valor || f.valor) + '</td>' +
+        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.seller_valor) + '</td>' +
+        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.originador_valor) + '</td>' +
+        '<td style="font-variant-numeric:tabular-nums">' + formatBRL(f.mesa_valor) + '</td>' +
         '<td>' + statusBadge(f.status) + '</td>' +
         '<td>' + fmtDate(f.vencimento || f.data_vencimento) + '</td>' +
         '</tr>';
@@ -944,32 +945,36 @@ async function loadMembros() {
   tableEl.innerHTML = '';
 
   try {
-    var res = await _sb.from('members').select('*').order('criado_em', { ascending: false });
+    var res = await _sb.from('players').select('*').order('criado_em', { ascending: false });
 
-    if (res.error) { showError(metricsEl, 'Erro ao carregar membros: ' + res.error.message); return; }
+    if (res.error) { showError(metricsEl, 'Erro ao carregar players: ' + res.error.message); return; }
 
     allMembros = res.data || [];
 
-    // Count per type
-    var counts = { total: allMembros.length, comprador: 0, fornecedor: 0, seller: 0, originador: 0 };
+    // Count per type — tipo is now text[] array
+    var counts = { total: allMembros.length, industria: 0, cliente: 0, seller: 0, originador: 0 };
     for (var i = 0; i < allMembros.length; i++) {
-      var tipo = (allMembros[i].tipo || '').toLowerCase();
-      if (tipo === 'comprador' || tipo === 'buyer') counts.comprador++;
-      else if (tipo === 'fornecedor' || tipo === 'supplier') counts.fornecedor++;
-      else if (tipo === 'seller') counts.seller++;
-      else if (tipo === 'originador') counts.originador++;
+      var tipos = allMembros[i].tipo || [];
+      if (!Array.isArray(tipos)) tipos = [tipos];
+      for (var j = 0; j < tipos.length; j++) {
+        var t = (tipos[j] || '').toLowerCase();
+        if (t === 'industria' || t === 'fornecedor' || t === 'supplier') counts.industria++;
+        else if (t === 'cliente' || t === 'comprador' || t === 'buyer') counts.cliente++;
+        else if (t === 'seller') counts.seller++;
+        else if (t === 'originador') counts.originador++;
+      }
     }
 
     metricsEl.innerHTML =
       '<div class="metric-card purple"><div class="label">Total</div><div class="value">' + counts.total + '</div></div>' +
-      '<div class="metric-card green"><div class="label">Compradores</div><div class="value">' + counts.comprador + '</div></div>' +
-      '<div class="metric-card orange"><div class="label">Fornecedores</div><div class="value">' + counts.fornecedor + '</div></div>' +
+      '<div class="metric-card green"><div class="label">Clientes</div><div class="value">' + counts.cliente + '</div></div>' +
+      '<div class="metric-card orange"><div class="label">Industrias</div><div class="value">' + counts.industria + '</div></div>' +
       '<div class="metric-card blue"><div class="label">Sellers</div><div class="value">' + counts.seller + '</div></div>' +
       '<div class="metric-card red"><div class="label">Originadores</div><div class="value">' + counts.originador + '</div></div>';
 
     // Render filter tabs
-    var filters = ['todos', 'comprador', 'fornecedor', 'seller', 'originador'];
-    var filterLabels = { todos: 'Todos', comprador: 'Compradores', fornecedor: 'Fornecedores', seller: 'Sellers', originador: 'Originadores' };
+    var filters = ['todos', 'cliente', 'industria', 'seller', 'originador'];
+    var filterLabels = { todos: 'Todos', cliente: 'Clientes', industria: 'Industrias', seller: 'Sellers', originador: 'Originadores' };
     var fhtml = '';
     for (var i = 0; i < filters.length; i++) {
       var f = filters[i];
@@ -1003,32 +1008,43 @@ function renderMembrosTable() {
   if (currentMembrosFilter !== 'todos') {
     filtered = [];
     for (var i = 0; i < allMembros.length; i++) {
-      var tipo = (allMembros[i].tipo || '').toLowerCase();
-      if (currentMembrosFilter === 'comprador' && (tipo === 'comprador' || tipo === 'buyer')) filtered.push(allMembros[i]);
-      else if (currentMembrosFilter === 'fornecedor' && (tipo === 'fornecedor' || tipo === 'supplier')) filtered.push(allMembros[i]);
-      else if (currentMembrosFilter === 'seller' && tipo === 'seller') filtered.push(allMembros[i]);
-      else if (currentMembrosFilter === 'originador' && tipo === 'originador') filtered.push(allMembros[i]);
+      var tipos = allMembros[i].tipo || [];
+      if (!Array.isArray(tipos)) tipos = [tipos];
+      var tiposLower = tipos.map(function(t) { return (t || '').toLowerCase(); });
+      if (currentMembrosFilter === 'cliente' && (tiposLower.indexOf('cliente') > -1 || tiposLower.indexOf('comprador') > -1 || tiposLower.indexOf('buyer') > -1)) filtered.push(allMembros[i]);
+      else if (currentMembrosFilter === 'industria' && (tiposLower.indexOf('industria') > -1 || tiposLower.indexOf('fornecedor') > -1 || tiposLower.indexOf('supplier') > -1)) filtered.push(allMembros[i]);
+      else if (currentMembrosFilter === 'seller' && tiposLower.indexOf('seller') > -1) filtered.push(allMembros[i]);
+      else if (currentMembrosFilter === 'originador' && tiposLower.indexOf('originador') > -1) filtered.push(allMembros[i]);
     }
   }
 
   if (filtered.length === 0) {
-    showEmpty(tableEl, 'Nenhum membro encontrado nesta categoria.');
+    showEmpty(tableEl, 'Nenhum player encontrado nesta categoria.');
     return;
   }
 
   var html = '<table class="tbl"><thead><tr>' +
-    '<th>Nome</th><th>Tipo</th><th>Status</th><th>Email</th><th>WhatsApp</th><th>Criado em</th><th>Ações</th>' +
+    '<th>Razao Social</th><th>Contato</th><th>Tipo</th><th>Status</th><th>Email</th><th>WhatsApp</th><th>Criado em</th><th>Acoes</th>' +
     '</tr></thead><tbody>';
 
   for (var i = 0; i < filtered.length; i++) {
     var m = filtered[i];
-    var tipoBadge = 'badge-gray';
-    var tipo = (m.tipo || '').toLowerCase();
-    if (tipo === 'comprador' || tipo === 'buyer') tipoBadge = 'badge-green';
-    else if (tipo === 'fornecedor' || tipo === 'supplier') tipoBadge = 'badge-orange';
-    else if (tipo === 'seller') tipoBadge = 'badge-blue';
-    else if (tipo === 'originador') tipoBadge = 'badge-purple';
-    else if (tipo === 'mesa') tipoBadge = 'badge-red';
+
+    // tipo is now text[] — render multiple badges
+    var tipos = m.tipo || [];
+    if (!Array.isArray(tipos)) tipos = [tipos];
+    var tipoBadgesHtml = '';
+    for (var j = 0; j < tipos.length; j++) {
+      var t = (tipos[j] || '').toLowerCase();
+      var tbCls = 'badge-gray';
+      if (t === 'cliente' || t === 'comprador' || t === 'buyer') tbCls = 'badge-green';
+      else if (t === 'industria' || t === 'fornecedor' || t === 'supplier') tbCls = 'badge-orange';
+      else if (t === 'seller') tbCls = 'badge-blue';
+      else if (t === 'originador') tbCls = 'badge-purple';
+      else if (t === 'mesa') tbCls = 'badge-red';
+      tipoBadgesHtml += '<span class="badge ' + tbCls + '" style="margin-right:4px">' + (tipos[j] || '-') + '</span>';
+    }
+    if (!tipoBadgesHtml) tipoBadgesHtml = '<span class="badge badge-gray">-</span>';
 
     // Determine invite status
     var statusHtml = '';
@@ -1043,18 +1059,19 @@ function renderMembrosTable() {
       statusHtml = '<span class="badge badge-orange">Sem convite</span>';
     } else if (isPendente && hasEmail) {
       statusHtml = '<span class="badge badge-blue">Convite pendente</span>';
-      // Check if >48h since created
+      var razaoSocial = (m.razao_social || m.nome || '').replace(/'/g, "\\'");
       var horasCriado = (Date.now() - new Date(m.criado_em).getTime()) / (1000*60*60);
       if (horasCriado > 48) {
-        actionHtml = '<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="resendInvite(\'' + m.email + '\',\'' + (m.nome||'').replace(/'/g,"\\'") + '\')">Reenviar</button>';
+        actionHtml = '<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="resendInvite(\'' + m.email + '\',\'' + razaoSocial + '\')">Reenviar</button>';
       }
     } else {
       statusHtml = statusBadge(m.status);
     }
 
     html += '<tr>' +
-      '<td style="font-weight:600;color:#fff">' + (m.nome || m.name || '-') + '</td>' +
-      '<td><span class="badge ' + tipoBadge + '">' + (m.tipo || '-') + '</span></td>' +
+      '<td style="font-weight:600;color:#fff">' + (m.razao_social || m.nome || '-') + '</td>' +
+      '<td>' + (m.contato_nome || '<span style="color:var(--text4)">—</span>') + '</td>' +
+      '<td>' + tipoBadgesHtml + '</td>' +
       '<td>' + statusHtml + '</td>' +
       '<td style="font-size:11px">' + (m.email || '<span style="color:var(--text4)">—</span>') + '</td>' +
       '<td style="font-size:11px">' + (m.whatsapp || m.telefone || '<span style="color:var(--text4)">—</span>') + '</td>' +
@@ -1077,49 +1094,52 @@ async function loadFeed() {
   }
 
   try {
-    var results = await Promise.all([
-      _sb.from('ia_logs').select('*').order('criado_em', { ascending: false }).limit(20),
-      _sb.from('notificacoes_v2').select('*').order('criado_em', { ascending: false }).limit(20),
-      _sb.from('aprovacoes').select('*').order('criado_em', { ascending: false }).limit(20)
-    ]);
-
     var allItems = [];
 
-    // IA Logs
-    var logs = results[0].data || [];
-    for (var i = 0; i < logs.length; i++) {
-      allItems.push({
-        type: 'log',
-        time: logs[i].criado_em,
-        title: logs[i].agente || logs[i].agent || 'IA Agent',
-        desc: logs[i].acao || logs[i].action || logs[i].mensagem || logs[i].message || '-',
-        icon: '🤖'
-      });
-    }
+    // IA Logs — may not exist in new schema
+    try {
+      var logsRes = await _sb.from('ia_logs').select('*').order('criado_em', { ascending: false }).limit(20);
+      var logs = logsRes.data || [];
+      for (var i = 0; i < logs.length; i++) {
+        allItems.push({
+          type: 'log',
+          time: logs[i].criado_em,
+          title: logs[i].agente || logs[i].agent || 'IA Agent',
+          desc: logs[i].acao || logs[i].action || logs[i].mensagem || logs[i].message || '-',
+          icon: '🤖'
+        });
+      }
+    } catch (e) { /* table may not exist */ }
 
-    // Notificacoes
-    var notifs = results[1].data || [];
-    for (var i = 0; i < notifs.length; i++) {
-      allItems.push({
-        type: 'notif',
-        time: notifs[i].criado_em,
-        title: notifs[i].titulo || notifs[i].tipo || 'Notificacao',
-        desc: notifs[i].mensagem || notifs[i].descricao || '-',
-        icon: '🔔'
-      });
-    }
+    // Notificacoes — may not exist in new schema
+    try {
+      var notifsRes = await _sb.from('notificacoes_v2').select('*').order('criado_em', { ascending: false }).limit(20);
+      var notifs = notifsRes.data || [];
+      for (var i = 0; i < notifs.length; i++) {
+        allItems.push({
+          type: 'notif',
+          time: notifs[i].criado_em,
+          title: notifs[i].titulo || notifs[i].tipo || 'Notificacao',
+          desc: notifs[i].mensagem || notifs[i].descricao || '-',
+          icon: '🔔'
+        });
+      }
+    } catch (e) { /* table may not exist */ }
 
     // Aprovacoes
-    var aprovs = results[2].data || [];
-    for (var i = 0; i < aprovs.length; i++) {
-      allItems.push({
-        type: 'aprov',
-        time: aprovs[i].criado_em,
-        title: 'Aprovacao: ' + (aprovs[i].tipo || 'geral'),
-        desc: (aprovs[i].entidade_codigo || '') + ' - Status: ' + (aprovs[i].status || '-'),
-        icon: '✅'
-      });
-    }
+    try {
+      var aprovsRes = await _sb.from('aprovacoes_v2').select('*').order('criado_em', { ascending: false }).limit(20);
+      var aprovs = aprovsRes.data || [];
+      for (var i = 0; i < aprovs.length; i++) {
+        allItems.push({
+          type: 'aprov',
+          time: aprovs[i].criado_em,
+          title: 'Aprovacao: ' + (aprovs[i].tipo || 'geral'),
+          desc: (aprovs[i].entidade_codigo || '') + ' - Status: ' + (aprovs[i].status || '-'),
+          icon: '✅'
+        });
+      }
+    } catch (e) { /* silent */ }
 
     // Sort by time desc
     allItems.sort(function(a, b) {
@@ -1133,6 +1153,7 @@ async function loadFeed() {
       showEmpty(el, 'Nenhuma atividade recente.');
       return;
     }
+
 
     var html = '';
     for (var i = 0; i < allItems.length; i++) {
@@ -1162,13 +1183,13 @@ async function loadInteligencia() {
   showLoading(el);
 
   try {
-    var res = await _sb.from('demandas_v2').select('*');
+    var res = await _sb.from('oportunidades').select('*');
 
     if (res.error) { showError(el, 'Erro ao carregar inteligencia: ' + res.error.message); return; }
 
-    var demandas = res.data || [];
+    var oportunidades = res.data || [];
 
-    if (demandas.length === 0) {
+    if (oportunidades.length === 0) {
       showEmpty(el, 'Sem dados suficientes para analise.');
       return;
     }
@@ -1178,13 +1199,12 @@ async function loadInteligencia() {
     var regionCounts = {};
     var statusValues = {};
 
-    for (var i = 0; i < demandas.length; i++) {
-      var d = demandas[i];
-      var spec = d.especificacao || {};
-      var prodNome = spec.produto_nome || spec.produto || d.produto_nome || 'Desconhecido';
-      var regiao = spec.regiao || d.regiao || 'Desconhecida';
+    for (var i = 0; i < oportunidades.length; i++) {
+      var d = oportunidades[i];
+      var prodNome = d.produto_descricao || d.titulo || 'Desconhecido';
+      var regiao = d.regiao || 'Desconhecida';
       var status = d.status || 'nova';
-      var valor = Number(spec.potencial || spec.valor_estimado || d.valor_estimado || 0);
+      var valor = Number(d.preco_alvo || 0);
 
       productCounts[prodNome] = (productCounts[prodNome] || 0) + 1;
       regionCounts[regiao] = (regionCounts[regiao] || 0) + 1;
@@ -1231,7 +1251,7 @@ async function loadInteligencia() {
       html += '<div class="rank-item">' +
         '<div class="rank-pos ' + posClass + '">' + (i + 1) + '</div>' +
         '<div class="rank-name">' + p.name + '</div>' +
-        '<div class="rank-value">' + p.count + ' demandas</div>' +
+        '<div class="rank-value">' + p.count + ' oportunidades</div>' +
         '</div>';
     }
     html += '</div></div>';
@@ -1245,7 +1265,7 @@ async function loadInteligencia() {
       html += '<div class="rank-item">' +
         '<div class="rank-pos ' + posClass + '">' + (i + 1) + '</div>' +
         '<div class="rank-name">' + r.name + '</div>' +
-        '<div class="rank-value">' + r.count + ' demandas</div>' +
+        '<div class="rank-value">' + r.count + ' oportunidades</div>' +
         '</div>';
     }
     html += '</div></div>';
@@ -1276,12 +1296,31 @@ async function loadInteligencia() {
 // =============================================
 // INVITE SYSTEM
 // =============================================
-function openInviteModal() {
+async function openInviteModal() {
   document.getElementById('invite-nome').value = '';
+  document.getElementById('invite-contato').value = '';
   document.getElementById('invite-email').value = '';
   document.getElementById('invite-whatsapp').value = '';
   document.getElementById('invite-tipo').value = '';
   document.getElementById('invite-error').textContent = '';
+
+  // Load intermediarios dropdown
+  var intSelect = document.getElementById('invite-intermediario');
+  intSelect.innerHTML = '<option value="">Intermediario (opcional)</option>';
+  try {
+    var res = await _sb.from('players').select('id, razao_social, tipo');
+    var players = res.data || [];
+    for (var i = 0; i < players.length; i++) {
+      var p = players[i];
+      var tipos = p.tipo || [];
+      if (!Array.isArray(tipos)) tipos = [tipos];
+      var isSeller = tipos.some(function(t) { return t && (t.toLowerCase() === 'seller' || t.toLowerCase() === 'originador'); });
+      if (isSeller) {
+        intSelect.innerHTML += '<option value="' + p.id + '">' + (p.razao_social || 'Player #' + p.id) + '</option>';
+      }
+    }
+  } catch (e) { /* silent */ }
+
   document.getElementById('invite-modal').classList.add('open');
 }
 
@@ -1290,14 +1329,16 @@ function closeInviteModal() {
 }
 
 async function confirmInvite() {
-  var nome = document.getElementById('invite-nome').value.trim();
+  var razaoSocial = document.getElementById('invite-nome').value.trim();
+  var contatoNome = document.getElementById('invite-contato').value.trim();
   var email = document.getElementById('invite-email').value.trim();
   var whatsapp = document.getElementById('invite-whatsapp').value.trim();
   var tipo = document.getElementById('invite-tipo').value;
+  var intermediarioId = document.getElementById('invite-intermediario').value;
   var errEl = document.getElementById('invite-error');
 
-  if (!nome || !email || !tipo) {
-    errEl.textContent = 'Nome, email e tipo sao obrigatorios.';
+  if (!razaoSocial || !email || !tipo) {
+    errEl.textContent = 'Razao social, email e tipo sao obrigatorios.';
     return;
   }
 
@@ -1307,39 +1348,51 @@ async function confirmInvite() {
   errEl.textContent = '';
 
   try {
-    // 1. Insert member
-    var memberData = {
-      nome: nome,
+    // 1. Insert player — tipo is now text[]
+    var playerData = {
+      razao_social: razaoSocial,
+      contato_nome: contatoNome || null,
       email: email,
-      tipo: tipo,
+      tipo: [tipo],
       status: 'pendente',
       criado_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString()
     };
-    if (whatsapp) memberData.whatsapp = whatsapp;
+    if (whatsapp) playerData.whatsapp = whatsapp;
 
-    var { error: memberErr } = await _sb.from('members').insert(memberData);
-    if (memberErr) {
-      if (memberErr.message && memberErr.message.indexOf('duplicate') > -1) {
+    var insertRes = await _sb.from('players').insert(playerData).select('id');
+    if (insertRes.error) {
+      if (insertRes.error.message && insertRes.error.message.indexOf('duplicate') > -1) {
         errEl.textContent = 'Email ou WhatsApp ja cadastrado.';
       } else {
-        errEl.textContent = 'Erro ao criar membro: ' + memberErr.message;
+        errEl.textContent = 'Erro ao criar player: ' + insertRes.error.message;
       }
       btn.disabled = false;
       btn.textContent = 'Enviar Convite';
       return;
     }
 
-    // 2. Send invite email via Supabase Auth
+    // 2. Create vinculo if intermediario specified
+    if (intermediarioId && insertRes.data && insertRes.data.length > 0) {
+      var newPlayerId = insertRes.data[0].id;
+      try {
+        await _sb.from('vinculos').insert({
+          player_id: newPlayerId,
+          intermediario_id: intermediarioId,
+          criado_em: new Date().toISOString()
+        });
+      } catch (e) { /* vinculo creation is best-effort */ }
+    }
+
+    // 3. Send invite email via Supabase Auth
     var { error: inviteErr } = await _sb.auth.admin.inviteUserByEmail(email, {
       redirectTo: 'https://brazilfoodhub.com/entrar.html'
     });
 
     if (inviteErr) {
-      // Member created but invite failed — still show partial success
-      showToast('Membro criado, mas erro no envio do email: ' + inviteErr.message);
+      showToast('Player criado, mas erro no envio do email: ' + inviteErr.message);
     } else {
-      showToast('Convite enviado para ' + nome + '!');
+      showToast('Convite enviado para ' + razaoSocial + '!');
     }
 
     closeInviteModal();

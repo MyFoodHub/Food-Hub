@@ -18,17 +18,24 @@
     align-items: center;
     justify-content: center;
     padding: 24px 16px;
+    overflow-x: hidden;
   }
 
   .login-wrapper {
     width: 100%;
     max-width: 420px;
+    animation: fadeUp 0.6s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .logo {
     text-align: center;
-    margin-bottom: 8px;
-    font-size: 38px;
+    margin-bottom: 6px;
+    font-size: 42px;
     font-weight: 700;
     letter-spacing: -0.5px;
     user-select: none;
@@ -39,18 +46,19 @@
 
   .logo-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
     background: #00C8FF;
     border-radius: 50%;
     margin-left: 2px;
     vertical-align: super;
     animation: pulse-dot 2.4s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(0, 200, 255, 0.4);
   }
 
   @keyframes pulse-dot {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.35); }
+    0%, 100% { opacity: 0.4; transform: scale(1); box-shadow: 0 0 8px rgba(0, 200, 255, 0.2); }
+    50% { opacity: 1; transform: scale(1.4); box-shadow: 0 0 16px rgba(0, 200, 255, 0.6); }
   }
 
   .subtitle {
@@ -59,12 +67,22 @@
     font-size: 14px;
     font-weight: 500;
     letter-spacing: 0.5px;
-    margin-bottom: 40px;
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    text-align: center;
+    color: #3d4a63;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    margin-bottom: 36px;
+    font-style: italic;
   }
 
   .card {
     background: #080D18;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.055);
     border-radius: 16px;
     padding: 32px 28px;
   }
@@ -83,7 +101,7 @@
 
   .form-group input {
     width: 100%;
-    min-height: 48px;
+    height: 48px;
     padding: 0 16px;
     background: #0c1322;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -92,7 +110,7 @@
     font-family: inherit;
     font-size: 15px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
 
   .form-group input::placeholder {
@@ -101,6 +119,7 @@
 
   .form-group input:focus {
     border-color: #00C8FF;
+    box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.08);
   }
 
   .password-wrapper {
@@ -132,7 +151,7 @@
 
   .btn-entrar {
     width: 100%;
-    min-height: 48px;
+    height: 48px;
     margin-top: 8px;
     background: #00C8FF;
     color: #050810;
@@ -142,13 +161,18 @@
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
+    transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
     position: relative;
+    letter-spacing: 0.3px;
   }
 
-  .btn-entrar:hover { opacity: 0.9; }
+  .btn-entrar:hover {
+    opacity: 0.92;
+    box-shadow: 0 4px 20px rgba(0, 200, 255, 0.25);
+  }
+
   .btn-entrar:active { transform: scale(0.98); }
-  .btn-entrar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-entrar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
   .btn-text { transition: opacity 0.2s; }
   .btn-entrar.loading .btn-text { opacity: 0; }
@@ -168,6 +192,23 @@
   .btn-entrar.loading .spinner { display: block; }
 
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-phrase {
+    display: none;
+    text-align: center;
+    margin-top: 14px;
+    color: #3d4a63;
+    font-size: 13px;
+    font-style: italic;
+    animation: fadePulse 1.8s ease-in-out infinite;
+  }
+
+  .loading-phrase.visible { display: block; }
+
+  @keyframes fadePulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
 
   .error-msg {
     margin-top: 16px;
@@ -212,7 +253,16 @@
 
   @media (max-width: 400px) {
     .card { padding: 24px 20px; }
-    .logo { font-size: 32px; }
+    .logo { font-size: 34px; }
+  }
+
+  @media (min-width: 768px) {
+    .logo { font-size: 46px; }
+    .card { padding: 36px 32px; }
+  }
+
+  @media (min-width: 1200px) {
+    .login-wrapper { max-width: 440px; }
   }
 </style>
 </head>
@@ -223,6 +273,7 @@
     <span class="logo-food">Food</span><span class="logo-hub">Hub</span><span class="logo-dot"></span>
   </div>
   <div class="subtitle">Mesa Nacional de Oportunidades</div>
+  <div class="tagline">Acesso exclusivo. Apenas convidados.</div>
 
   <div class="card">
     <form id="loginForm" autocomplete="on">
@@ -234,7 +285,7 @@
         <label for="password">Senha</label>
         <div class="password-wrapper">
           <input type="password" id="password" name="password" placeholder="Sua senha" autocomplete="current-password" required>
-          <button type="button" class="eye-toggle" id="eyeToggle" onclick="togglePassword()">👁</button>
+          <button type="button" class="eye-toggle" id="eyeToggle" aria-label="Mostrar senha">&#128065;</button>
         </div>
       </div>
       <button type="submit" class="btn-entrar" id="btnEntrar">
@@ -243,8 +294,9 @@
       </button>
     </form>
 
+    <div class="loading-phrase" id="loadingPhrase">Sua mesa est&aacute; sendo preparada...</div>
     <div class="error-msg" id="errorMsg"></div>
-    <div class="reset-success" id="resetMsg">Link de recuperacao enviado para seu email.</div>
+    <div class="reset-success" id="resetMsg">Link de recupera&ccedil;&atilde;o enviado para seu email.</div>
 
     <a class="forgot-link" id="forgotLink">Esqueceu a senha?</a>
   </div>
@@ -252,12 +304,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  // Client para autenticação (anon key — seguro no frontend)
+  // Client para autenticacao (anon key)
   var _sb = supabase.createClient(
     'https://jqbuckofiaopxwllghac.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8'
   );
-  // Client admin para lookup de perfil (bypassa RLS)
+
+  // Client admin para lookup de player (bypassa RLS)
   var _sbAdmin = supabase.createClient(
     'https://jqbuckofiaopxwllghac.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo',
@@ -269,47 +322,66 @@
   var emailInput = document.getElementById('email');
   var passwordInput = document.getElementById('password');
   var eyeToggle = document.getElementById('eyeToggle');
+  var errorMsg = document.getElementById('errorMsg');
+  var resetMsg = document.getElementById('resetMsg');
+  var forgotLink = document.getElementById('forgotLink');
+  var loadingPhrase = document.getElementById('loadingPhrase');
 
   function togglePassword() {
     if (passwordInput.type === 'password') {
       passwordInput.type = 'text';
-      eyeToggle.textContent = '🙈';
+      eyeToggle.innerHTML = '&#128584;';
     } else {
       passwordInput.type = 'password';
-      eyeToggle.textContent = '👁';
+      eyeToggle.innerHTML = '&#128065;';
     }
   }
-  var errorMsg = document.getElementById('errorMsg');
-  var resetMsg = document.getElementById('resetMsg');
-  var forgotLink = document.getElementById('forgotLink');
 
-  var redirectMap = {
-    comprador: 'index.html',
-    fornecedor: 'industria.html',
-    seller: 'seller.html',
-    originador: 'originador.html',
-    mesa: 'mesa.html'
-  };
+  eyeToggle.addEventListener('click', togglePassword);
 
   function showError(msg) {
     errorMsg.textContent = msg;
     errorMsg.classList.add('visible');
     resetMsg.classList.remove('visible');
+    loadingPhrase.classList.remove('visible');
   }
 
   function clearMessages() {
     errorMsg.classList.remove('visible');
     resetMsg.classList.remove('visible');
+    loadingPhrase.classList.remove('visible');
   }
 
   function setLoading(state) {
     if (state) {
       btnEntrar.classList.add('loading');
       btnEntrar.disabled = true;
+      loadingPhrase.classList.add('visible');
     } else {
       btnEntrar.classList.remove('loading');
       btnEntrar.disabled = false;
+      loadingPhrase.classList.remove('visible');
     }
+  }
+
+  function resolveRedirect(tipo) {
+    // tipo is an array (players table) — check includes
+    if (Array.isArray(tipo)) {
+      if (tipo.indexOf('mesa') !== -1) return 'mesa.html';
+      if (tipo.indexOf('industria') !== -1) return 'vitrine.html';
+      if (tipo.indexOf('cliente') !== -1) return 'demandas.html';
+      if (tipo.indexOf('seller') !== -1 || tipo.indexOf('originador') !== -1) return 'carteira.html';
+      // Unknown tipo array — default
+      return 'demandas.html';
+    }
+    // tipo is a string (legacy members table)
+    if (typeof tipo === 'string') {
+      if (tipo === 'comprador') return 'demandas.html';
+      if (tipo === 'fornecedor') return 'vitrine.html';
+      if (tipo === 'mesa') return 'mesa.html';
+      return 'demandas.html';
+    }
+    return 'demandas.html';
   }
 
   form.addEventListener('submit', function(e) {
@@ -333,39 +405,58 @@
 
         var userEmail = authResult.data.user.email;
 
-        // Usar _sbAdmin para bypasear RLS na lookup de perfil
-        return _sbAdmin.from('members')
-          .select('tipo, status')
+        // Step 1: Lookup in players table
+        return _sbAdmin.from('players')
+          .select('id, tipo, status, contato_nome, razao_social')
           .eq('email', userEmail)
-          .eq('status', 'ativo')
           .single()
-          .then(function(memberResult) {
-            if (!memberResult.error && memberResult.data) {
+          .then(function(playerResult) {
+            if (!playerResult.error && playerResult.data) {
+              var player = playerResult.data;
+              player.email = userEmail;
+              sessionStorage.setItem('player', JSON.stringify(player));
+
+              var dest = resolveRedirect(player.tipo);
               setLoading(false);
-              var dest = redirectMap[memberResult.data.tipo];
-              if (dest) {
-                window.location.href = dest;
-              } else {
-                showError('Perfil nao reconhecido. Entre em contato com a mesa FoodHub.');
-              }
+              window.location.href = dest;
               return;
             }
 
-            // Fallback: buscar na tabela profiles antiga (compatibilidade com MVP)
-            return _sbAdmin.from('profiles')
-              .select('id, email')
+            // Step 2: Fallback to members table (legacy)
+            return _sbAdmin.from('members')
+              .select('tipo, status, nome, email')
               .eq('email', userEmail)
               .single()
-              .then(function(profileResult) {
-                setLoading(false);
+              .then(function(memberResult) {
+                if (!memberResult.error && memberResult.data) {
+                  var member = memberResult.data;
+                  sessionStorage.setItem('player', JSON.stringify(member));
 
-                // Se tem perfil antigo, mandar para comprador (default MVP)
-                if (!profileResult.error && profileResult.data) {
-                  window.location.href = 'index.html';
+                  var dest = resolveRedirect(member.tipo);
+                  setLoading(false);
+                  window.location.href = dest;
                   return;
                 }
 
-                showError('Acesso por convite apenas. Entre em contato com a mesa FoodHub.');
+                // Step 3: Fallback to profiles table (MVP compat)
+                return _sbAdmin.from('profiles')
+                  .select('id, email')
+                  .eq('email', userEmail)
+                  .single()
+                  .then(function(profileResult) {
+                    if (!profileResult.error && profileResult.data) {
+                      var profile = profileResult.data;
+                      sessionStorage.setItem('player', JSON.stringify(profile));
+
+                      setLoading(false);
+                      window.location.href = 'demandas.html';
+                      return;
+                    }
+
+                    // No record found anywhere
+                    setLoading(false);
+                    showError('Acesso exclusivo. Apenas convidados. Entre em contato com a mesa FoodHub.');
+                  });
               });
           });
       })

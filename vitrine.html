@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#050810">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>FoodHub · Vitrine</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#050810;color:#E0E8F0;font-family:'DM Sans',system-ui,sans-serif;font-size:14px;-webkit-tap-highlight-color:transparent}
+
+:root{
+  --bg:#050810;--card:#080D18;--card2:#0C1220;--card3:#101828;
+  --b0:rgba(255,255,255,.055);--b1:rgba(255,255,255,.08);--b2:rgba(255,255,255,.14);--b3:rgba(255,255,255,.22);
+  --w:#FFFFFF;--w2:#C8D0DC;--w3:#8892A4;--w4:#505868;--w5:#3A4258;
+  --ac:#00C8FF;--ac2:rgba(0,200,255,.09);--ac3:rgba(0,200,255,.22);
+  --gn:#00E09A;--gn2:rgba(0,224,154,.09);--gn3:rgba(0,224,154,.22);
+  --am:#F5A623;--am2:rgba(245,166,35,.09);--am3:rgba(245,166,35,.22);
+  --rd:#FF4060;--rd2:rgba(255,64,96,.09);--rd3:rgba(255,64,96,.22);
+  --pu:#9B7AFF;--pu2:rgba(155,122,255,.09);
+  --r:12px;
+}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:column;overflow:hidden}
+#app.on{display:flex}
+
+/* ── LOADING SCREEN ── */
+#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px}
+#loading-screen.hidden{display:none}
+.load-logo{font-size:28px;font-weight:800;color:var(--w)}
+.load-logo span{color:var(--ac)}
+.load-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 10px var(--ac);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+.load-text{font-size:13px;color:var(--w4);margin-top:8px}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#060A14;border-bottom:1px solid var(--b0);flex-shrink:0;z-index:20}
+.tb-logo{font-size:16px;font-weight:800;color:var(--w);display:flex;align-items:center;gap:6px}
+.tb-logo span{color:var(--ac)}
+.tb-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac)}
+.tb-badge{font-size:9px;background:var(--ac2);color:var(--ac);padding:2px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-name{font-size:12px;color:var(--w3);display:none}
+.tb-sair{background:transparent;border:1px solid var(--b2);color:var(--w3);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',system-ui;transition:all .15s}
+.tb-sair:hover{border-color:var(--rd);color:var(--rd)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;min-height:0}
+.main-area{flex:1;overflow-y:auto;padding:16px;padding-bottom:90px}
+
+/* ── SECTIONS ── */
+.section{display:none;animation:fadeIn .2s ease}
+.section.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#060A14;border-top:1px solid var(--b0);display:flex;align-items:center;justify-content:space-around;height:60px;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 8px;border-radius:8px;transition:all .15s;color:var(--w4);font-size:10px;font-weight:500;-webkit-tap-highlight-color:transparent;background:none;border:none;font-family:'DM Sans',system-ui}
+.bnav-item:hover,.bnav-item.on{color:var(--ac)}
+.bnav-item.on{background:var(--ac2)}
+.bnav-icon{font-size:20px;line-height:1}
+.bnav-lbl{font-size:9px;white-space:nowrap}
+
+/* ── SIDEBAR (desktop) ── */
+.sidebar{display:none}
+.sbar-sec{font-size:9px;color:var(--w4);text-transform:uppercase;letter-spacing:.1em;padding:12px 12px 4px;font-weight:600}
+.sbar-item{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;font-size:13px;color:var(--w3);cursor:pointer;transition:all .14s;border:1px solid transparent}
+.sbar-item:hover{background:var(--ac2);color:var(--w)}
+.sbar-item.on{background:var(--ac2);color:var(--ac);border-color:var(--ac3);font-weight:600}
+.sbar-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--b0);border-radius:var(--r);padding:14px}
+.kpi-lbl{font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:500}
+.kpi-val{font-size:22px;font-weight:800;color:var(--w);line-height:1.1}
+.kpi-sub{font-size:11px;color:var(--w4);margin-top:4px}
+.kpi-ac .kpi-val{color:var(--ac)}
+.kpi-gn .kpi-val{color:var(--gn)}
+.kpi-am .kpi-val{color:var(--am)}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.sh h2{font-size:16px;font-weight:700;color:var(--w)}
+.sh-sub{font-size:11px;color:var(--w3)}
+
+/* ── CARDS ── */
+.v-card{background:var(--card);border:1px solid var(--b0);border-radius:var(--r);padding:14px;margin-bottom:10px;transition:all .15s}
+.v-card:hover{border-color:var(--b2)}
+.v-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px}
+.v-card-title{font-size:14px;font-weight:600;color:var(--w);line-height:1.4}
+.v-card-desc{font-size:12px;color:var(--w2);line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.v-card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.b-ac{background:var(--ac2);color:var(--ac)}
+.b-gn{background:var(--gn2);color:var(--gn)}
+.b-am{background:var(--am2);color:var(--am)}
+.b-rd{background:var(--rd2);color:var(--rd)}
+.b-pu{background:var(--pu2);color:var(--pu)}
+.b-ghost{background:rgba(255,255,255,.06);color:var(--w3)}
+
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:600;background:rgba(255,255,255,.06);color:var(--w3);border:1px solid var(--b0)}
+
+/* ── STATUS BADGES ── */
+.st-ativa{background:var(--gn2);color:var(--gn);border:1px solid var(--gn3)}
+.st-aguardando{background:var(--am2);color:var(--am);border:1px solid var(--am3)}
+.st-enviada{background:var(--ac2);color:var(--ac);border:1px solid var(--ac3)}
+.st-aceita{background:var(--gn2);color:var(--gn);border:1px solid var(--gn3)}
+.st-recusada{background:var(--rd2);color:var(--rd);border:1px solid var(--rd3)}
+
+/* ── MATCH BAR ── */
+.match-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
+.match-lbl{font-size:10px;color:var(--w3);white-space:nowrap;min-width:42px}
+.match-track{flex:1;height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.match-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.match-pct{font-size:11px;font-weight:700;min-width:32px;text-align:right}
+
+/* ── BUTTONS ── */
+.btn{border:none;border-radius:9px;padding:10px 20px;font-family:'DM Sans',system-ui;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-ac{background:var(--ac);color:#000}
+.btn-ac:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-gn{background:var(--gn);color:#000}
+.btn-gn:hover{filter:brightness(1.1)}
+.btn-gh{background:transparent;color:var(--w3);border:1px solid var(--b2);padding:10px 20px;border-radius:9px;font-size:13px;cursor:pointer;font-family:'DM Sans',system-ui;transition:all .13s}
+.btn-gh:hover{background:var(--card2);color:var(--w)}
+.btn-sm{padding:6px 14px;font-size:11px}
+.btn-full{width:100%;justify-content:center}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:76px;right:16px;background:var(--ac);color:#000;border:none;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;z-index:25;box-shadow:0 4px 20px rgba(0,200,255,.3);display:none;align-items:center;gap:7px;font-family:'DM Sans',system-ui;transition:all .2s}
+.fab:hover{transform:scale(1.05);filter:brightness(1.1)}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--ac3);border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:700;color:var(--w);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;color:var(--w3);font-size:18px;cursor:pointer;padding:4px;transition:color .15s}
+.modal-close:hover{color:var(--rd)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--w3);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{width:100%;background:var(--card2);border:1px solid var(--b0);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--w);outline:none;font-family:'DM Sans',system-ui;transition:border .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--ac)}
+.field textarea{resize:vertical;min-height:100px;line-height:1.5}
+.field input::placeholder,.field textarea::placeholder{color:var(--w5)}
+.field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.modal-btns{display:flex;gap:10px;margin-top:18px}
+.modal-msg{font-size:12px;margin-top:10px;padding:8px 12px;border-radius:8px;display:none}
+.modal-msg.err{display:block;background:var(--rd2);color:var(--rd);border:1px solid var(--rd3)}
+.modal-msg.ok{display:block;background:var(--gn2);color:var(--gn);border:1px solid var(--gn3)}
+
+/* ── CHECKBOX GROUP ── */
+.chk-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chk-item{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--w2)}
+.chk-item input[type=checkbox]{accent-color:var(--ac);width:16px;height:16px;cursor:pointer}
+
+/* ── EMPTY / LOADING STATE ── */
+.state-msg{text-align:center;padding:40px 20px;color:var(--w4);font-size:13px}
+.state-msg .state-icon{font-size:36px;margin-bottom:12px;opacity:.4}
+
+/* ── DEAL DETAIL ── */
+.detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b0);font-size:13px}
+.detail-row:last-child{border:none}
+.detail-lbl{color:var(--w3)}
+.detail-val{color:var(--w);font-weight:500;text-align:right}
+
+/* ── PROFILE ── */
+.prof-field{margin-bottom:14px}
+.prof-label{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.prof-value{font-size:14px;color:var(--w);font-weight:500}
+.prof-input{width:100%;background:var(--card2);border:1px solid var(--b0);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--w);outline:none;font-family:'DM Sans',system-ui}
+.prof-input:focus{border-color:var(--ac)}
+
+/* ── DESKTOP ── */
+@media(min-width:769px){
+  .bnav{display:none !important}
+  .sidebar{display:flex !important;flex-direction:column;width:210px;background:#060A14;border-right:1px solid var(--b0);padding:14px 10px;flex-shrink:0;gap:2px;overflow-y:auto}
+  .tb-name{display:inline}
+  .main-area{padding:24px 28px;padding-bottom:24px}
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .fab{bottom:24px;right:28px}
+  .topbar{padding:10px 24px}
+  .oport-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:1100px){
+  .oport-grid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ── GRID ── */
+.oport-grid{display:grid;grid-template-columns:1fr;gap:10px}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADING SCREEN ═══ -->
+<div id="loading-screen">
+  <div class="load-logo">Food<span>Hub</span></div>
+  <div class="load-dot"></div>
+  <div class="load-text">Buscando os melhores negocios para voce...</div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">Food<span>Hub</span> <span class="tb-dot"></span> <span class="tb-badge">VITRINE</span></div>
+    <div class="tb-right">
+      <span class="tb-name" id="tb-ind-name"></span>
+      <button class="tb-sair" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+
+    <!-- DESKTOP SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sbar-sec">Menu</div>
+      <div class="sbar-item on" onclick="goTab('vitrine')"><span class="sbar-icon">&#x1F3EA;</span>Vitrine</div>
+      <div class="sbar-item" onclick="goTab('oportunidades')"><span class="sbar-icon">&#x1F4CB;</span>Oportunidades</div>
+      <div class="sbar-item" onclick="goTab('propostas')"><span class="sbar-icon">&#x1F4E4;</span>Propostas</div>
+      <div class="sbar-item" onclick="goTab('deals')"><span class="sbar-icon">&#x1F91D;</span>Deals</div>
+      <div class="sbar-item" onclick="goTab('perfil')"><span class="sbar-icon">&#x1F464;</span>Perfil</div>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="main-area" id="main-area">
+
+      <!-- ═══ VITRINE (Meus Produtos) ═══ -->
+      <div class="section on" id="sec-vitrine">
+        <div class="sh">
+          <h2>Meus Produtos</h2>
+          <span class="sh-sub" id="prod-count"></span>
+        </div>
+        <div id="prod-list">
+          <div class="state-msg"><div class="state-icon">&#x1F4E6;</div>Buscando os melhores negocios para voce...</div>
+        </div>
+      </div>
+
+      <!-- ═══ OPORTUNIDADES ═══ -->
+      <div class="section" id="sec-oportunidades">
+        <div class="sh">
+          <h2>Oportunidades</h2>
+          <span class="sh-sub">Demandas compativeis com seus produtos</span>
+        </div>
+        <div id="oport-list">
+          <div class="state-msg"><div class="state-icon">&#x1F4CB;</div>Buscando os melhores negocios para voce...</div>
+        </div>
+      </div>
+
+      <!-- ═══ PROPOSTAS ENVIADAS ═══ -->
+      <div class="section" id="sec-propostas">
+        <div class="sh">
+          <h2>Propostas Enviadas</h2>
+          <span class="sh-sub" id="prop-count"></span>
+        </div>
+        <div id="prop-list">
+          <div class="state-msg"><div class="state-icon">&#x1F4E4;</div>Buscando os melhores negocios para voce...</div>
+        </div>
+      </div>
+
+      <!-- ═══ DEALS ═══ -->
+      <div class="section" id="sec-deals">
+        <div class="sh">
+          <h2>Deals</h2>
+          <span class="sh-sub" id="deal-count"></span>
+        </div>
+        <div id="deal-list">
+          <div class="state-msg"><div class="state-icon">&#x1F91D;</div>Buscando os melhores negocios para voce...</div>
+        </div>
+      </div>
+
+      <!-- ═══ PERFIL ═══ -->
+      <div class="section" id="sec-perfil">
+        <div class="sh"><h2>Meu Perfil</h2></div>
+        <div class="v-card" id="perfil-card">
+          <div class="state-msg">Carregando...</div>
+        </div>
+        <div class="sh" style="margin-top:16px"><h2>Estatisticas</h2></div>
+        <div class="kpi-grid" id="perfil-stats">
+          <div class="kpi kpi-ac"><div class="kpi-lbl">Produtos</div><div class="kpi-val" id="stat-prods">--</div></div>
+          <div class="kpi kpi-am"><div class="kpi-lbl">Propostas</div><div class="kpi-val" id="stat-props">--</div></div>
+          <div class="kpi kpi-gn"><div class="kpi-lbl">Deals Fechados</div><div class="kpi-val" id="stat-deals">--</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM NAV (MOBILE) ═══ -->
+<nav class="bnav" id="bnav" style="display:none">
+  <button class="bnav-item on" onclick="goTab('vitrine')"><span class="bnav-icon">&#x1F3EA;</span><span class="bnav-lbl">Vitrine</span></button>
+  <button class="bnav-item" onclick="goTab('oportunidades')"><span class="bnav-icon">&#x1F4CB;</span><span class="bnav-lbl">Oportunidades</span></button>
+  <button class="bnav-item" onclick="goTab('propostas')"><span class="bnav-icon">&#x1F4E4;</span><span class="bnav-lbl">Propostas</span></button>
+  <button class="bnav-item" onclick="goTab('deals')"><span class="bnav-icon">&#x1F91D;</span><span class="bnav-lbl">Deals</span></button>
+  <button class="bnav-item" onclick="goTab('perfil')"><span class="bnav-icon">&#x1F464;</span><span class="bnav-lbl">Perfil</span></button>
+</nav>
+
+<!-- ═══ FAB ═══ -->
+<button class="fab" id="fab-produto" onclick="openCadastro()">+ Cadastrar Produto</button>
+
+<!-- ═══ MODAL: CADASTRAR PRODUTO ═══ -->
+<div class="modal-bg" id="modal-cadastro" onclick="if(event.target===this)closeCadastro()">
+  <div class="modal">
+    <h3>Cadastrar Produto <button class="modal-close" onclick="closeCadastro()">&times;</button></h3>
+    <div class="field">
+      <label>Descreva seu produto como quiser</label>
+      <textarea id="cad-descricao" rows="5" placeholder="Ex: Frango inteiro congelado, embalagem de 18kg, SIF, entrega para SP e RJ. Lote minimo 500 caixas. Preco competitivo para food service."></textarea>
+    </div>
+    <div class="field">
+      <label>Regioes de atendimento (opcional)</label>
+      <div class="chk-group" id="cad-regioes">
+        <label class="chk-item"><input type="checkbox" value="Norte"> Norte</label>
+        <label class="chk-item"><input type="checkbox" value="Nordeste"> Nordeste</label>
+        <label class="chk-item"><input type="checkbox" value="Centro-Oeste"> Centro-Oeste</label>
+        <label class="chk-item"><input type="checkbox" value="Sudeste" checked> Sudeste</label>
+        <label class="chk-item"><input type="checkbox" value="Sul"> Sul</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Frete (opcional)</label>
+      <div class="chk-group" id="cad-frete">
+        <label class="chk-item"><input type="checkbox" value="CIF"> CIF (incluso)</label>
+        <label class="chk-item"><input type="checkbox" value="FOB"> FOB (por conta do comprador)</label>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ac" style="flex:1" onclick="enviarProduto()">Cadastrar</button>
+      <button class="btn-gh" onclick="closeCadastro()">Cancelar</button>
+    </div>
+    <div class="modal-msg" id="cad-msg"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: ENVIAR PROPOSTA ═══ -->
+<div class="modal-bg" id="modal-proposta" onclick="if(event.target===this)closeProposta()">
+  <div class="modal">
+    <h3>Enviar Proposta <button class="modal-close" onclick="closeProposta()">&times;</button></h3>
+    <input type="hidden" id="prop-oport-id">
+    <div id="prop-oport-info" style="margin-bottom:14px;padding:10px;background:var(--card2);border-radius:8px;font-size:12px;color:var(--w2)"></div>
+    <div class="field">
+      <label>Preco (R$)</label>
+      <input type="number" id="prop-preco" placeholder="Ex: 12.50" step="0.01" min="0">
+    </div>
+    <div class="field">
+      <label>Volume</label>
+      <input type="text" id="prop-volume" placeholder="Ex: 500 caixas">
+    </div>
+    <div class="field">
+      <label>Prazo de entrega</label>
+      <input type="text" id="prop-prazo" placeholder="Ex: 7 dias uteis">
+    </div>
+    <div class="field">
+      <label>Condicao de pagamento</label>
+      <input type="text" id="prop-pagamento" placeholder="Ex: 30/60 dias">
+    </div>
+    <div class="field">
+      <label>Frete</label>
+      <select id="prop-frete">
+        <option value="CIF">CIF (incluso no preco)</option>
+        <option value="FOB">FOB (por conta do comprador)</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-gn" style="flex:1" onclick="enviarProposta()">Enviar Proposta</button>
+      <button class="btn-gh" onclick="closeProposta()">Cancelar</button>
+    </div>
+    <div class="modal-msg" id="prop-msg"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: DEAL DETAIL ═══ -->
+<div class="modal-bg" id="modal-deal" onclick="if(event.target===this)closeDeal()">
+  <div class="modal" style="max-width:540px">
+    <h3>Detalhes do Deal <button class="modal-close" onclick="closeDeal()">&times;</button></h3>
+    <div id="deal-detail-content">
+      <div class="state-msg">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   SUPABASE CONFIG
+   ═══════════════════════════════════════════ */
+var _sb = supabase.createClient(
+  'https://jqbuckofiaopxwllghac.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+);
+
+var _player = null;
+var _currentTab = 'vitrine';
+var _myProducts = [];
+var _tabs = ['vitrine', 'oportunidades', 'propostas', 'deals', 'perfil'];
+
+/* ═══════════════════════════════════════════
+   AUTH — sessionStorage check
+   ═══════════════════════════════════════════ */
+function checkAuth() {
+  try {
+    var raw = sessionStorage.getItem('player');
+    if (!raw) {
+      window.location.href = 'entrar.html';
+      return false;
+    }
+    var player = JSON.parse(raw);
+    var tipo = player.tipo || '';
+    if (tipo.indexOf('industria') === -1) {
+      window.location.href = 'entrar.html';
+      return false;
+    }
+    _player = player;
+    return true;
+  } catch (e) {
+    window.location.href = 'entrar.html';
+    return false;
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('player');
+  window.location.href = 'entrar.html';
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════ */
+function initApp() {
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('on');
+  document.getElementById('bnav').style.display = 'flex';
+  document.getElementById('fab-produto').style.display = 'flex';
+
+  var nome = _player.razao_social || _player.nome || _player.email || 'Industria';
+  document.getElementById('tb-ind-name').textContent = nome;
+  document.title = 'FoodHub · Vitrine — ' + nome;
+
+  loadAll();
+}
+
+/* ═══════════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════════ */
+function goTab(tab) {
+  _currentTab = tab;
+  var secs = document.querySelectorAll('.section');
+  for (var i = 0; i < secs.length; i++) secs[i].classList.remove('on');
+  document.getElementById('sec-' + tab).classList.add('on');
+
+  // bottom nav
+  var bItems = document.querySelectorAll('.bnav-item');
+  for (var i = 0; i < bItems.length; i++) bItems[i].classList.remove('on');
+  var idx = _tabs.indexOf(tab);
+  if (idx >= 0 && bItems[idx]) bItems[idx].classList.add('on');
+
+  // sidebar
+  var sItems = document.querySelectorAll('.sbar-item');
+  for (var i = 0; i < sItems.length; i++) sItems[i].classList.remove('on');
+  if (idx >= 0 && sItems[idx]) sItems[idx].classList.add('on');
+
+  // FAB visibility
+  var fab = document.getElementById('fab-produto');
+  fab.style.display = (tab === 'vitrine') ? 'flex' : 'none';
+}
+
+/* ═══════════════════════════════════════════
+   LOAD ALL DATA
+   ═══════════════════════════════════════════ */
+async function loadAll() {
+  await loadProdutos();
+  loadOportunidades();
+  loadPropostas();
+  loadDeals();
+  loadPerfil();
+}
+
+/* ═══════════════════════════════════════════
+   1. VITRINE — MEUS PRODUTOS
+   ═══════════════════════════════════════════ */
+async function loadProdutos() {
+  var container = document.getElementById('prod-list');
+  container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4E6;</div>Buscando os melhores negocios para voce...</div>';
+
+  var { data, error } = await _sb
+    .from('produtos_v2')
+    .select('*')
+    .eq('industria_id', _player.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar produtos: ' + error.message + '</div>';
+    return;
+  }
+
+  _myProducts = data || [];
+  document.getElementById('prod-count').textContent = _myProducts.length + ' produto(s)';
+  document.getElementById('stat-prods').textContent = _myProducts.length;
+
+  if (!_myProducts.length) {
+    container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4E6;</div>Nenhum produto cadastrado ainda.<br>Clique em <b>Cadastrar Produto</b> para comecar.</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < _myProducts.length; i++) {
+    var p = _myProducts[i];
+    var statusClass = getStatusClass(p.status);
+    var statusLabel = formatStatus(p.status);
+    var regioes = (p.regioes && p.regioes.length) ? p.regioes.join(', ') : '—';
+    var frete = (p.frete && p.frete.length) ? p.frete.join(' / ') : '—';
+    var categoria = p.categoria || '';
+    var tags = p.tags || [];
+    var desc = p.descricao_livre || '(sem descricao)';
+
+    html += '<div class="v-card">';
+    html += '<div class="v-card-header">';
+    html += '<div style="flex:1">';
+    if (categoria) html += '<span class="badge b-pu" style="margin-bottom:6px;display:inline-block">' + esc(categoria) + '</span> ';
+    html += '<span class="badge ' + statusClass + '">' + statusLabel + '</span>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="v-card-desc">' + esc(desc) + '</div>';
+
+    if (tags.length) {
+      html += '<div class="v-card-meta" style="margin-bottom:6px">';
+      for (var t = 0; t < tags.length; t++) {
+        html += '<span class="pill">' + esc(tags[t]) + '</span>';
+      }
+      html += '</div>';
+    }
+
+    html += '<div class="v-card-meta">';
+    html += '<span style="font-size:11px;color:var(--w3)">&#x1F4CD; ' + esc(regioes) + '</span>';
+    html += '<span style="font-size:11px;color:var(--w3)">&#x1F69A; ' + esc(frete) + '</span>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════
+   2. OPORTUNIDADES
+   ═══════════════════════════════════════════ */
+async function loadOportunidades() {
+  var container = document.getElementById('oport-list');
+  container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4CB;</div>Buscando os melhores negocios para voce...</div>';
+
+  var { data, error } = await _sb
+    .from('oportunidades')
+    .select('*')
+    .eq('status', 'ativa')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar oportunidades: ' + error.message + '</div>';
+    return;
+  }
+
+  var oports = data || [];
+
+  if (!oports.length) {
+    container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4CB;</div>Nenhuma oportunidade ativa no momento.</div>';
+    return;
+  }
+
+  // Collect all my product tags for matching
+  var myTags = [];
+  for (var i = 0; i < _myProducts.length; i++) {
+    var pt = _myProducts[i].tags || [];
+    for (var j = 0; j < pt.length; j++) {
+      if (myTags.indexOf(pt[j].toLowerCase()) === -1) {
+        myTags.push(pt[j].toLowerCase());
+      }
+    }
+  }
+
+  // Calculate match scores
+  for (var i = 0; i < oports.length; i++) {
+    var o = oports[i];
+    var oTags = o.tags || [];
+    if (!oTags.length || !myTags.length) {
+      o._score = 0;
+    } else {
+      var matches = 0;
+      for (var j = 0; j < oTags.length; j++) {
+        if (myTags.indexOf(oTags[j].toLowerCase()) !== -1) matches++;
+      }
+      o._score = Math.round((matches / oTags.length) * 100);
+    }
+  }
+
+  // Sort by score DESC
+  oports.sort(function(a, b) { return b._score - a._score; });
+
+  var html = '<div class="oport-grid">';
+  for (var i = 0; i < oports.length; i++) {
+    var o = oports[i];
+    var score = o._score;
+    var scoreColor = score >= 70 ? 'var(--gn)' : score >= 40 ? 'var(--am)' : 'var(--w4)';
+    var desc = o.produto_descricao || o.descricao || '(sem descricao)';
+    var volume = o.volume || '—';
+    var regiao = o.regiao || (o.regioes ? (o.regioes.join ? o.regioes.join(', ') : o.regioes) : '—');
+    var frete = o.frete || '—';
+    var precoAlvo = o.preco_alvo ? formatMoney(o.preco_alvo) : '—';
+
+    html += '<div class="v-card">';
+    html += '<div class="v-card-desc" style="-webkit-line-clamp:2;font-size:13px;font-weight:600;color:var(--w);margin-bottom:6px">' + esc(desc) + '</div>';
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px;color:var(--w3);margin-bottom:8px">';
+    html += '<div>&#x1F4E6; Volume: <span style="color:var(--w2)">' + esc(volume) + '</span></div>';
+    html += '<div>&#x1F4CD; Regiao: <span style="color:var(--w2)">' + esc(regiao) + '</span></div>';
+    html += '<div>&#x1F69A; Frete: <span style="color:var(--w2)">' + esc(frete) + '</span></div>';
+    html += '<div>&#x1F4B0; Alvo: <span style="color:var(--w2)">' + esc(precoAlvo) + '</span></div>';
+    html += '</div>';
+
+    // Match bar
+    html += '<div class="match-wrap">';
+    html += '<span class="match-lbl">Match</span>';
+    html += '<div class="match-track"><div class="match-fill" style="width:' + score + '%;background:' + scoreColor + '"></div></div>';
+    html += '<span class="match-pct" style="color:' + scoreColor + '">' + score + '%</span>';
+    html += '</div>';
+
+    html += '<div style="margin-top:10px;text-align:right">';
+    html += '<button class="btn btn-gn btn-sm" onclick="openProposta(\'' + o.id + '\',this)">Enviar Proposta</button>';
+    html += '</div>';
+
+    html += '</div>';
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════
+   3. PROPOSTAS ENVIADAS
+   ═══════════════════════════════════════════ */
+async function loadPropostas() {
+  var container = document.getElementById('prop-list');
+  container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4E4;</div>Buscando os melhores negocios para voce...</div>';
+
+  var { data, error } = await _sb
+    .from('propostas_v3')
+    .select('*, oportunidades(*)')
+    .eq('industria_id', _player.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar propostas: ' + error.message + '</div>';
+    return;
+  }
+
+  var props = data || [];
+  document.getElementById('prop-count').textContent = props.length + ' proposta(s)';
+  document.getElementById('stat-props').textContent = props.length;
+
+  if (!props.length) {
+    container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4E4;</div>Nenhuma proposta enviada ainda.<br>Acesse <b>Oportunidades</b> para encontrar demandas compativeis.</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < props.length; i++) {
+    var pr = props[i];
+    var op = pr.oportunidades || {};
+    var opDesc = op.produto_descricao || op.descricao || 'Oportunidade #' + (pr.oportunidade_id || '').substring(0, 8);
+    var statusClass = getPropostaStatusClass(pr.status);
+    var statusLabel = formatStatus(pr.status);
+    var preco = pr.preco ? formatMoney(pr.preco) : '—';
+
+    html += '<div class="v-card">';
+    html += '<div class="v-card-header">';
+    html += '<div class="v-card-title" style="flex:1">' + esc(opDesc) + '</div>';
+    html += '<span class="badge ' + statusClass + '">' + statusLabel + '</span>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;font-size:12px;color:var(--w3)">';
+    html += '<span>Preco: <b style="color:var(--w)">' + esc(preco) + '</b></span>';
+    if (pr.volume) html += '<span>Volume: <b style="color:var(--w)">' + esc(pr.volume) + '</b></span>';
+    if (pr.prazo) html += '<span>Prazo: <b style="color:var(--w)">' + esc(pr.prazo) + '</b></span>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════
+   4. DEALS
+   ═══════════════════════════════════════════ */
+async function loadDeals() {
+  var container = document.getElementById('deal-list');
+  container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F91D;</div>Buscando os melhores negocios para voce...</div>';
+
+  var { data, error } = await _sb
+    .from('deals')
+    .select('*')
+    .eq('industria_id', _player.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar deals: ' + error.message + '</div>';
+    return;
+  }
+
+  var deals = data || [];
+  document.getElementById('deal-count').textContent = deals.length + ' deal(s)';
+  document.getElementById('stat-deals').textContent = deals.length;
+
+  if (!deals.length) {
+    container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F91D;</div>Nenhum deal fechado ainda.</div>';
+    return;
+  }
+
+  // Gather client IDs
+  var clientIds = [];
+  for (var i = 0; i < deals.length; i++) {
+    var cid = deals[i].cliente_id || deals[i].comprador_id;
+    if (cid && clientIds.indexOf(cid) === -1) clientIds.push(cid);
+  }
+
+  // Fetch client names
+  var clientMap = {};
+  if (clientIds.length) {
+    var { data: clients } = await _sb
+      .from('players')
+      .select('id, razao_social, nome, email')
+      .in('id', clientIds);
+    if (clients) {
+      for (var i = 0; i < clients.length; i++) {
+        clientMap[clients[i].id] = clients[i].razao_social || clients[i].nome || clients[i].email || '—';
+      }
+    }
+  }
+
+  var html = '';
+  for (var i = 0; i < deals.length; i++) {
+    var d = deals[i];
+    var cid = d.cliente_id || d.comprador_id;
+    var clientName = clientMap[cid] || '—';
+    var codigo = d.codigo || d.id.substring(0, 8).toUpperCase();
+    var produto = d.produto || d.produto_descricao || '—';
+    var valor = d.valor ? formatMoney(d.valor) : '—';
+    var statusClass = getDealStatusClass(d.status);
+    var statusLabel = formatStatus(d.status);
+
+    html += '<div class="v-card" style="cursor:pointer" onclick="openDealDetail(\'' + d.id + '\')">';
+    html += '<div class="v-card-header">';
+    html += '<div>';
+    html += '<div style="font-size:10px;color:var(--w4);margin-bottom:2px">#' + esc(codigo) + '</div>';
+    html += '<div class="v-card-title">' + esc(produto) + '</div>';
+    html += '</div>';
+    html += '<span class="badge ' + statusClass + '">' + statusLabel + '</span>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;font-size:12px;color:var(--w3)">';
+    html += '<span>Cliente: <b style="color:var(--w)">' + esc(clientName) + '</b></span>';
+    html += '<span>Valor: <b style="color:var(--gn)">' + esc(valor) + '</b></span>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════
+   5. PERFIL
+   ═══════════════════════════════════════════ */
+function loadPerfil() {
+  var card = document.getElementById('perfil-card');
+  var p = _player;
+
+  var html = '';
+  html += '<div class="prof-field"><div class="prof-label">Razao Social</div><div class="prof-value">' + esc(p.razao_social || '—') + '</div></div>';
+  html += '<div class="prof-field"><div class="prof-label">CNPJ</div><div class="prof-value">' + esc(p.cnpj || '—') + '</div></div>';
+  html += '<div class="prof-field"><div class="prof-label">Email</div><div class="prof-value">' + esc(p.email || '—') + '</div></div>';
+
+  html += '<div style="border-top:1px solid var(--b0);margin:14px 0;padding-top:14px">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--w);margin-bottom:12px">Editar contato</div>';
+
+  html += '<div class="prof-field">';
+  html += '<div class="prof-label">Nome do contato</div>';
+  html += '<input class="prof-input" id="edit-contato" value="' + esc(p.contato_nome || '') + '" placeholder="Nome do responsavel">';
+  html += '</div>';
+
+  html += '<div class="prof-field">';
+  html += '<div class="prof-label">WhatsApp</div>';
+  html += '<input class="prof-input" id="edit-whatsapp" value="' + esc(p.whatsapp || '') + '" placeholder="(11) 99999-9999">';
+  html += '</div>';
+
+  html += '<button class="btn btn-ac btn-sm" onclick="salvarPerfil()">Salvar alteracoes</button>';
+  html += '<span id="perfil-msg" style="font-size:12px;margin-left:12px;display:none"></span>';
+  html += '</div>';
+
+  card.innerHTML = html;
+}
+
+async function salvarPerfil() {
+  var contato = document.getElementById('edit-contato').value.trim();
+  var whatsapp = document.getElementById('edit-whatsapp').value.trim();
+  var msgEl = document.getElementById('perfil-msg');
+
+  var { error } = await _sb
+    .from('players')
+    .update({ contato_nome: contato, whatsapp: whatsapp })
+    .eq('id', _player.id);
+
+  if (error) {
+    msgEl.style.display = 'inline';
+    msgEl.style.color = 'var(--rd)';
+    msgEl.textContent = 'Erro: ' + error.message;
+    return;
+  }
+
+  _player.contato_nome = contato;
+  _player.whatsapp = whatsapp;
+  sessionStorage.setItem('player', JSON.stringify(_player));
+
+  msgEl.style.display = 'inline';
+  msgEl.style.color = 'var(--gn)';
+  msgEl.textContent = 'Salvo!';
+  setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
+}
+
+/* ═══════════════════════════════════════════
+   MODAL: CADASTRAR PRODUTO
+   ═══════════════════════════════════════════ */
+function openCadastro() {
+  document.getElementById('modal-cadastro').classList.add('show');
+  document.getElementById('cad-descricao').value = '';
+  hideCadMsg();
+}
+
+function closeCadastro() {
+  document.getElementById('modal-cadastro').classList.remove('show');
+}
+
+function hideCadMsg() {
+  var m = document.getElementById('cad-msg');
+  m.style.display = 'none';
+  m.className = 'modal-msg';
+  m.textContent = '';
+}
+
+async function enviarProduto() {
+  var descricao = document.getElementById('cad-descricao').value.trim();
+  var msgEl = document.getElementById('cad-msg');
+
+  if (!descricao) {
+    msgEl.className = 'modal-msg err';
+    msgEl.style.display = 'block';
+    msgEl.textContent = 'Por favor, descreva seu produto.';
+    return;
+  }
+
+  // Gather regioes
+  var regioes = [];
+  var regChecks = document.querySelectorAll('#cad-regioes input[type=checkbox]:checked');
+  for (var i = 0; i < regChecks.length; i++) regioes.push(regChecks[i].value);
+
+  // Gather frete
+  var frete = [];
+  var freteChecks = document.querySelectorAll('#cad-frete input[type=checkbox]:checked');
+  for (var i = 0; i < freteChecks.length; i++) frete.push(freteChecks[i].value);
+
+  var payload = {
+    industria_id: _player.id,
+    descricao_livre: descricao,
+    status: 'aguardando_aprovacao',
+    regioes: regioes.length ? regioes : null,
+    frete: frete.length ? frete : null
+  };
+
+  var { error } = await _sb.from('produtos_v2').insert(payload);
+
+  if (error) {
+    msgEl.className = 'modal-msg err';
+    msgEl.style.display = 'block';
+    msgEl.textContent = 'Erro ao cadastrar: ' + error.message;
+    return;
+  }
+
+  msgEl.className = 'modal-msg ok';
+  msgEl.style.display = 'block';
+  msgEl.textContent = 'Produto cadastrado! Aguardando aprovacao da mesa.';
+
+  setTimeout(function() {
+    closeCadastro();
+    loadProdutos();
+  }, 1500);
+}
+
+/* ═══════════════════════════════════════════
+   MODAL: ENVIAR PROPOSTA
+   ═══════════════════════════════════════════ */
+var _currentOportData = null;
+
+function openProposta(oportId, btnEl) {
+  // Find oportunidade data from the card
+  document.getElementById('prop-oport-id').value = oportId;
+  document.getElementById('prop-preco').value = '';
+  document.getElementById('prop-volume').value = '';
+  document.getElementById('prop-prazo').value = '';
+  document.getElementById('prop-pagamento').value = '';
+  hidePropMsg();
+
+  // Try to show oportunidade info
+  _sb.from('oportunidades').select('*').eq('id', oportId).single().then(function(res) {
+    var o = res.data;
+    if (o) {
+      var info = '<b>' + esc(o.produto_descricao || o.descricao || 'Oportunidade') + '</b>';
+      if (o.volume) info += ' &middot; ' + esc(o.volume);
+      if (o.preco_alvo) info += ' &middot; Alvo: ' + formatMoney(o.preco_alvo);
+      document.getElementById('prop-oport-info').innerHTML = info;
+    }
+  });
+
+  document.getElementById('modal-proposta').classList.add('show');
+}
+
+function closeProposta() {
+  document.getElementById('modal-proposta').classList.remove('show');
+}
+
+function hidePropMsg() {
+  var m = document.getElementById('prop-msg');
+  m.style.display = 'none';
+  m.className = 'modal-msg';
+}
+
+async function enviarProposta() {
+  var oportId = document.getElementById('prop-oport-id').value;
+  var preco = parseFloat(document.getElementById('prop-preco').value);
+  var volume = document.getElementById('prop-volume').value.trim();
+  var prazo = document.getElementById('prop-prazo').value.trim();
+  var pagamento = document.getElementById('prop-pagamento').value.trim();
+  var frete = document.getElementById('prop-frete').value;
+  var msgEl = document.getElementById('prop-msg');
+
+  if (!preco || preco <= 0) {
+    msgEl.className = 'modal-msg err';
+    msgEl.style.display = 'block';
+    msgEl.textContent = 'Informe um preco valido.';
+    return;
+  }
+
+  var payload = {
+    oportunidade_id: oportId,
+    industria_id: _player.id,
+    preco: preco,
+    volume: volume || null,
+    prazo: prazo || null,
+    condicao_pagamento: pagamento || null,
+    frete: frete,
+    status: 'enviada'
+  };
+
+  var { error } = await _sb.from('propostas_v3').insert(payload);
+
+  if (error) {
+    msgEl.className = 'modal-msg err';
+    msgEl.style.display = 'block';
+    msgEl.textContent = 'Erro ao enviar proposta: ' + error.message;
+    return;
+  }
+
+  msgEl.className = 'modal-msg ok';
+  msgEl.style.display = 'block';
+  msgEl.textContent = 'Proposta enviada com sucesso!';
+
+  setTimeout(function() {
+    closeProposta();
+    loadPropostas();
+  }, 1500);
+}
+
+/* ═══════════════════════════════════════════
+   MODAL: DEAL DETAIL
+   ═══════════════════════════════════════════ */
+async function openDealDetail(dealId) {
+  document.getElementById('modal-deal').classList.add('show');
+  var container = document.getElementById('deal-detail-content');
+  container.innerHTML = '<div class="state-msg">Carregando...</div>';
+
+  var { data: deal, error } = await _sb
+    .from('deals')
+    .select('*')
+    .eq('id', dealId)
+    .single();
+
+  if (error || !deal) {
+    container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar deal.</div>';
+    return;
+  }
+
+  // Fetch client name
+  var clientName = '—';
+  var cid = deal.cliente_id || deal.comprador_id;
+  if (cid) {
+    var { data: cli } = await _sb.from('players').select('razao_social, nome, email').eq('id', cid).single();
+    if (cli) clientName = cli.razao_social || cli.nome || cli.email;
+  }
+
+  var codigo = deal.codigo || deal.id.substring(0, 8).toUpperCase();
+  var html = '';
+
+  html += '<div class="detail-row"><span class="detail-lbl">Codigo</span><span class="detail-val">#' + esc(codigo) + '</span></div>';
+  html += '<div class="detail-row"><span class="detail-lbl">Cliente</span><span class="detail-val">' + esc(clientName) + '</span></div>';
+  html += '<div class="detail-row"><span class="detail-lbl">Produto</span><span class="detail-val">' + esc(deal.produto || deal.produto_descricao || '—') + '</span></div>';
+  html += '<div class="detail-row"><span class="detail-lbl">Valor</span><span class="detail-val" style="color:var(--gn)">' + (deal.valor ? formatMoney(deal.valor) : '—') + '</span></div>';
+  html += '<div class="detail-row"><span class="detail-lbl">Status</span><span class="detail-val"><span class="badge ' + getDealStatusClass(deal.status) + '">' + formatStatus(deal.status) + '</span></span></div>';
+
+  if (deal.volume) html += '<div class="detail-row"><span class="detail-lbl">Volume</span><span class="detail-val">' + esc(deal.volume) + '</span></div>';
+  if (deal.frete) html += '<div class="detail-row"><span class="detail-lbl">Frete</span><span class="detail-val">' + esc(deal.frete) + '</span></div>';
+  if (deal.condicao_pagamento) html += '<div class="detail-row"><span class="detail-lbl">Pagamento</span><span class="detail-val">' + esc(deal.condicao_pagamento) + '</span></div>';
+
+  if (deal.created_at) {
+    html += '<div class="detail-row"><span class="detail-lbl">Criado em</span><span class="detail-val">' + formatDate(deal.created_at) + '</span></div>';
+  }
+
+  // Chat / documents / tracking placeholders
+  html += '<div style="border-top:1px solid var(--b0);margin-top:14px;padding-top:14px">';
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  html += '<button class="btn btn-ac btn-sm" disabled title="Em breve">&#x1F4AC; Chat</button>';
+  html += '<button class="btn btn-gh btn-sm" disabled title="Em breve">&#x1F4C4; Documentos</button>';
+  html += '<button class="btn btn-gh btn-sm" disabled title="Em breve">&#x1F4E6; Rastreio</button>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--w4);margin-top:8px">Chat, documentos e rastreio em breve.</div>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function closeDeal() {
+  document.getElementById('modal-deal').classList.remove('show');
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════ */
+function esc(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+function formatMoney(val) {
+  var n = parseFloat(val);
+  if (isNaN(n)) return '—';
+  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(iso) {
+  try {
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch (e) {
+    return iso;
+  }
+}
+
+function formatStatus(s) {
+  if (!s) return '—';
+  return s.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
+function getStatusClass(status) {
+  if (!status) return 'b-ghost';
+  var s = status.toLowerCase();
+  if (s === 'ativa' || s === 'aprovado' || s === 'aprovada') return 'st-ativa';
+  if (s === 'aguardando_aprovacao' || s === 'pendente') return 'st-aguardando';
+  if (s === 'recusado' || s === 'recusada' || s === 'inativo') return 'st-recusada';
+  return 'b-ghost';
+}
+
+function getPropostaStatusClass(status) {
+  if (!status) return 'b-ghost';
+  var s = status.toLowerCase();
+  if (s === 'enviada') return 'st-enviada';
+  if (s === 'aceita' || s === 'aprovada') return 'st-aceita';
+  if (s === 'recusada' || s === 'rejeitada') return 'st-recusada';
+  return 'b-ghost';
+}
+
+function getDealStatusClass(status) {
+  if (!status) return 'b-ghost';
+  var s = status.toLowerCase();
+  if (s === 'fechado' || s === 'concluido' || s === 'ativo') return 'b-gn';
+  if (s === 'em_andamento' || s === 'negociando') return 'b-ac';
+  if (s === 'cancelado') return 'b-rd';
+  if (s === 'pendente') return 'b-am';
+  return 'b-ghost';
+}
+
+/* ═══════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════ */
+(function boot() {
+  if (checkAuth()) {
+    setTimeout(function() {
+      initApp();
+    }, 600);
+  }
+})();
+</script>
+</body>
+</html>

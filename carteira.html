@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050810">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FoodHub &middot; Carteira</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;overflow-x:hidden}
+body{background:#050810;color:#ECF0FF;font-family:'DM Sans',system-ui,-apple-system,sans-serif;font-size:14px}
+
+:root{
+  --bg:#050810;--bg2:#080D18;--bg3:#0C1220;--bg4:#111826;--bg5:#162030;
+  --b1:rgba(255,255,255,.055);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.18);
+  --t1:#FFFFFF;--t2:#CCCCCC;--t3:#999999;--t4:#3A4A66;
+  --ac:#00C8FF;--a2:rgba(0,200,255,.08);--a3:rgba(0,200,255,.15);
+  --gn:#00E09A;--g2:rgba(0,224,154,.08);--g3:rgba(0,224,154,.15);
+  --am:#F5A623;--am2:rgba(245,166,35,.08);
+  --rd:#FF4060;--r2:rgba(255,64,96,.08);
+  --pu:#9B7AFF;--p2:rgba(155,122,255,.08);
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--t4)}
+
+/* ── LOADING SCREEN ── */
+#loading-screen{position:fixed;inset:0;background:#050810;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loading-screen .logo-lg{font-size:38px;font-weight:700;letter-spacing:-.5px}
+#loading-screen .logo-lg span{color:var(--ac)}
+#loading-screen .load-dot{width:9px;height:9px;background:var(--ac);border-radius:50%;animation:pulse-dot 2s ease-in-out infinite;box-shadow:0 0 10px rgba(0,200,255,.5)}
+@keyframes pulse-dot{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+#loading-screen .load-phrase{color:var(--t4);font-size:13px;font-style:italic;animation:fadePulse 2s ease-in-out infinite}
+@keyframes fadePulse{0%,100%{opacity:.4}50%{opacity:1}}
+#loading-screen.hidden{display:none}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:column;overflow:hidden}
+#app.active{display:flex}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--b1);background:var(--bg2);flex-shrink:0;gap:10px;z-index:10}
+.logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;letter-spacing:-.01em;flex-shrink:0}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac)}
+.logo span{color:var(--ac)}
+.user-pill{display:flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--b1);border-radius:20px;padding:3px 12px 3px 4px;flex-shrink:0}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:var(--t2)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR (desktop) ── */
+.sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--b1);padding:12px 8px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-sec{font-size:9px;color:var(--t4);text-transform:uppercase;letter-spacing:.09em;padding:10px 10px 3px;font-weight:500}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12px;color:var(--t2);cursor:pointer;transition:all .12s;border:1px solid transparent;position:relative}
+.nav-item:hover{background:linear-gradient(90deg,rgba(0,200,255,.07),transparent);color:var(--t1);box-shadow:inset 2px 0 0 rgba(0,200,255,.35)}
+.nav-item.active{background:var(--a2);color:var(--ac);border-color:rgba(0,200,255,.12);font-weight:600}
+.ni{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;padding:16px 18px;padding-bottom:80px}
+
+/* ── PANELS ── */
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PANEL HEADER ── */
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.panel-header h2{font-size:17px;font-weight:700;color:var(--t1)}
+.panel-header .subtitle{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* ── ROLE BADGES ── */
+.role-badges{display:flex;gap:6px;flex-wrap:wrap}
+.role-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.role-badge.seller{background:var(--a2);color:var(--ac);border:1px solid rgba(0,200,255,.2)}
+.role-badge.originador{background:var(--p2);color:var(--pu);border:1px solid rgba(155,122,255,.2)}
+
+/* ── METRIC GRID ── */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
+.metric-card{background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;transition:all .15s}
+.metric-card:hover{border-color:rgba(0,200,255,.2)}
+.metric-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:500}
+.metric-value{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--t1)}
+.metric-value.green{color:var(--gn)}
+.metric-value.cyan{color:var(--ac)}
+.metric-sub{font-size:10px;color:var(--t4);margin-top:3px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--b1);border-radius:11px;padding:14px;margin-bottom:8px;transition:all .15s}
+.card:hover{border-color:rgba(0,200,255,.2)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.card-title{font-size:13px;font-weight:600;color:var(--t1)}
+.card-subtitle{font-size:11px;color:var(--t3);margin-top:2px}
+.card-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t2);padding:3px 0}
+.card-row .label{color:var(--t3)}
+.card-row .value{font-weight:600;font-family:var(--mono)}
+
+/* ── FILTER TABS ── */
+.filter-tabs{display:flex;gap:4px;margin-bottom:14px;background:var(--bg3);border-radius:8px;padding:3px;border:1px solid var(--b1)}
+.filter-tab{flex:1;padding:7px 12px;border-radius:6px;font-size:11px;font-weight:600;text-align:center;cursor:pointer;color:var(--t3);transition:all .15s;border:none;background:none}
+.filter-tab.active{background:var(--a2);color:var(--ac);box-shadow:0 0 8px rgba(0,200,255,.1)}
+.filter-tab:hover:not(.active){color:var(--t2)}
+
+/* ── STATUS BADGE ── */
+.status-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.status-badge.ativo,.status-badge.concluido{background:var(--g2);color:var(--gn)}
+.status-badge.pendente,.status-badge.em_negociacao{background:var(--am2);color:var(--am)}
+.status-badge.cancelado{background:var(--r2);color:var(--rd)}
+.status-badge.rascunho{background:rgba(255,255,255,.05);color:var(--t3)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;margin-bottom:14px;border-radius:10px;border:1px solid var(--b1)}
+.tbl{width:100%;border-collapse:collapse;min-width:600px}
+.tbl thead th{padding:10px 12px;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:500;text-align:left;background:var(--bg3);border-bottom:1px solid var(--b1)}
+.tbl tbody tr{transition:all .1s}
+.tbl tbody tr:hover{background:rgba(0,200,255,.03)}
+.tbl td{padding:10px 12px;font-size:12px;border-bottom:1px solid var(--b1);color:var(--t2)}
+.tbl td:first-child{color:var(--t1);font-weight:500}
+
+/* ── DEAL CARD ── */
+.deal-card{background:var(--bg2);border:1px solid var(--b1);border-left:3px solid var(--ac);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.deal-card:hover{border-color:rgba(0,200,255,.3);background:linear-gradient(135deg,rgba(0,200,255,.03),transparent);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,200,255,.06)}
+.deal-parties{font-size:12px;color:var(--t2);margin:6px 0}
+.deal-parties .arrow{color:var(--ac);margin:0 6px;font-weight:700}
+.deal-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:6px}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:76px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--ac);color:#000;border:none;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,200,255,.35);z-index:90;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(0,200,255,.5)}
+.fab:active{transform:scale(.95)}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:460px;padding:22px;max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-header h3{font-size:15px;font-weight:700;color:var(--t1)}
+.mx{background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;padding:4px;transition:color .15s}
+.mx:hover{color:var(--t1)}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;font-weight:500;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.form-input{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;color:var(--t1);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--ac)}
+.form-input::placeholder{color:var(--t4)}
+.form-select{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;color:var(--t1);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.form-select:focus{border-color:var(--ac)}
+
+/* ── BUTTONS ── */
+.btn{background:var(--ac);color:#000;border:none;border-radius:8px;padding:10px 20px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;width:100%}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--b2);border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:12px;cursor:pointer;transition:all .13s}
+.btn-ghost:hover{background:var(--bg4);color:var(--t1)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-danger{background:var(--rd);color:#fff}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--t3)}
+.empty-state .icon{font-size:36px;margin-bottom:10px;opacity:.5}
+.empty-state p{font-size:13px;line-height:1.6}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:12px 20px;font-size:13px;font-weight:500;color:var(--t1);z-index:600;transition:transform .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:rgba(0,224,154,.3);color:var(--gn)}
+.toast.error{border-color:rgba(255,64,96,.3);color:var(--rd)}
+
+/* ── DETAIL PANEL ── */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:400;align-items:flex-end;justify-content:center}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--bg2);border:1px solid var(--b1);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:20px}
+.detail-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;padding:4px}
+.detail-close:hover{color:var(--t1)}
+.detail-section{margin-bottom:16px}
+.detail-section h4{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:500}
+
+/* ── PROFILE SECTION ── */
+.profile-card{background:var(--bg3);border:1px solid var(--b1);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#000;margin:0 auto 12px}
+.profile-name{font-size:16px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.profile-email{font-size:12px;color:var(--t3);margin-bottom:10px}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.profile-stat{text-align:center}
+.profile-stat .stat-val{font-size:18px;font-weight:700;font-family:var(--mono);color:var(--ac)}
+.profile-stat .stat-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bg2);border-top:1px solid var(--b1);z-index:100;padding:0}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1;height:100%;background:none;border:none;color:var(--t3);font-size:9px;font-family:var(--font);cursor:pointer;transition:color .15s;padding:0;min-height:44px}
+.bottom-nav-item .bnav-icon{font-size:20px;line-height:1}
+.bottom-nav-item.active{color:var(--ac)}
+.bottom-nav-item.active .bnav-icon{filter:drop-shadow(0 0 6px rgba(0,200,255,.4))}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .bottom-nav{display:flex;justify-content:space-around;align-items:center}
+  .main{padding-bottom:80px!important}
+  .topbar{padding:8px 12px}
+  .fab{bottom:76px}
+  .metrics-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:769px){
+  .bottom-nav{display:none!important}
+  .fab{bottom:24px;right:24px}
+}
+@media(max-width:375px){
+  .metric-card{padding:10px 12px}
+  .metric-value{font-size:18px}
+}
+@media(min-width:1024px){
+  .metrics-grid{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ LOADING SCREEN ════════ -->
+<div id="loading-screen">
+  <div class="logo-lg">Food<span>Hub</span></div>
+  <div class="load-dot"></div>
+  <div class="load-phrase">A mesa est&aacute; aberta. Vamos fechar neg&oacute;cios.</div>
+</div>
+
+<!-- ════════ APP ════════ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">Food<span>Hub</span><div class="logo-dot"></div></div>
+    <div class="user-pill">
+      <div class="avatar" id="topAvatar"></div>
+      <span class="user-name" id="topName"></span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR (desktop) -->
+    <div class="sidebar">
+      <div class="nav-sec">Carteira</div>
+      <div class="nav-item active" data-panel="dashboard"><span class="ni">&#128202;</span> Dashboard</div>
+      <div class="nav-item" data-panel="carteira"><span class="ni">&#128101;</span> Meus V&iacute;nculos</div>
+      <div class="nav-item" data-panel="deals"><span class="ni">&#129309;</span> Deals</div>
+      <div class="nav-item" data-panel="comissoes"><span class="ni">&#128176;</span> Comiss&otilde;es</div>
+      <div class="nav-sec">Conta</div>
+      <div class="nav-item" data-panel="perfil"><span class="ni">&#128100;</span> Perfil</div>
+      <div class="nav-item" id="btnLogout"><span class="ni">&#128682;</span> Sair</div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main" id="mainContent">
+
+      <!-- ══ PANEL: DASHBOARD ══ -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-header">
+          <div>
+            <h2>Dashboard</h2>
+            <div class="subtitle">Vis&atilde;o geral da sua carteira</div>
+          </div>
+          <div class="role-badges" id="roleBadges"></div>
+        </div>
+        <div class="metrics-grid" id="dashMetrics">
+          <div class="metric-card">
+            <div class="metric-label">Comiss&atilde;o Projetada</div>
+            <div class="metric-value green" id="metComProj">R$ --</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Comiss&atilde;o Realizada</div>
+            <div class="metric-value cyan" id="metComReal">R$ --</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Players Vinculados</div>
+            <div class="metric-value" id="metVinculos">--</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Deals Ativos</div>
+            <div class="metric-value" id="metDeals">--</div>
+          </div>
+        </div>
+        <div id="dashRecentDeals"></div>
+      </div>
+
+      <!-- ══ PANEL: CARTEIRA ══ -->
+      <div class="panel" id="panel-carteira">
+        <div class="panel-header">
+          <div>
+            <h2>Meus V&iacute;nculos</h2>
+            <div class="subtitle">Clientes e ind&uacute;strias vinculados a voc&ecirc;</div>
+          </div>
+        </div>
+        <div class="filter-tabs" id="carteiraFilterTabs">
+          <div class="filter-tab active" data-filter="seller">Como Seller</div>
+          <div class="filter-tab" data-filter="originador">Como Originador</div>
+        </div>
+        <div id="carteiraList"></div>
+      </div>
+
+      <!-- ══ PANEL: DEALS ══ -->
+      <div class="panel" id="panel-deals">
+        <div class="panel-header">
+          <div>
+            <h2>Deals</h2>
+            <div class="subtitle">Negocia&ccedil;&otilde;es vinculadas a voc&ecirc;</div>
+          </div>
+        </div>
+        <div id="dealsList"></div>
+      </div>
+
+      <!-- ══ PANEL: COMISSOES ══ -->
+      <div class="panel" id="panel-comissoes">
+        <div class="panel-header">
+          <div>
+            <h2>Comiss&otilde;es</h2>
+            <div class="subtitle">Acompanhe seus ganhos</div>
+          </div>
+        </div>
+        <div class="metrics-grid" id="comMetrics" style="margin-bottom:16px">
+          <div class="metric-card">
+            <div class="metric-label">Total Projetado</div>
+            <div class="metric-value green" id="comProj">R$ --</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Realizado</div>
+            <div class="metric-value cyan" id="comReal">R$ --</div>
+          </div>
+        </div>
+        <div id="comSummary" style="margin-bottom:14px"></div>
+        <div class="tbl-wrap">
+          <table class="tbl" id="comTable">
+            <thead>
+              <tr>
+                <th>Deal</th>
+                <th>Cliente</th>
+                <th>Ind&uacute;stria</th>
+                <th>Meu Papel</th>
+                <th>%</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="comBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ PANEL: PERFIL ══ -->
+      <div class="panel" id="panel-perfil">
+        <div class="panel-header">
+          <div>
+            <h2>Perfil</h2>
+            <div class="subtitle">Suas informa&ccedil;&otilde;es e configura&ccedil;&otilde;es</div>
+          </div>
+        </div>
+        <div class="profile-card">
+          <div class="profile-avatar" id="profileAvatar"></div>
+          <div class="profile-name" id="profileName"></div>
+          <div class="profile-email" id="profileEmail"></div>
+          <div class="role-badges" id="profileRoleBadges" style="justify-content:center;margin-bottom:10px"></div>
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <div class="stat-val" id="profVinculos">--</div>
+              <div class="stat-label">V&iacute;nculos</div>
+            </div>
+            <div class="profile-stat">
+              <div class="stat-val" id="profDeals">--</div>
+              <div class="stat-label">Deals</div>
+            </div>
+            <div class="profile-stat">
+              <div class="stat-val" id="profComissao">--</div>
+              <div class="stat-label">Comiss&atilde;o</div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:400px">
+          <div class="form-group">
+            <label>Nome de Contato</label>
+            <input type="text" class="form-input" id="editContatoNome" placeholder="Seu nome">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input type="tel" class="form-input" id="editWhatsapp" placeholder="(11) 99999-9999">
+          </div>
+          <button class="btn" id="btnSaveProfile" style="margin-top:6px">Salvar Altera&ccedil;&otilde;es</button>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /layout -->
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" data-panel="dashboard">
+      <span class="bnav-icon">&#128202;</span>Dashboard
+    </button>
+    <button class="bottom-nav-item" data-panel="carteira">
+      <span class="bnav-icon">&#128101;</span>Carteira
+    </button>
+    <button class="bottom-nav-item" data-panel="deals">
+      <span class="bnav-icon">&#129309;</span>Deals
+    </button>
+    <button class="bottom-nav-item" data-panel="comissoes">
+      <span class="bnav-icon">&#128176;</span>Comiss&otilde;es
+    </button>
+    <button class="bottom-nav-item" data-panel="perfil">
+      <span class="bnav-icon">&#128100;</span>Perfil
+    </button>
+  </nav>
+
+  <!-- FAB (Indicar) -->
+  <button class="fab" id="fabIndicar" title="Indicar player">+</button>
+
+</div><!-- /app -->
+
+<!-- ════════ MODAL: INDICAR ════════ -->
+<div class="overlay" id="modalIndicar">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Indicar Player</h3>
+      <button class="mx" id="closeIndicar">&times;</button>
+    </div>
+    <form id="formIndicar">
+      <div class="form-group">
+        <label>Raz&atilde;o Social</label>
+        <input type="text" class="form-input" id="indRazao" placeholder="Nome da empresa" required>
+      </div>
+      <div class="form-group">
+        <label>CNPJ</label>
+        <input type="text" class="form-input" id="indCnpj" placeholder="00.000.000/0000-00">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" class="form-input" id="indEmail" placeholder="contato@empresa.com" required>
+      </div>
+      <div class="form-group">
+        <label>WhatsApp</label>
+        <input type="tel" class="form-input" id="indWhatsapp" placeholder="(11) 99999-9999">
+      </div>
+      <div class="form-group">
+        <label>Tipo de Player</label>
+        <select class="form-select" id="indTipo" required>
+          <option value="">Selecione...</option>
+          <option value="cliente">Cliente (Food Service / Varejo)</option>
+          <option value="industria">Ind&uacute;stria (Fornecedor)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Meu Papel</label>
+        <select class="form-select" id="indPapel">
+          <option value="seller">Seller (trago clientes)</option>
+          <option value="originador">Originador (trago ind&uacute;strias)</option>
+        </select>
+      </div>
+      <button type="submit" class="btn" id="btnIndicar">Indicar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════ DETAIL: DEAL ════════ -->
+<div class="detail-overlay" id="dealDetail">
+  <div class="detail-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700" id="detailDealTitle">Deal</h3>
+      <button class="detail-close" id="closeDealDetail">&times;</button>
+    </div>
+    <div id="detailDealContent"></div>
+  </div>
+</div>
+
+<!-- ════════ TOAST ════════ -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ── Supabase ──
+  var _sb = supabase.createClient(
+    'https://jqbuckofiaopxwllghac.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+  );
+
+  // ── Auth Guard ──
+  var playerRaw = sessionStorage.getItem('player');
+  if (!playerRaw) { window.location.href = 'entrar.html'; return; }
+
+  var player;
+  try { player = JSON.parse(playerRaw); } catch(e) { window.location.href = 'entrar.html'; return; }
+
+  var tipo = player.tipo || [];
+  if (typeof tipo === 'string') tipo = [tipo];
+  var isSeller = tipo.indexOf('seller') !== -1;
+  var isOriginador = tipo.indexOf('originador') !== -1;
+  if (!isSeller && !isOriginador) { window.location.href = 'entrar.html'; return; }
+
+  var playerId = player.id;
+  var playerName = player.contato_nome || player.razao_social || player.nome || 'Player';
+
+  // ── DOM refs ──
+  var loadingScreen = document.getElementById('loading-screen');
+  var app = document.getElementById('app');
+  var topAvatar = document.getElementById('topAvatar');
+  var topName = document.getElementById('topName');
+  var roleBadges = document.getElementById('roleBadges');
+  var mainContent = document.getElementById('mainContent');
+  var bottomNav = document.getElementById('bottomNav');
+
+  // Metrics
+  var metComProj = document.getElementById('metComProj');
+  var metComReal = document.getElementById('metComReal');
+  var metVinculos = document.getElementById('metVinculos');
+  var metDeals = document.getElementById('metDeals');
+
+  // Carteira
+  var carteiraList = document.getElementById('carteiraList');
+  var carteiraFilterTabs = document.getElementById('carteiraFilterTabs');
+
+  // Deals
+  var dealsList = document.getElementById('dealsList');
+
+  // Comissoes
+  var comProj = document.getElementById('comProj');
+  var comReal = document.getElementById('comReal');
+  var comBody = document.getElementById('comBody');
+  var comSummary = document.getElementById('comSummary');
+
+  // Perfil
+  var profileAvatar = document.getElementById('profileAvatar');
+  var profileName = document.getElementById('profileName');
+  var profileEmail = document.getElementById('profileEmail');
+  var profileRoleBadges = document.getElementById('profileRoleBadges');
+  var editContatoNome = document.getElementById('editContatoNome');
+  var editWhatsapp = document.getElementById('editWhatsapp');
+  var btnSaveProfile = document.getElementById('btnSaveProfile');
+  var profVinculos = document.getElementById('profVinculos');
+  var profDeals = document.getElementById('profDeals');
+  var profComissao = document.getElementById('profComissao');
+
+  // Modal Indicar
+  var modalIndicar = document.getElementById('modalIndicar');
+  var fabIndicar = document.getElementById('fabIndicar');
+  var closeIndicar = document.getElementById('closeIndicar');
+  var formIndicar = document.getElementById('formIndicar');
+  var indTipo = document.getElementById('indTipo');
+  var indPapel = document.getElementById('indPapel');
+
+  // Deal detail
+  var dealDetail = document.getElementById('dealDetail');
+  var closeDealDetail = document.getElementById('closeDealDetail');
+  var detailDealTitle = document.getElementById('detailDealTitle');
+  var detailDealContent = document.getElementById('detailDealContent');
+
+  // Toast
+  var toastEl = document.getElementById('toast');
+  var toastTimer;
+
+  // Logout
+  var btnLogout = document.getElementById('btnLogout');
+
+  // ── State ──
+  var currentFilter = 'seller';
+  var vinculosCache = [];
+  var dealsCache = [];
+  var comissoesCache = [];
+  var vinculosPlayersCache = {};
+
+  // ── Helpers ──
+  function fmt(v) {
+    if (v === null || v === undefined) return 'R$ 0,00';
+    return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function initials(name) {
+    if (!name) return '?';
+    var parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+
+  function showToast(msg, type) {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast ' + (type || '') + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
+  }
+
+  function statusLabel(s) {
+    if (!s) return 'rascunho';
+    return s.replace(/_/g, ' ');
+  }
+
+  function statusClass(s) {
+    if (!s) return 'rascunho';
+    if (s === 'ativo' || s === 'concluido' || s === 'fechado') return 'ativo';
+    if (s === 'pendente' || s === 'em_negociacao' || s === 'em_andamento') return 'pendente';
+    if (s === 'cancelado') return 'cancelado';
+    return 'rascunho';
+  }
+
+  // ── Init UI ──
+  function initUI() {
+    topAvatar.textContent = initials(playerName);
+    topName.textContent = playerName;
+    document.title = 'FoodHub \u00b7 Carteira \u2014 ' + playerName;
+
+    var badgeHTML = '';
+    if (isSeller) badgeHTML += '<span class="role-badge seller">Seller</span>';
+    if (isOriginador) badgeHTML += '<span class="role-badge originador">Originador</span>';
+    roleBadges.innerHTML = badgeHTML;
+    profileRoleBadges.innerHTML = badgeHTML;
+
+    profileAvatar.textContent = initials(playerName);
+    profileName.textContent = playerName;
+    profileEmail.textContent = player.email || '';
+    editContatoNome.value = player.contato_nome || '';
+    editWhatsapp.value = player.whatsapp || '';
+
+    // Auto-detect papel based on tipo selection
+    indTipo.addEventListener('change', function() {
+      if (indTipo.value === 'cliente' && isSeller) indPapel.value = 'seller';
+      else if (indTipo.value === 'industria' && isOriginador) indPapel.value = 'originador';
+    });
+  }
+
+  // ── Navigation ──
+  function switchPanel(panelId) {
+    var panels = mainContent.querySelectorAll('.panel');
+    for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+    var target = document.getElementById('panel-' + panelId);
+    if (target) target.classList.add('active');
+
+    // Sidebar
+    var navItems = document.querySelectorAll('.sidebar .nav-item[data-panel]');
+    for (var j = 0; j < navItems.length; j++) {
+      navItems[j].classList.toggle('active', navItems[j].getAttribute('data-panel') === panelId);
+    }
+
+    // Bottom nav
+    var bnItems = bottomNav.querySelectorAll('.bottom-nav-item');
+    for (var k = 0; k < bnItems.length; k++) {
+      bnItems[k].classList.toggle('active', bnItems[k].getAttribute('data-panel') === panelId);
+    }
+
+    // FAB visibility: show only on carteira
+    fabIndicar.style.display = (panelId === 'carteira') ? 'flex' : 'none';
+
+    // Load data per panel
+    if (panelId === 'dashboard') loadDashboard();
+    if (panelId === 'carteira') loadCarteira();
+    if (panelId === 'deals') loadDeals();
+    if (panelId === 'comissoes') loadComissoes();
+    if (panelId === 'perfil') loadPerfil();
+  }
+
+  // Sidebar clicks
+  var sidebarItems = document.querySelectorAll('.sidebar .nav-item[data-panel]');
+  for (var i = 0; i < sidebarItems.length; i++) {
+    sidebarItems[i].addEventListener('click', function() {
+      switchPanel(this.getAttribute('data-panel'));
+    });
+  }
+
+  // Bottom nav clicks
+  var bnItems = bottomNav.querySelectorAll('.bottom-nav-item');
+  for (var j = 0; j < bnItems.length; j++) {
+    bnItems[j].addEventListener('click', function() {
+      switchPanel(this.getAttribute('data-panel'));
+    });
+  }
+
+  // ── Logout ──
+  btnLogout.addEventListener('click', function() {
+    sessionStorage.removeItem('player');
+    window.location.href = 'entrar.html';
+  });
+
+  // ── FAB / Modal ──
+  fabIndicar.addEventListener('click', function() { modalIndicar.classList.add('open'); });
+  closeIndicar.addEventListener('click', function() { modalIndicar.classList.remove('open'); });
+  modalIndicar.addEventListener('click', function(e) { if (e.target === modalIndicar) modalIndicar.classList.remove('open'); });
+
+  // Deal detail
+  closeDealDetail.addEventListener('click', function() { dealDetail.classList.remove('open'); });
+  dealDetail.addEventListener('click', function(e) { if (e.target === dealDetail) dealDetail.classList.remove('open'); });
+
+  // ── Carteira filter tabs ──
+  var filterTabs = carteiraFilterTabs.querySelectorAll('.filter-tab');
+  for (var ft = 0; ft < filterTabs.length; ft++) {
+    filterTabs[ft].addEventListener('click', function() {
+      for (var x = 0; x < filterTabs.length; x++) filterTabs[x].classList.remove('active');
+      this.classList.add('active');
+      currentFilter = this.getAttribute('data-filter');
+      renderCarteira();
+    });
+  }
+
+  // ══════════════════════════════════════════
+  //  DATA LOADERS
+  // ══════════════════════════════════════════
+
+  // ── Load Vinculos ──
+  async function fetchVinculos() {
+    var res = await _sb.from('vinculos').select('*').eq('intermediario_id', playerId);
+    if (res.error) { console.error('vinculos error:', res.error); return []; }
+    vinculosCache = res.data || [];
+
+    // Fetch linked player details
+    var playerIds = vinculosCache.map(function(v) { return v.player_id; }).filter(Boolean);
+    if (playerIds.length > 0) {
+      var pRes = await _sb.from('players').select('id, razao_social, contato_nome, email, whatsapp, tipo, status').in('id', playerIds);
+      if (!pRes.error && pRes.data) {
+        vinculosPlayersCache = {};
+        pRes.data.forEach(function(p) { vinculosPlayersCache[p.id] = p; });
+      }
+    }
+    return vinculosCache;
+  }
+
+  // ── Load Deals ──
+  async function fetchDeals() {
+    var res = await _sb.from('deals').select('*').or('seller_id.eq.' + playerId + ',originador_id.eq.' + playerId);
+    if (res.error) { console.error('deals error:', res.error); return []; }
+    dealsCache = res.data || [];
+
+    // Fetch player names for deals
+    var ids = [];
+    dealsCache.forEach(function(d) {
+      if (d.cliente_id && ids.indexOf(d.cliente_id) === -1) ids.push(d.cliente_id);
+      if (d.industria_id && ids.indexOf(d.industria_id) === -1) ids.push(d.industria_id);
+    });
+    if (ids.length > 0) {
+      var pRes = await _sb.from('players').select('id, razao_social, contato_nome').in('id', ids);
+      if (!pRes.error && pRes.data) {
+        pRes.data.forEach(function(p) { vinculosPlayersCache[p.id] = Object.assign(vinculosPlayersCache[p.id] || {}, p); });
+      }
+    }
+    return dealsCache;
+  }
+
+  // ── Load Comissoes ──
+  async function fetchComissoes() {
+    var res = await _sb.from('comissoes').select('*, deals(*)');
+    if (res.error) { console.error('comissoes error:', res.error); return []; }
+    // Filter to only this player's deals
+    var all = res.data || [];
+    comissoesCache = all.filter(function(c) {
+      var d = c.deals;
+      if (!d) return false;
+      return d.seller_id === playerId || d.originador_id === playerId;
+    });
+    return comissoesCache;
+  }
+
+  // ══════════════════════════════════════════
+  //  RENDER: DASHBOARD
+  // ══════════════════════════════════════════
+  async function loadDashboard() {
+    try {
+      await Promise.all([fetchVinculos(), fetchDeals(), fetchComissoes()]);
+    } catch(e) { console.error('dashboard load error:', e); }
+
+    // Vinculos count
+    metVinculos.textContent = vinculosCache.length;
+
+    // Active deals
+    var activeDeals = dealsCache.filter(function(d) {
+      return d.status && d.status !== 'cancelado' && d.status !== 'concluido';
+    });
+    metDeals.textContent = activeDeals.length;
+
+    // Commission sums
+    var projTotal = 0, realTotal = 0;
+    comissoesCache.forEach(function(c) {
+      var val = Number(c.valor) || 0;
+      if (c.status === 'pago' || c.status === 'realizado') realTotal += val;
+      else projTotal += val;
+    });
+    metComProj.textContent = fmt(projTotal);
+    metComReal.textContent = fmt(realTotal);
+
+    // Profile stats
+    profVinculos.textContent = vinculosCache.length;
+    profDeals.textContent = dealsCache.length;
+    profComissao.textContent = fmt(realTotal);
+
+    // Recent deals
+    var dashRecentDeals = document.getElementById('dashRecentDeals');
+    if (dealsCache.length > 0) {
+      var recentHTML = '<div style="margin-top:6px"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:500">Deals Recentes</div>';
+      var recent = dealsCache.slice(0, 5);
+      recent.forEach(function(d) {
+        var clienteP = vinculosPlayersCache[d.cliente_id];
+        var industriaP = vinculosPlayersCache[d.industria_id];
+        var clienteName = clienteP ? (clienteP.razao_social || clienteP.contato_nome || '--') : '--';
+        var industriaName = industriaP ? (industriaP.razao_social || industriaP.contato_nome || '--') : '--';
+        var myRole = d.seller_id === playerId ? 'seller' : 'originador';
+        recentHTML += '<div class="deal-card" data-deal-id="' + d.id + '">';
+        recentHTML += '<div class="card-header"><span class="card-title">' + (d.codigo || 'Deal #' + (d.id || '').substring(0,6)) + '</span>';
+        recentHTML += '<span class="role-badge ' + myRole + '">' + myRole + '</span></div>';
+        recentHTML += '<div class="deal-parties">' + clienteName + '<span class="arrow">&harr;</span>' + industriaName + '</div>';
+        recentHTML += '<div class="deal-footer"><span style="font-family:var(--mono);font-weight:600">' + fmt(d.valor_total || d.valor) + '</span>';
+        recentHTML += '<span class="status-badge ' + statusClass(d.status) + '">' + statusLabel(d.status) + '</span></div>';
+        recentHTML += '</div>';
+      });
+      recentHTML += '</div>';
+      dashRecentDeals.innerHTML = recentHTML;
+      bindDealCards(dashRecentDeals);
+    } else {
+      dashRecentDeals.innerHTML = '<div class="empty-state"><div class="icon">&#129309;</div><p>Nenhum deal ainda.<br>Indique players para come&ccedil;ar!</p></div>';
+    }
+  }
+
+  // ══════════════════════════════════════════
+  //  RENDER: CARTEIRA
+  // ══════════════════════════════════════════
+  async function loadCarteira() {
+    if (vinculosCache.length === 0) await fetchVinculos();
+    renderCarteira();
+  }
+
+  function renderCarteira() {
+    var filtered = vinculosCache.filter(function(v) { return v.papel === currentFilter; });
+
+    if (filtered.length === 0) {
+      var label = currentFilter === 'seller' ? 'clientes' : 'ind\u00fastrias';
+      carteiraList.innerHTML = '<div class="empty-state"><div class="icon">&#128101;</div><p>Nenhum v\u00ednculo como ' + currentFilter + '.<br>Indique ' + label + ' usando o bot\u00e3o +</p></div>';
+      return;
+    }
+
+    var html = '';
+    filtered.forEach(function(v) {
+      var p = vinculosPlayersCache[v.player_id] || {};
+      var name = p.razao_social || p.contato_nome || 'Player';
+      var email = p.email || '';
+
+      // Count deals for this player
+      var dealCount = 0;
+      var pipelineVal = 0;
+      dealsCache.forEach(function(d) {
+        var isLinked = false;
+        if (currentFilter === 'seller' && d.cliente_id === v.player_id) isLinked = true;
+        if (currentFilter === 'originador' && d.industria_id === v.player_id) isLinked = true;
+        if (isLinked) { dealCount++; pipelineVal += Number(d.valor_total || d.valor || 0); }
+      });
+
+      html += '<div class="card">';
+      html += '<div class="card-header"><span class="card-title">' + name + '</span>';
+      html += '<span class="role-badge ' + currentFilter + '">' + currentFilter + '</span></div>';
+      if (email) html += '<div class="card-subtitle">' + email + '</div>';
+      html += '<div class="card-row"><span class="label">Deals</span><span class="value">' + dealCount + '</span></div>';
+      html += '<div class="card-row"><span class="label">Pipeline</span><span class="value">' + fmt(pipelineVal) + '</span></div>';
+      html += '</div>';
+    });
+    carteiraList.innerHTML = html;
+  }
+
+  // ══════════════════════════════════════════
+  //  RENDER: DEALS
+  // ══════════════════════════════════════════
+  async function loadDeals() {
+    if (dealsCache.length === 0) await fetchDeals();
+    renderDeals();
+  }
+
+  function renderDeals() {
+    if (dealsCache.length === 0) {
+      dealsList.innerHTML = '<div class="empty-state"><div class="icon">&#129309;</div><p>Nenhum deal vinculado.<br>Seus deals aparecer&atilde;o aqui.</p></div>';
+      return;
+    }
+
+    var html = '';
+    dealsCache.forEach(function(d) {
+      var clienteP = vinculosPlayersCache[d.cliente_id] || {};
+      var industriaP = vinculosPlayersCache[d.industria_id] || {};
+      var clienteName = clienteP.razao_social || clienteP.contato_nome || '--';
+      var industriaName = industriaP.razao_social || industriaP.contato_nome || '--';
+      var myRole = d.seller_id === playerId ? 'seller' : 'originador';
+
+      html += '<div class="deal-card" data-deal-id="' + d.id + '">';
+      html += '<div class="card-header"><span class="card-title">' + (d.codigo || 'Deal #' + (d.id || '').substring(0,6)) + '</span>';
+      html += '<span class="role-badge ' + myRole + '">' + myRole + '</span></div>';
+      html += '<div class="deal-parties">' + clienteName + '<span class="arrow">&harr;</span>' + industriaName + '</div>';
+      html += '<div class="deal-footer"><span style="font-family:var(--mono);font-weight:600">' + fmt(d.valor_total || d.valor) + '</span>';
+      html += '<span class="status-badge ' + statusClass(d.status) + '">' + statusLabel(d.status) + '</span></div>';
+      html += '</div>';
+    });
+    dealsList.innerHTML = html;
+    bindDealCards(dealsList);
+  }
+
+  function bindDealCards(container) {
+    var cards = container.querySelectorAll('.deal-card');
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].addEventListener('click', function() {
+        var dealId = this.getAttribute('data-deal-id');
+        openDealDetail(dealId);
+      });
+    }
+  }
+
+  async function openDealDetail(dealId) {
+    var deal = dealsCache.find(function(d) { return d.id === dealId; });
+    if (!deal) return;
+
+    var clienteP = vinculosPlayersCache[deal.cliente_id] || {};
+    var industriaP = vinculosPlayersCache[deal.industria_id] || {};
+    var clienteName = clienteP.razao_social || clienteP.contato_nome || '--';
+    var industriaName = industriaP.razao_social || industriaP.contato_nome || '--';
+    var myRole = deal.seller_id === playerId ? 'seller' : 'originador';
+
+    detailDealTitle.textContent = deal.codigo || 'Deal #' + (deal.id || '').substring(0,6);
+
+    var html = '';
+    html += '<div class="detail-section">';
+    html += '<h4>Informa&ccedil;&otilde;es</h4>';
+    html += '<div class="card-row"><span class="label">Cliente</span><span class="value">' + clienteName + '</span></div>';
+    html += '<div class="card-row"><span class="label">Ind&uacute;stria</span><span class="value">' + industriaName + '</span></div>';
+    html += '<div class="card-row"><span class="label">Valor</span><span class="value">' + fmt(deal.valor_total || deal.valor) + '</span></div>';
+    html += '<div class="card-row"><span class="label">Status</span><span class="status-badge ' + statusClass(deal.status) + '">' + statusLabel(deal.status) + '</span></div>';
+    html += '<div class="card-row"><span class="label">Meu Papel</span><span class="role-badge ' + myRole + '">' + myRole + '</span></div>';
+    if (deal.created_at) html += '<div class="card-row"><span class="label">Criado em</span><span class="value">' + new Date(deal.created_at).toLocaleDateString('pt-BR') + '</span></div>';
+    html += '</div>';
+
+    // Tracking
+    if (deal.tracking && Array.isArray(deal.tracking) && deal.tracking.length > 0) {
+      html += '<div class="detail-section"><h4>Tracking</h4>';
+      deal.tracking.forEach(function(t) {
+        html += '<div class="card-row"><span class="label">' + (t.data || t.date || '') + '</span><span class="value">' + (t.descricao || t.description || t.status || '') + '</span></div>';
+      });
+      html += '</div>';
+    }
+
+    // Documents
+    if (deal.documentos && Array.isArray(deal.documentos) && deal.documentos.length > 0) {
+      html += '<div class="detail-section"><h4>Documentos</h4>';
+      deal.documentos.forEach(function(doc) {
+        html += '<div class="card-row"><span class="value" style="color:var(--ac);cursor:pointer">' + (doc.nome || doc.name || 'Documento') + '</span></div>';
+      });
+      html += '</div>';
+    }
+
+    // Notes/Observacoes
+    if (deal.observacoes || deal.notas) {
+      html += '<div class="detail-section"><h4>Observa&ccedil;&otilde;es</h4>';
+      html += '<p style="font-size:12px;color:var(--t2);line-height:1.6">' + (deal.observacoes || deal.notas) + '</p>';
+      html += '</div>';
+    }
+
+    detailDealContent.innerHTML = html;
+    dealDetail.classList.add('open');
+  }
+
+  // ══════════════════════════════════════════
+  //  RENDER: COMISSOES
+  // ══════════════════════════════════════════
+  async function loadComissoes() {
+    await fetchComissoes();
+    if (dealsCache.length === 0) await fetchDeals();
+    renderComissoes();
+  }
+
+  function renderComissoes() {
+    // Totals
+    var projTotal = 0, realTotal = 0;
+    var sellerTotal = 0, originadorTotal = 0;
+
+    comissoesCache.forEach(function(c) {
+      var val = Number(c.valor) || 0;
+      var d = c.deals;
+      if (c.status === 'pago' || c.status === 'realizado') {
+        realTotal += val;
+      } else {
+        projTotal += val;
+      }
+      if (d && d.seller_id === playerId) sellerTotal += val;
+      if (d && d.originador_id === playerId) originadorTotal += val;
+    });
+
+    comProj.textContent = fmt(projTotal);
+    comReal.textContent = fmt(realTotal);
+
+    // Role summary
+    var summaryHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap">';
+    if (isSeller) {
+      summaryHTML += '<div class="card" style="flex:1;min-width:140px"><div class="card-row"><span class="label">Total como Seller</span><span class="value" style="color:var(--ac)">' + fmt(sellerTotal) + '</span></div></div>';
+    }
+    if (isOriginador) {
+      summaryHTML += '<div class="card" style="flex:1;min-width:140px"><div class="card-row"><span class="label">Total como Originador</span><span class="value" style="color:var(--pu)">' + fmt(originadorTotal) + '</span></div></div>';
+    }
+    summaryHTML += '</div>';
+    comSummary.innerHTML = summaryHTML;
+
+    // Table
+    if (comissoesCache.length === 0) {
+      comBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:24px">Nenhuma comiss&atilde;o registrada ainda.</td></tr>';
+      return;
+    }
+
+    var rows = '';
+    comissoesCache.forEach(function(c) {
+      var d = c.deals || {};
+      var clienteP = vinculosPlayersCache[d.cliente_id] || {};
+      var industriaP = vinculosPlayersCache[d.industria_id] || {};
+      var clienteName = clienteP.razao_social || clienteP.contato_nome || '--';
+      var industriaName = industriaP.razao_social || industriaP.contato_nome || '--';
+      var myRole = d.seller_id === playerId ? 'seller' : 'originador';
+      var pct = c.percentual || c.porcentagem || '--';
+      if (typeof pct === 'number') pct = pct + '%';
+
+      rows += '<tr>';
+      rows += '<td>' + (d.codigo || (d.id || '').substring(0,6) || '--') + '</td>';
+      rows += '<td>' + clienteName + '</td>';
+      rows += '<td>' + industriaName + '</td>';
+      rows += '<td><span class="role-badge ' + myRole + '">' + myRole + '</span></td>';
+      rows += '<td>' + pct + '</td>';
+      rows += '<td style="font-family:var(--mono);font-weight:600">' + fmt(c.valor) + '</td>';
+      rows += '<td><span class="status-badge ' + statusClass(c.status) + '">' + statusLabel(c.status) + '</span></td>';
+      rows += '</tr>';
+    });
+    comBody.innerHTML = rows;
+  }
+
+  // ══════════════════════════════════════════
+  //  RENDER: PERFIL
+  // ══════════════════════════════════════════
+  async function loadPerfil() {
+    if (vinculosCache.length === 0) await fetchVinculos();
+    if (dealsCache.length === 0) await fetchDeals();
+
+    var realTotal = 0;
+    comissoesCache.forEach(function(c) {
+      if (c.status === 'pago' || c.status === 'realizado') realTotal += Number(c.valor) || 0;
+    });
+
+    profVinculos.textContent = vinculosCache.length;
+    profDeals.textContent = dealsCache.length;
+    profComissao.textContent = fmt(realTotal);
+
+    editContatoNome.value = player.contato_nome || '';
+    editWhatsapp.value = player.whatsapp || '';
+  }
+
+  // ── Save Profile ──
+  btnSaveProfile.addEventListener('click', async function() {
+    var nome = editContatoNome.value.trim();
+    var wpp = editWhatsapp.value.trim();
+
+    if (!nome) { showToast('Nome de contato obrigat\u00f3rio', 'error'); return; }
+
+    btnSaveProfile.disabled = true;
+    btnSaveProfile.textContent = 'Salvando...';
+
+    var res = await _sb.from('players').update({ contato_nome: nome, whatsapp: wpp }).eq('id', playerId);
+
+    btnSaveProfile.disabled = false;
+    btnSaveProfile.textContent = 'Salvar Altera\u00e7\u00f5es';
+
+    if (res.error) {
+      showToast('Erro ao salvar: ' + res.error.message, 'error');
+    } else {
+      player.contato_nome = nome;
+      player.whatsapp = wpp;
+      sessionStorage.setItem('player', JSON.stringify(player));
+      playerName = nome;
+      topName.textContent = nome;
+      topAvatar.textContent = initials(nome);
+      profileName.textContent = nome;
+      profileAvatar.textContent = initials(nome);
+      showToast('Perfil atualizado!', 'success');
+    }
+  });
+
+  // ── Indicar Player ──
+  formIndicar.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    var razao = document.getElementById('indRazao').value.trim();
+    var cnpj = document.getElementById('indCnpj').value.trim();
+    var email = document.getElementById('indEmail').value.trim();
+    var whatsapp = document.getElementById('indWhatsapp').value.trim();
+    var tipoVal = indTipo.value;
+    var papelVal = indPapel.value;
+
+    if (!razao || !email || !tipoVal) {
+      showToast('Preencha os campos obrigat\u00f3rios', 'error');
+      return;
+    }
+
+    var btnInd = document.getElementById('btnIndicar');
+    btnInd.disabled = true;
+    btnInd.textContent = 'Indicando...';
+
+    try {
+      // 1. Create or find the player
+      var existingRes = await _sb.from('players').select('id').eq('email', email).maybeSingle();
+      var linkedPlayerId;
+
+      if (existingRes.data) {
+        linkedPlayerId = existingRes.data.id;
+      } else {
+        var newPlayer = {
+          razao_social: razao,
+          cnpj: cnpj || null,
+          email: email,
+          whatsapp: whatsapp || null,
+          tipo: [tipoVal],
+          status: 'pendente',
+          indicado_por: playerId
+        };
+        var createRes = await _sb.from('players').insert(newPlayer).select('id').single();
+        if (createRes.error) throw createRes.error;
+        linkedPlayerId = createRes.data.id;
+      }
+
+      // 2. Create vinculo
+      var vinculo = {
+        intermediario_id: playerId,
+        player_id: linkedPlayerId,
+        papel: papelVal,
+        status: 'ativo'
+      };
+      var vincRes = await _sb.from('vinculos').insert(vinculo);
+      if (vincRes.error) throw vincRes.error;
+
+      showToast('Player indicado com sucesso!', 'success');
+      modalIndicar.classList.remove('open');
+      formIndicar.reset();
+
+      // Refresh
+      await fetchVinculos();
+      renderCarteira();
+
+    } catch(err) {
+      showToast('Erro: ' + (err.message || 'Falha ao indicar'), 'error');
+    }
+
+    btnInd.disabled = false;
+    btnInd.textContent = 'Indicar';
+  });
+
+  // ══════════════════════════════════════════
+  //  BOOT
+  // ══════════════════════════════════════════
+  async function boot() {
+    initUI();
+
+    // Show app
+    loadingScreen.classList.add('hidden');
+    app.classList.add('active');
+
+    // Default: fab hidden until carteira panel
+    fabIndicar.style.display = 'none';
+
+    // Load dashboard
+    await loadDashboard();
+  }
+
+  boot();
+
+})();
+</script>
+</body>
+</html>

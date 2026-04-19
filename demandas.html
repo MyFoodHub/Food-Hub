@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050810">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FoodHub &middot; Demandas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;overflow-x:hidden}
+body{background:#050810;color:#ECF0FF;font-family:'DM Sans',sans-serif;font-size:14px}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+
+:root{
+  --bg:#050810;--bg2:#080D18;--bg3:#0C1220;--bg4:#111826;--bg5:#162030;
+  --b1:rgba(255,255,255,.055);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.18);
+  --t1:#FFFFFF;--t2:#CCCCCC;--t3:#999999;--t4:#3A4A66;
+  --ac:#00C8FF;--a2:rgba(0,200,255,.08);--a3:rgba(0,200,255,.15);
+  --gn:#00E09A;--g2:rgba(0,224,154,.08);--g3:rgba(0,224,154,.15);
+  --am:#F5A623;--am2:rgba(245,166,35,.08);
+  --rd:#FF4060;--r2:rgba(255,64,96,.08);
+  --pu:#9B7AFF;--p2:rgba(155,122,255,.08);
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+
+/* ── LOADING SCREEN ── */
+#loadingScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loadingScreen.hidden{display:none}
+.loading-logo{font-size:36px;font-weight:700;letter-spacing:-.5px}
+.loading-logo span{color:var(--ac)}
+.loading-dot{display:inline-block;width:8px;height:8px;background:var(--ac);border-radius:50%;box-shadow:0 0 10px var(--ac);animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+.loading-phrase{color:var(--t4);font-size:13px;font-style:italic;animation:fadePulse 1.8s ease-in-out infinite}
+@keyframes fadePulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* ── ACCESS DENIED ── */
+#accessDenied{position:fixed;inset:0;background:var(--bg);z-index:9998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px}
+#accessDenied.visible{display:flex}
+#accessDenied h2{font-size:20px;color:var(--rd)}
+#accessDenied p{color:var(--t3);font-size:14px}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:column;overflow:hidden}
+#app.active{display:flex}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--b1);background:var(--bg2);flex-shrink:0;z-index:10}
+.logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px;letter-spacing:-.01em}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac)}
+.logo span{color:var(--ac)}
+.user-pill{display:flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--b1);border-radius:20px;padding:3px 12px 3px 4px;font-size:12px;color:var(--t2)}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden}
+.main{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px}
+
+/* ── SIDEBAR (desktop) ── */
+.sidebar{display:none;width:200px;background:var(--bg2);border-right:1px solid var(--b1);padding:12px 8px;flex-shrink:0;flex-direction:column;gap:2px;overflow-y:auto}
+@media(min-width:769px){
+  .sidebar{display:flex}
+  .bottom-nav{display:none!important}
+  .main{padding-bottom:16px}
+}
+.nav-sec{font-size:9px;color:var(--t4);text-transform:uppercase;letter-spacing:.09em;padding:10px 10px 3px;font-weight:500}
+.nav-item{position:relative;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12px;color:var(--t2);cursor:pointer;transition:all .12s;border:1px solid transparent}
+.nav-item:hover{background:linear-gradient(90deg,rgba(0,200,255,.07),transparent);color:var(--t1)}
+.nav-item.active{background:var(--a2);color:var(--ac);border-color:rgba(0,200,255,.12)}
+.ni{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);border-top:1px solid var(--b1);z-index:100;padding:4px 0;padding-bottom:env(safe-area-inset-bottom,4px)}
+.bottom-nav .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;cursor:pointer;color:var(--t4);font-size:9px;transition:color .15s}
+.bottom-nav .bnav-item.active{color:var(--ac)}
+.bottom-nav .bnav-item .bnav-icon{font-size:18px}
+
+/* ── SECTIONS ── */
+.section{display:none;flex-direction:column;gap:14px}
+.section.active{display:flex}
+
+/* ── METRIC CARDS ── */
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:600px){.metrics-grid{grid-template-columns:repeat(4,1fr)}}
+.metric{background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:12px 14px}
+.metric .ml{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.metric .mv{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--t1)}
+.metric .md{font-size:10px;margin-top:3px;color:var(--t3)}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--b1);border-radius:11px;padding:13px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.card:hover{border-color:rgba(0,200,255,.3);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,200,255,.06)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.badge-green{background:var(--g2);color:var(--gn)}
+.badge-amber{background:var(--am2);color:var(--am)}
+.badge-blue{background:var(--a2);color:var(--ac)}
+.badge-purple{background:var(--p2);color:var(--pu)}
+.badge-red{background:var(--r2);color:var(--rd)}
+
+/* ── BUTTONS ── */
+.btn{background:var(--ac);color:#000;border:none;border-radius:8px;padding:9px 18px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-green{background:var(--gn);color:#000}
+.btn-red{background:var(--rd);color:#fff}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--b2);border-radius:8px;padding:8px 15px;font-family:var(--font);font-size:13px;cursor:pointer;transition:all .13s}
+.btn-ghost:hover{background:var(--bg4);color:var(--t1)}
+.btn-sm{padding:5px 11px;font-size:11px}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sh h2{font-size:16px;font-weight:700;color:var(--t1)}
+.sh h3{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:72px;right:16px;background:var(--ac);color:#000;border:none;border-radius:14px;padding:12px 20px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,200,255,.35);z-index:90;display:flex;align-items:center;gap:6px;transition:all .15s}
+.fab:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(0,200,255,.45)}
+@media(min-width:769px){.fab{bottom:24px;right:24px}}
+
+/* ── MODAL / OVERLAY ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:520px;padding:20px;max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-header h3{font-size:16px;font-weight:700}
+.mx{background:none;border:none;color:var(--t3);cursor:pointer;font-size:20px;padding:0}
+.mx:hover{color:var(--t1)}
+
+/* ── FORM ELEMENTS ── */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:500;color:var(--t3);margin-bottom:5px}
+.form-input{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--b1);border-radius:9px;color:var(--t1);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s;resize:vertical}
+.form-input:focus{border-color:var(--ac);box-shadow:0 0 0 2px rgba(0,200,255,.08)}
+.form-input::placeholder{color:var(--t4)}
+textarea.form-input{min-height:100px;line-height:1.5}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── CHAT ── */
+.chat-area{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:10px}
+.msg{display:flex;gap:6px;align-items:flex-end}
+.msg.me{flex-direction:row-reverse}
+.bubble{padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:80%}
+.msg.them .bubble{background:var(--bg4);border-bottom-left-radius:3px}
+.msg.me .bubble{background:var(--a2);border:1px solid rgba(0,200,255,.18);border-bottom-right-radius:3px}
+.msg-time{font-size:9px;color:var(--t4);margin-top:2px}
+.chat-bar{display:flex;gap:8px;margin-top:8px}
+.chat-inp{flex:1;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;padding:8px 12px;color:var(--t1);font-family:var(--font);font-size:13px;outline:none}
+.chat-inp:focus{border-color:var(--ac)}
+
+/* ── PROPOSAL CARD ── */
+.prop-card{background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:14px;margin-bottom:8px}
+.prop-card .prop-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.prop-card .prop-industry{font-weight:600;font-size:14px}
+.prop-card .prop-details{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--t2);margin-bottom:10px}
+.prop-card .prop-details .pd-label{color:var(--t3);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.prop-card .prop-actions{display:flex;gap:8px}
+
+/* ── DEAL CARD ── */
+.deal-card{background:var(--bg2);border:1px solid var(--b1);border-left:3px solid var(--gn);border-radius:11px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.deal-card:hover{border-color:rgba(0,224,154,.3);transform:translateY(-1px)}
+.deal-card .deal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.deal-card .deal-code{font-family:var(--mono);font-size:12px;color:var(--ac)}
+.deal-card .deal-info{font-size:12px;color:var(--t2);line-height:1.6}
+
+/* ── PROFILE ── */
+.profile-card{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:12px}
+.profile-card h4{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.profile-field{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b1);font-size:13px}
+.profile-field:last-child{border:none}
+.profile-field .pf-label{color:var(--t3)}
+.profile-field .pf-value{color:var(--t1);font-weight:500;text-align:right}
+
+/* ── ACTIVITY LIST ── */
+.activity-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)}
+.activity-item:last-child{border:none}
+.activity-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.activity-text{flex:1;font-size:12px;color:var(--t2)}
+.activity-time{font-size:10px;color:var(--t4);white-space:nowrap}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--t4)}
+.empty-state .empty-icon{font-size:36px;margin-bottom:10px}
+.empty-state p{font-size:13px}
+
+/* ── DETAIL VIEW ── */
+.detail-view{display:none;flex-direction:column;gap:12px}
+.detail-view.active{display:flex}
+.detail-back{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);cursor:pointer;padding:4px 0;transition:color .12s}
+.detail-back:hover{color:var(--ac)}
+.detail-header{margin-bottom:4px}
+.detail-header h2{font-size:18px;font-weight:700}
+.detail-header p{font-size:12px;color:var(--t3);margin-top:2px}
+
+/* ── SCORE BAR ── */
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.score-row label{font-size:11px;color:var(--t2);min-width:60px}
+.score-track{flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.score-bar{height:100%;border-radius:2px;transition:width .4s}
+.score-val{font-size:11px;font-family:var(--mono);color:var(--t1);min-width:24px;text-align:right}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:20px;right:20px;background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--t1);z-index:600;transform:translateX(120%);transition:transform .3s;max-width:320px}
+.toast.show{transform:translateX(0)}
+.toast.success{border-left:3px solid var(--gn)}
+.toast.error{border-left:3px solid var(--rd)}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="loading-logo">Food<span>Hub</span><span class="loading-dot"></span></div>
+  <div class="loading-phrase">Sua mesa est&aacute; sendo preparada...</div>
+</div>
+
+<!-- ACCESS DENIED -->
+<div id="accessDenied">
+  <h2>Acesso Restrito</h2>
+  <p>Acesso exclusivo. Apenas convidados.</p>
+  <a href="entrar.html" style="color:var(--ac);font-size:13px;margin-top:8px">Voltar ao login</a>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">Food<span>Hub</span><span class="logo-dot"></span></div>
+    <div class="user-pill">
+      <div class="avatar" id="userAvatar">--</div>
+      <span id="userName">---</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR (desktop) -->
+    <div class="sidebar">
+      <div class="nav-sec">Menu</div>
+      <div class="nav-item active" data-tab="home"><span class="ni">&#127968;</span> Home</div>
+      <div class="nav-item" data-tab="demandas"><span class="ni">&#128203;</span> Demandas</div>
+      <div class="nav-item" data-tab="propostas"><span class="ni">&#128202;</span> Propostas</div>
+      <div class="nav-item" data-tab="deals"><span class="ni">&#129309;</span> Deals</div>
+      <div class="nav-item" data-tab="perfil"><span class="ni">&#128100;</span> Perfil</div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main" id="mainContent">
+
+      <!-- ═══ SECTION: HOME ═══ -->
+      <div class="section active" id="sec-home">
+        <div class="sh"><h2 id="homeGreeting">Bem-vindo</h2></div>
+        <div class="metrics-grid" id="homeMetrics">
+          <div class="metric"><div class="ml">Demandas Ativas</div><div class="mv" id="metDemandasAtivas">-</div></div>
+          <div class="metric"><div class="ml">Propostas Recebidas</div><div class="mv" id="metPropostasRecebidas">-</div></div>
+          <div class="metric"><div class="ml">Deals em Andamento</div><div class="mv" id="metDealsAndamento">-</div></div>
+          <div class="metric"><div class="ml">Saving Acumulado</div><div class="mv" id="metSaving">R$ -</div></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="sh"><h3>Atividade Recente</h3></div>
+          <div id="homeActivity" class="empty-state"><div class="empty-icon">&#128203;</div><p>Carregando...</p></div>
+        </div>
+      </div>
+
+      <!-- ═══ SECTION: DEMANDAS ═══ -->
+      <div class="section" id="sec-demandas">
+        <div class="sh"><h2>Minhas Demandas</h2></div>
+        <div id="demandasList"></div>
+        <!-- DETAIL: demand detail with proposals -->
+        <div class="detail-view" id="demandaDetail">
+          <div class="detail-back" id="demandaDetailBack">&#8592; Voltar</div>
+          <div id="demandaDetailContent"></div>
+        </div>
+      </div>
+
+      <!-- ═══ SECTION: PROPOSTAS ═══ -->
+      <div class="section" id="sec-propostas">
+        <div class="sh"><h2>Propostas Recebidas</h2></div>
+        <div id="propostasList"></div>
+      </div>
+
+      <!-- ═══ SECTION: DEALS ═══ -->
+      <div class="section" id="sec-deals">
+        <div class="sh"><h2>Meus Deals</h2></div>
+        <div id="dealsList"></div>
+        <!-- DETAIL: deal detail with chat -->
+        <div class="detail-view" id="dealDetail">
+          <div class="detail-back" id="dealDetailBack">&#8592; Voltar</div>
+          <div id="dealDetailContent"></div>
+        </div>
+      </div>
+
+      <!-- ═══ SECTION: PERFIL ═══ -->
+      <div class="section" id="sec-perfil">
+        <div class="sh"><h2>Meu Perfil</h2></div>
+        <div id="perfilContent"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <div class="bottom-nav">
+    <div class="bnav-item active" data-tab="home"><div class="bnav-icon">&#127968;</div>Home</div>
+    <div class="bnav-item" data-tab="demandas"><div class="bnav-icon">&#128203;</div>Demandas</div>
+    <div class="bnav-item" data-tab="propostas"><div class="bnav-icon">&#128202;</div>Propostas</div>
+    <div class="bnav-item" data-tab="deals"><div class="bnav-icon">&#129309;</div>Deals</div>
+    <div class="bnav-item" data-tab="perfil"><div class="bnav-icon">&#128100;</div>Perfil</div>
+  </div>
+
+  <!-- FAB (visible on demandas tab) -->
+  <button class="fab" id="fabNovaDemanda" style="display:none" onclick="openNewDemandModal()">+ Nova Demanda</button>
+</div>
+
+<!-- ═══ MODAL: NOVA DEMANDA ═══ -->
+<div class="overlay" id="modalNovaDemanda">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova Demanda</h3>
+      <button class="mx" onclick="closeNewDemandModal()">&times;</button>
+    </div>
+    <form id="formNovaDemanda" onsubmit="submitNovaDemanda(event)">
+      <div class="form-group">
+        <label>O que voc&ecirc; precisa comprar?</label>
+        <textarea class="form-input" id="ndDescricao" placeholder="Descreva o produto que precisa. Ex: Frango inteiro congelado, arroz tipo 1, queijo muçarela fatiado..." required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Volume</label>
+          <input type="number" class="form-input" id="ndVolume" placeholder="Ex: 5000" min="1" required>
+        </div>
+        <div class="form-group">
+          <label>Unidade</label>
+          <select class="form-input" id="ndUnidade">
+            <option value="kg">kg</option>
+            <option value="ton">tonelada</option>
+            <option value="un">unidade</option>
+            <option value="cx">caixa</option>
+            <option value="lt">litro</option>
+            <option value="sc">saca</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Regi&atilde;o de entrega</label>
+          <select class="form-input" id="ndRegiao">
+            <option value="Brasil">Brasil (qualquer)</option>
+            <option value="Sul">Sul</option>
+            <option value="Sudeste">Sudeste</option>
+            <option value="Centro-Oeste">Centro-Oeste</option>
+            <option value="Nordeste">Nordeste</option>
+            <option value="Norte">Norte</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prefer&ecirc;ncia de frete</label>
+          <select class="form-input" id="ndFrete">
+            <option value="CIF">CIF (entregue)</option>
+            <option value="FOB">FOB (retira)</option>
+            <option value="A combinar">A combinar</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btnSubmitDemanda" style="width:100%;margin-top:6px">Publicar Demanda</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ MODAL: DEAL DETAIL ═══ -->
+<div class="overlay" id="modalDealDetail">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3 id="dealModalTitle">Deal</h3>
+      <button class="mx" onclick="closeDealModal()">&times;</button>
+    </div>
+    <div id="dealModalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ═══════════════════════════════════════
+// SUPABASE CLIENT
+// ═══════════════════════════════════════
+var _sb = supabase.createClient(
+  'https://jqbuckofiaopxwllghac.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+);
+
+// ═══════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════
+var player = null;
+var currentTab = 'home';
+var currentDemandaId = null;
+var currentDealId = null;
+
+// ═══════════════════════════════════════
+// AUTH CHECK
+// ═══════════════════════════════════════
+(function init() {
+  var raw = sessionStorage.getItem('player');
+  if (!raw) {
+    window.location.href = 'entrar.html';
+    return;
+  }
+
+  try {
+    player = JSON.parse(raw);
+  } catch (e) {
+    window.location.href = 'entrar.html';
+    return;
+  }
+
+  // Verify tipo includes 'cliente'
+  var isCliente = false;
+  if (Array.isArray(player.tipo)) {
+    isCliente = player.tipo.indexOf('cliente') !== -1;
+  } else if (typeof player.tipo === 'string') {
+    isCliente = player.tipo === 'cliente' || player.tipo === 'comprador';
+  }
+
+  if (!isCliente) {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('accessDenied').classList.add('visible');
+    return;
+  }
+
+  // Setup UI
+  var nome = player.contato_nome || player.razao_social || player.nome || player.email || '---';
+  document.getElementById('userName').textContent = nome;
+  var initials = nome.split(' ').map(function(w){ return w[0]; }).join('').substring(0,2).toUpperCase();
+  document.getElementById('userAvatar').textContent = initials;
+
+  var companyName = player.razao_social || nome;
+  document.title = 'FoodHub \u00B7 Demandas \u2014 ' + companyName;
+  document.getElementById('homeGreeting').textContent = 'Ol\u00E1, ' + nome.split(' ')[0];
+
+  // Show app
+  document.getElementById('loadingScreen').classList.add('hidden');
+  document.getElementById('app').classList.add('active');
+
+  // Load initial data
+  loadHome();
+})();
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+
+  // Update nav items
+  var navItems = document.querySelectorAll('.nav-item, .bnav-item');
+  for (var i = 0; i < navItems.length; i++) {
+    if (navItems[i].getAttribute('data-tab') === tab) {
+      navItems[i].classList.add('active');
+    } else {
+      navItems[i].classList.remove('active');
+    }
+  }
+
+  // Update sections
+  var sections = document.querySelectorAll('.section');
+  for (var j = 0; j < sections.length; j++) {
+    sections[j].classList.remove('active');
+  }
+  var target = document.getElementById('sec-' + tab);
+  if (target) target.classList.add('active');
+
+  // FAB visibility
+  var fab = document.getElementById('fabNovaDemanda');
+  fab.style.display = (tab === 'demandas') ? 'flex' : 'none';
+
+  // Hide detail views
+  document.getElementById('demandaDetail').classList.remove('active');
+  document.getElementById('dealDetail').classList.remove('active');
+  document.getElementById('demandasList').style.display = '';
+  document.getElementById('dealsList').style.display = '';
+
+  // Load data
+  if (tab === 'home') loadHome();
+  if (tab === 'demandas') loadDemandas();
+  if (tab === 'propostas') loadPropostas();
+  if (tab === 'deals') loadDeals();
+  if (tab === 'perfil') loadPerfil();
+}
+
+// Bind nav clicks
+document.querySelectorAll('.nav-item, .bnav-item').forEach(function(el) {
+  el.addEventListener('click', function() {
+    switchTab(this.getAttribute('data-tab'));
+  });
+});
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || 'success') + ' show';
+  setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function statusBadge(status) {
+  var map = {
+    'aguardando_aprovacao': { cls: 'badge-amber', txt: 'Aguardando' },
+    'ativa': { cls: 'badge-green', txt: 'Ativa' },
+    'em_andamento': { cls: 'badge-blue', txt: 'Em Andamento' },
+    'fechada': { cls: 'badge-purple', txt: 'Fechada' },
+    'cancelada': { cls: 'badge-red', txt: 'Cancelada' },
+    'fechado': { cls: 'badge-green', txt: 'Fechado' },
+    'pendente': { cls: 'badge-amber', txt: 'Pendente' },
+    'aceita': { cls: 'badge-green', txt: 'Aceita' },
+    'recusada': { cls: 'badge-red', txt: 'Recusada' },
+    'enviada': { cls: 'badge-blue', txt: 'Enviada' }
+  };
+  var info = map[status] || { cls: 'badge-blue', txt: status || 'N/A' };
+  return '<span class="badge ' + info.cls + '">' + info.txt + '</span>';
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  var dt = new Date(d);
+  return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+
+function formatCurrency(v) {
+  if (!v && v !== 0) return 'R$ -';
+  return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function timeAgo(d) {
+  if (!d) return '';
+  var diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (diff < 60) return 'agora';
+  if (diff < 3600) return Math.floor(diff / 60) + 'min';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+  return Math.floor(diff / 86400) + 'd';
+}
+
+function generateCodigo() {
+  var num = Math.floor(1000 + Math.random() * 9000);
+  return 'OPR-' + num;
+}
+
+// ═══════════════════════════════════════
+// SECTION: HOME
+// ═══════════════════════════════════════
+async function loadHome() {
+  try {
+    // Demandas ativas
+    var demRes = await _sb.from('oportunidades').select('id, status', { count: 'exact' })
+      .eq('cliente_id', player.id).in('status', ['ativa', 'aguardando_aprovacao', 'em_andamento']);
+    var demandasAtivas = (demRes.count !== null && demRes.count !== undefined) ? demRes.count : (demRes.data ? demRes.data.length : 0);
+    document.getElementById('metDemandasAtivas').textContent = demandasAtivas;
+
+    // Propostas recebidas
+    var propRes = await _sb.from('propostas_v3').select('id, oportunidade_id, oportunidades!inner(cliente_id)', { count: 'exact' })
+      .eq('oportunidades.cliente_id', player.id);
+    var propostasCount = (propRes.count !== null && propRes.count !== undefined) ? propRes.count : (propRes.data ? propRes.data.length : 0);
+    document.getElementById('metPropostasRecebidas').textContent = propostasCount;
+
+    // Deals em andamento
+    var dealRes = await _sb.from('deals').select('id, status, saving', { count: 'exact' })
+      .eq('cliente_id', player.id);
+    var dealsAndamento = 0;
+    var savingTotal = 0;
+    if (dealRes.data) {
+      for (var i = 0; i < dealRes.data.length; i++) {
+        if (dealRes.data[i].status === 'em_andamento') dealsAndamento++;
+        if (dealRes.data[i].saving) savingTotal += Number(dealRes.data[i].saving) || 0;
+      }
+    }
+    document.getElementById('metDealsAndamento').textContent = dealsAndamento;
+    document.getElementById('metSaving').textContent = formatCurrency(savingTotal);
+
+    // Recent activity: last 5 oportunidades
+    var actRes = await _sb.from('oportunidades').select('id, codigo, produto_descricao, status, criado_em')
+      .eq('cliente_id', player.id).order('criado_em', { ascending: false }).limit(5);
+
+    var actContainer = document.getElementById('homeActivity');
+    if (!actRes.data || actRes.data.length === 0) {
+      actContainer.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><p>Nenhuma atividade ainda. Crie sua primeira demanda!</p></div>';
+      return;
+    }
+    var html = '';
+    for (var a = 0; a < actRes.data.length; a++) {
+      var act = actRes.data[a];
+      var dotColor = act.status === 'ativa' ? 'var(--gn)' : act.status === 'aguardando_aprovacao' ? 'var(--am)' : 'var(--ac)';
+      html += '<div class="activity-item">';
+      html += '<div class="activity-dot" style="background:' + dotColor + '"></div>';
+      html += '<div class="activity-text"><strong>' + (act.codigo || '-') + '</strong> &mdash; ' + (act.produto_descricao || '').substring(0, 50) + '</div>';
+      html += '<div>' + statusBadge(act.status) + '</div>';
+      html += '<div class="activity-time">' + timeAgo(act.criado_em) + '</div>';
+      html += '</div>';
+    }
+    actContainer.innerHTML = html;
+  } catch (err) {
+    console.error('loadHome error:', err);
+  }
+}
+
+// ═══════════════════════════════════════
+// SECTION: DEMANDAS
+// ═══════════════════════════════════════
+async function loadDemandas() {
+  var container = document.getElementById('demandasList');
+  container.innerHTML = '<div class="empty-state"><div class="loading-phrase">Sua mesa est\u00E1 sendo preparada...</div></div>';
+
+  try {
+    var res = await _sb.from('oportunidades').select('*')
+      .eq('cliente_id', player.id).order('criado_em', { ascending: false });
+
+    if (res.error) throw res.error;
+
+    if (!res.data || res.data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><p>Nenhuma demanda ainda. Clique em "Nova Demanda" para come\u00E7ar.</p></div>';
+      return;
+    }
+
+    // Get proposal counts per oportunidade
+    var opIds = res.data.map(function(o) { return o.id; });
+    var propRes = await _sb.from('propostas_v3').select('oportunidade_id').in('oportunidade_id', opIds);
+    var propCounts = {};
+    if (propRes.data) {
+      for (var p = 0; p < propRes.data.length; p++) {
+        var oid = propRes.data[p].oportunidade_id;
+        propCounts[oid] = (propCounts[oid] || 0) + 1;
+      }
+    }
+
+    var html = '';
+    for (var i = 0; i < res.data.length; i++) {
+      var d = res.data[i];
+      var pc = propCounts[d.id] || 0;
+      html += '<div class="card" onclick="openDemandaDetail(\'' + d.id + '\')">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+      html += '<span style="font-family:var(--mono);font-size:11px;color:var(--ac)">' + (d.codigo || '-') + '</span>';
+      html += statusBadge(d.status);
+      html += '</div>';
+      html += '<div style="font-weight:600;font-size:14px;margin-bottom:4px;line-height:1.4">' + (d.produto_descricao || '-') + '</div>';
+      html += '<div style="display:flex;gap:12px;font-size:11px;color:var(--t3);flex-wrap:wrap">';
+      html += '<span>&#128230; ' + (d.volume || '-') + ' ' + (d.unidade || '') + '</span>';
+      html += '<span>&#127758; ' + (d.regiao || '-') + '</span>';
+      html += '<span>&#128666; ' + (d.frete || '-') + '</span>';
+      html += '<span>&#128172; ' + pc + ' proposta' + (pc !== 1 ? 's' : '') + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:10px;color:var(--t4);margin-top:6px">Criado ' + formatDate(d.criado_em) + '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('loadDemandas error:', err);
+    container.innerHTML = '<div class="empty-state"><p style="color:var(--rd)">Erro ao carregar demandas.</p></div>';
+  }
+}
+
+// ═══ Open Demanda Detail ═══
+async function openDemandaDetail(demandaId) {
+  currentDemandaId = demandaId;
+  document.getElementById('demandasList').style.display = 'none';
+  document.getElementById('fabNovaDemanda').style.display = 'none';
+
+  var detailView = document.getElementById('demandaDetail');
+  var content = document.getElementById('demandaDetailContent');
+  detailView.classList.add('active');
+  content.innerHTML = '<div class="empty-state"><div class="loading-phrase">Sua mesa est\u00E1 sendo preparada...</div></div>';
+
+  try {
+    // Get demanda info
+    var demRes = await _sb.from('oportunidades').select('*').eq('id', demandaId).single();
+    if (demRes.error) throw demRes.error;
+    var dem = demRes.data;
+
+    // Get proposals for this demanda, sorted by score
+    var propRes = await _sb.from('propostas_v3').select('*, players(razao_social, contato_nome)')
+      .eq('oportunidade_id', demandaId).order('score', { ascending: false });
+
+    var html = '';
+    html += '<div class="detail-header">';
+    html += '<h2>' + (dem.produto_descricao || '-') + '</h2>';
+    html += '<p>' + (dem.codigo || '-') + ' &bull; ' + statusBadge(dem.status) + ' &bull; ' + (dem.volume || '-') + ' ' + (dem.unidade || '') + ' &bull; ' + (dem.regiao || '-') + ' &bull; ' + (dem.frete || '-') + '</p>';
+    html += '</div>';
+
+    // Proposals
+    html += '<div style="margin-top:16px"><div class="sh"><h3>Propostas (' + (propRes.data ? propRes.data.length : 0) + ')</h3></div>';
+
+    if (!propRes.data || propRes.data.length === 0) {
+      html += '<div class="empty-state"><div class="empty-icon">&#128202;</div><p>Nenhuma proposta recebida ainda.</p></div>';
+    } else {
+      for (var i = 0; i < propRes.data.length; i++) {
+        var pr = propRes.data[i];
+        var indName = (pr.players && (pr.players.razao_social || pr.players.contato_nome)) || 'Ind\u00FAstria';
+        var scoreVal = pr.score || 0;
+        var scoreColor = scoreVal >= 80 ? 'var(--gn)' : scoreVal >= 50 ? 'var(--am)' : 'var(--rd)';
+
+        html += '<div class="prop-card">';
+        html += '<div class="prop-header">';
+        html += '<span class="prop-industry">' + indName + '</span>';
+        html += statusBadge(pr.status);
+        html += '</div>';
+
+        // Score bar
+        html += '<div class="score-row"><label>Score</label><div class="score-track"><div class="score-bar" style="width:' + scoreVal + '%;background:' + scoreColor + '"></div></div><span class="score-val">' + scoreVal + '</span></div>';
+
+        html += '<div class="prop-details">';
+        html += '<div><div class="pd-label">Pre\u00E7o</div>' + formatCurrency(pr.preco) + '</div>';
+        html += '<div><div class="pd-label">Volume</div>' + (pr.volume || '-') + ' ' + (pr.unidade || '') + '</div>';
+        html += '<div><div class="pd-label">Prazo</div>' + (pr.prazo || '-') + '</div>';
+        html += '<div><div class="pd-label">Condi\u00E7\u00E3o</div>' + (pr.condicao || '-') + '</div>';
+        html += '</div>';
+
+        if (pr.status === 'enviada' || pr.status === 'pendente') {
+          html += '<div class="prop-actions">';
+          html += '<button class="btn btn-sm" onclick="negociarProposta(\'' + pr.id + '\', \'' + demandaId + '\', \'' + (pr.industria_id || '') + '\')">Negociar</button>';
+          html += '<button class="btn-ghost btn-sm" onclick="recusarProposta(\'' + pr.id + '\')">Recusar</button>';
+          html += '</div>';
+        }
+
+        html += '</div>';
+      }
+    }
+    html += '</div>';
+    content.innerHTML = html;
+  } catch (err) {
+    console.error('openDemandaDetail error:', err);
+    content.innerHTML = '<div class="empty-state"><p style="color:var(--rd)">Erro ao carregar detalhes.</p></div>';
+  }
+}
+
+document.getElementById('demandaDetailBack').addEventListener('click', function() {
+  document.getElementById('demandaDetail').classList.remove('active');
+  document.getElementById('demandasList').style.display = '';
+  document.getElementById('fabNovaDemanda').style.display = 'flex';
+  currentDemandaId = null;
+});
+
+// ═══ New Demand Modal ═══
+function openNewDemandModal() {
+  document.getElementById('modalNovaDemanda').classList.add('open');
+}
+function closeNewDemandModal() {
+  document.getElementById('modalNovaDemanda').classList.remove('open');
+  document.getElementById('formNovaDemanda').reset();
+}
+
+async function submitNovaDemanda(e) {
+  e.preventDefault();
+  var btn = document.getElementById('btnSubmitDemanda');
+  btn.disabled = true;
+  btn.textContent = 'Publicando...';
+
+  try {
+    var descricao = document.getElementById('ndDescricao').value.trim();
+    var volume = document.getElementById('ndVolume').value;
+    var unidade = document.getElementById('ndUnidade').value;
+    var regiao = document.getElementById('ndRegiao').value;
+    var frete = document.getElementById('ndFrete').value;
+    var codigo = generateCodigo();
+
+    var insertData = {
+      cliente_id: player.id,
+      produto_descricao: descricao,
+      volume: Number(volume),
+      unidade: unidade,
+      regiao: regiao,
+      frete: frete,
+      codigo: codigo,
+      status: 'aguardando_aprovacao'
+    };
+
+    var res = await _sb.from('oportunidades').insert(insertData);
+    if (res.error) throw res.error;
+
+    closeNewDemandModal();
+    showToast('Demanda ' + codigo + ' publicada com sucesso!', 'success');
+    loadDemandas();
+  } catch (err) {
+    console.error('submitNovaDemanda error:', err);
+    showToast('Erro ao publicar demanda: ' + (err.message || ''), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Publicar Demanda';
+  }
+}
+
+// ═══════════════════════════════════════
+// SECTION: PROPOSTAS
+// ═══════════════════════════════════════
+async function loadPropostas() {
+  var container = document.getElementById('propostasList');
+  container.innerHTML = '<div class="empty-state"><div class="loading-phrase">Sua mesa est\u00E1 sendo preparada...</div></div>';
+
+  try {
+    var res = await _sb.from('propostas_v3')
+      .select('*, oportunidades!inner(id, codigo, produto_descricao, cliente_id), players(razao_social, contato_nome)')
+      .eq('oportunidades.cliente_id', player.id)
+      .order('criado_em', { ascending: false });
+
+    if (res.error) throw res.error;
+
+    if (!res.data || res.data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128202;</div><p>Nenhuma proposta recebida ainda.</p></div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < res.data.length; i++) {
+      var pr = res.data[i];
+      var indName = (pr.players && (pr.players.razao_social || pr.players.contato_nome)) || 'Ind\u00FAstria';
+      var opName = (pr.oportunidades && pr.oportunidades.produto_descricao) || '-';
+      var opCode = (pr.oportunidades && pr.oportunidades.codigo) || '-';
+
+      html += '<div class="prop-card">';
+      html += '<div class="prop-header">';
+      html += '<div><span class="prop-industry">' + indName + '</span><div style="font-size:10px;color:var(--t4);margin-top:2px">' + opCode + ' &mdash; ' + opName.substring(0, 40) + '</div></div>';
+      html += statusBadge(pr.status);
+      html += '</div>';
+
+      html += '<div class="prop-details">';
+      html += '<div><div class="pd-label">Pre\u00E7o</div>' + formatCurrency(pr.preco) + '</div>';
+      html += '<div><div class="pd-label">Volume</div>' + (pr.volume || '-') + ' ' + (pr.unidade || '') + '</div>';
+      html += '<div><div class="pd-label">Prazo</div>' + (pr.prazo || '-') + '</div>';
+      html += '<div><div class="pd-label">Condi\u00E7\u00E3o</div>' + (pr.condicao || '-') + '</div>';
+      html += '</div>';
+
+      if (pr.status === 'enviada' || pr.status === 'pendente') {
+        html += '<div class="prop-actions">';
+        html += '<button class="btn btn-sm" onclick="negociarProposta(\'' + pr.id + '\', \'' + (pr.oportunidade_id || '') + '\', \'' + (pr.industria_id || '') + '\')">Negociar</button>';
+        html += '<button class="btn-ghost btn-sm" onclick="recusarProposta(\'' + pr.id + '\')">Recusar</button>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('loadPropostas error:', err);
+    container.innerHTML = '<div class="empty-state"><p style="color:var(--rd)">Erro ao carregar propostas.</p></div>';
+  }
+}
+
+// ═══ Negociar Proposta → Create Deal ═══
+async function negociarProposta(propostaId, oportunidadeId, industriaId) {
+  if (!confirm('Iniciar negocia\u00E7\u00E3o com esta ind\u00FAstria?')) return;
+
+  try {
+    // Update proposal status
+    await _sb.from('propostas_v3').update({ status: 'aceita' }).eq('id', propostaId);
+
+    // Get proposal details for deal
+    var propRes = await _sb.from('propostas_v3').select('*').eq('id', propostaId).single();
+    var prop = propRes.data || {};
+
+    // Create deal
+    var dealCode = 'DEAL-' + Math.floor(1000 + Math.random() * 9000);
+    var dealData = {
+      codigo: dealCode,
+      cliente_id: player.id,
+      industria_id: industriaId || null,
+      oportunidade_id: oportunidadeId || null,
+      proposta_id: propostaId,
+      status: 'em_andamento',
+      valor_total: prop.preco ? (Number(prop.preco) * (Number(prop.volume) || 1)) : null
+    };
+
+    var dealRes = await _sb.from('deals').insert(dealData);
+    if (dealRes.error) throw dealRes.error;
+
+    showToast('Deal ' + dealCode + ' criado! Negocia\u00E7\u00E3o iniciada.', 'success');
+    switchTab('deals');
+  } catch (err) {
+    console.error('negociarProposta error:', err);
+    showToast('Erro ao criar deal: ' + (err.message || ''), 'error');
+  }
+}
+
+// ═══ Recusar Proposta ═══
+async function recusarProposta(propostaId) {
+  if (!confirm('Recusar esta proposta?')) return;
+
+  try {
+    var res = await _sb.from('propostas_v3').update({ status: 'recusada' }).eq('id', propostaId);
+    if (res.error) throw res.error;
+    showToast('Proposta recusada.', 'success');
+
+    // Reload current view
+    if (currentTab === 'propostas') loadPropostas();
+    if (currentTab === 'demandas' && currentDemandaId) openDemandaDetail(currentDemandaId);
+  } catch (err) {
+    console.error('recusarProposta error:', err);
+    showToast('Erro ao recusar proposta.', 'error');
+  }
+}
+
+// ═══════════════════════════════════════
+// SECTION: DEALS
+// ═══════════════════════════════════════
+async function loadDeals() {
+  var container = document.getElementById('dealsList');
+  container.innerHTML = '<div class="empty-state"><div class="loading-phrase">Sua mesa est\u00E1 sendo preparada...</div></div>';
+
+  try {
+    var res = await _sb.from('deals').select('*, players(razao_social, contato_nome), oportunidades(produto_descricao, codigo)')
+      .eq('cliente_id', player.id).order('criado_em', { ascending: false });
+
+    if (res.error) throw res.error;
+
+    if (!res.data || res.data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129309;</div><p>Nenhum deal em andamento.</p></div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < res.data.length; i++) {
+      var d = res.data[i];
+      var indName = (d.players && (d.players.razao_social || d.players.contato_nome)) || '-';
+      var prodName = (d.oportunidades && d.oportunidades.produto_descricao) || '-';
+
+      html += '<div class="deal-card" onclick="openDealDetail(\'' + d.id + '\')">';
+      html += '<div class="deal-header">';
+      html += '<span class="deal-code">' + (d.codigo || '-') + '</span>';
+      html += statusBadge(d.status);
+      html += '</div>';
+      html += '<div class="deal-info">';
+      html += '<div><strong>' + indName + '</strong></div>';
+      html += '<div>' + prodName.substring(0, 50) + '</div>';
+      if (d.valor_total) html += '<div style="color:var(--gn);font-weight:600;margin-top:4px">' + formatCurrency(d.valor_total) + '</div>';
+      html += '</div>';
+      html += '<div style="font-size:10px;color:var(--t4);margin-top:6px">' + formatDate(d.criado_em) + '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('loadDeals error:', err);
+    container.innerHTML = '<div class="empty-state"><p style="color:var(--rd)">Erro ao carregar deals.</p></div>';
+  }
+}
+
+// ═══ Deal Detail (modal with chat) ═══
+async function openDealDetail(dealId) {
+  currentDealId = dealId;
+  document.getElementById('modalDealDetail').classList.add('open');
+  var body = document.getElementById('dealModalBody');
+  body.innerHTML = '<div class="empty-state"><div class="loading-phrase">Sua mesa est\u00E1 sendo preparada...</div></div>';
+
+  try {
+    var dealRes = await _sb.from('deals').select('*, players(razao_social, contato_nome), oportunidades(produto_descricao, codigo)')
+      .eq('id', dealId).single();
+    if (dealRes.error) throw dealRes.error;
+    var deal = dealRes.data;
+
+    document.getElementById('dealModalTitle').textContent = deal.codigo || 'Deal';
+
+    var indName = (deal.players && (deal.players.razao_social || deal.players.contato_nome)) || '-';
+    var prodName = (deal.oportunidades && deal.oportunidades.produto_descricao) || '-';
+
+    var html = '';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:12px">';
+    html += '<div><span style="color:var(--t3)">Ind\u00FAstria:</span> ' + indName + '</div>';
+    html += '<div><span style="color:var(--t3)">Produto:</span> ' + prodName.substring(0, 40) + '</div>';
+    html += '<div><span style="color:var(--t3)">Valor:</span> ' + formatCurrency(deal.valor_total) + '</div>';
+    html += '<div><span style="color:var(--t3)">Status:</span> ' + statusBadge(deal.status) + '</div>';
+    html += '</div>';
+
+    // Chat area
+    html += '<div class="sh"><h3>Chat</h3></div>';
+    html += '<div class="chat-area" id="dealChatArea"></div>';
+    html += '<div class="chat-bar">';
+    html += '<input type="text" class="chat-inp" id="dealChatInput" placeholder="Digite sua mensagem..." onkeydown="if(event.key===\'Enter\')sendDealMessage()">';
+    html += '<button class="btn btn-sm" onclick="sendDealMessage()">Enviar</button>';
+    html += '</div>';
+
+    // Close deal button
+    if (deal.status === 'em_andamento') {
+      html += '<div style="margin-top:16px;text-align:center">';
+      html += '<button class="btn btn-green" onclick="fecharDeal(\'' + dealId + '\')">&#9989; Fechar Deal</button>';
+      html += '</div>';
+    }
+
+    body.innerHTML = html;
+
+    // Load chat messages
+    loadDealChat(dealId);
+  } catch (err) {
+    console.error('openDealDetail error:', err);
+    body.innerHTML = '<div class="empty-state"><p style="color:var(--rd)">Erro ao carregar deal.</p></div>';
+  }
+}
+
+function closeDealModal() {
+  document.getElementById('modalDealDetail').classList.remove('open');
+  currentDealId = null;
+}
+
+async function loadDealChat(dealId) {
+  var chatArea = document.getElementById('dealChatArea');
+  if (!chatArea) return;
+
+  try {
+    var res = await _sb.from('chat_deal').select('*').eq('deal_id', dealId).order('criado_em', { ascending: true });
+
+    if (!res.data || res.data.length === 0) {
+      chatArea.innerHTML = '<div style="text-align:center;color:var(--t4);font-size:12px;padding:20px">Nenhuma mensagem ainda. Inicie a conversa!</div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < res.data.length; i++) {
+      var msg = res.data[i];
+      var isMe = msg.sender_id === player.id;
+      html += '<div class="msg ' + (isMe ? 'me' : 'them') + '">';
+      html += '<div class="bubble">' + (msg.mensagem || msg.texto || '') + '</div>';
+      html += '</div>';
+      html += '<div class="msg-time" style="text-align:' + (isMe ? 'right' : 'left') + '">' + timeAgo(msg.criado_em) + '</div>';
+    }
+    chatArea.innerHTML = html;
+    chatArea.scrollTop = chatArea.scrollHeight;
+  } catch (err) {
+    console.error('loadDealChat error:', err);
+    chatArea.innerHTML = '<div style="color:var(--t4);font-size:12px;text-align:center">Erro ao carregar mensagens.</div>';
+  }
+}
+
+async function sendDealMessage() {
+  var input = document.getElementById('dealChatInput');
+  var text = input.value.trim();
+  if (!text || !currentDealId) return;
+
+  input.value = '';
+
+  try {
+    var res = await _sb.from('chat_deal').insert({
+      deal_id: currentDealId,
+      sender_id: player.id,
+      mensagem: text
+    });
+    if (res.error) throw res.error;
+
+    loadDealChat(currentDealId);
+  } catch (err) {
+    console.error('sendDealMessage error:', err);
+    showToast('Erro ao enviar mensagem.', 'error');
+  }
+}
+
+async function fecharDeal(dealId) {
+  if (!confirm('Confirmar fechamento deste deal?')) return;
+
+  try {
+    var res = await _sb.from('deals').update({
+      status: 'fechado',
+      fechado_em: new Date().toISOString()
+    }).eq('id', dealId);
+
+    if (res.error) throw res.error;
+
+    showToast('Deal fechado com sucesso!', 'success');
+    closeDealModal();
+    loadDeals();
+  } catch (err) {
+    console.error('fecharDeal error:', err);
+    showToast('Erro ao fechar deal.', 'error');
+  }
+}
+
+// ═══════════════════════════════════════
+// SECTION: PERFIL
+// ═══════════════════════════════════════
+async function loadPerfil() {
+  var container = document.getElementById('perfilContent');
+
+  try {
+    // Reload fresh player data
+    var playerRes = await _sb.from('players').select('*').eq('id', player.id).single();
+    var p = (playerRes.data) ? playerRes.data : player;
+
+    var html = '';
+
+    // Info card
+    html += '<div class="profile-card">';
+    html += '<h4>Informa\u00E7\u00F5es da Empresa</h4>';
+    html += '<div class="profile-field"><span class="pf-label">Raz\u00E3o Social</span><span class="pf-value">' + (p.razao_social || '-') + '</span></div>';
+    html += '<div class="profile-field"><span class="pf-label">CNPJ</span><span class="pf-value">' + (p.cnpj || '-') + '</span></div>';
+    html += '<div class="profile-field"><span class="pf-label">Email</span><span class="pf-value">' + (p.email || player.email || '-') + '</span></div>';
+    html += '<div class="profile-field"><span class="pf-label">WhatsApp</span><span class="pf-value">' + (p.whatsapp || '-') + '</span></div>';
+    html += '<div class="profile-field"><span class="pf-label">Contato</span><span class="pf-value">' + (p.contato_nome || '-') + '</span></div>';
+    html += '</div>';
+
+    // Edit card
+    html += '<div class="profile-card">';
+    html += '<h4>Editar Contato</h4>';
+    html += '<div class="form-group"><label>Nome do contato</label><input type="text" class="form-input" id="editContatoNome" value="' + (p.contato_nome || '') + '"></div>';
+    html += '<div class="form-group"><label>WhatsApp</label><input type="text" class="form-input" id="editWhatsapp" value="' + (p.whatsapp || '') + '" placeholder="(11) 99999-9999"></div>';
+    html += '<button class="btn" onclick="salvarPerfil()">Salvar</button>';
+    html += '</div>';
+
+    // Stats card
+    html += '<div class="profile-card">';
+    html += '<h4>Estat\u00EDsticas</h4>';
+    html += '<div id="perfilStats" style="color:var(--t3);font-size:12px">Carregando...</div>';
+    html += '</div>';
+
+    // Logout
+    html += '<div style="text-align:center;margin-top:16px">';
+    html += '<button class="btn-ghost" onclick="logout()">Sair da conta</button>';
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Load stats
+    loadPerfilStats();
+  } catch (err) {
+    console.error('loadPerfil error:', err);
+    container.innerHTML = '<div class="empty-state"><p style="color:var(--rd)">Erro ao carregar perfil.</p></div>';
+  }
+}
+
+async function loadPerfilStats() {
+  var container = document.getElementById('perfilStats');
+  if (!container) return;
+
+  try {
+    var demRes = await _sb.from('oportunidades').select('id', { count: 'exact' }).eq('cliente_id', player.id);
+    var dealRes = await _sb.from('deals').select('id, status, saving').eq('cliente_id', player.id);
+
+    var demandasCriadas = (demRes.count !== null && demRes.count !== undefined) ? demRes.count : (demRes.data ? demRes.data.length : 0);
+    var dealsFechados = 0;
+    var savingTotal = 0;
+    if (dealRes.data) {
+      for (var i = 0; i < dealRes.data.length; i++) {
+        if (dealRes.data[i].status === 'fechado') dealsFechados++;
+        if (dealRes.data[i].saving) savingTotal += Number(dealRes.data[i].saving) || 0;
+      }
+    }
+
+    var html = '';
+    html += '<div class="profile-field"><span class="pf-label">Demandas criadas</span><span class="pf-value">' + demandasCriadas + '</span></div>';
+    html += '<div class="profile-field"><span class="pf-label">Deals fechados</span><span class="pf-value">' + dealsFechados + '</span></div>';
+    html += '<div class="profile-field"><span class="pf-label">Saving total</span><span class="pf-value" style="color:var(--gn)">' + formatCurrency(savingTotal) + '</span></div>';
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('loadPerfilStats error:', err);
+    container.innerHTML = '<span style="color:var(--rd)">Erro ao carregar estat\u00EDsticas.</span>';
+  }
+}
+
+async function salvarPerfil() {
+  try {
+    var contatoNome = document.getElementById('editContatoNome').value.trim();
+    var whatsapp = document.getElementById('editWhatsapp').value.trim();
+
+    var res = await _sb.from('players').update({
+      contato_nome: contatoNome,
+      whatsapp: whatsapp
+    }).eq('id', player.id);
+
+    if (res.error) throw res.error;
+
+    // Update session
+    player.contato_nome = contatoNome;
+    player.whatsapp = whatsapp;
+    sessionStorage.setItem('player', JSON.stringify(player));
+
+    showToast('Perfil atualizado!', 'success');
+    loadPerfil();
+  } catch (err) {
+    console.error('salvarPerfil error:', err);
+    showToast('Erro ao salvar perfil.', 'error');
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('player');
+  window.location.href = 'entrar.html';
+}
+</script>
+</body>
+</html>
