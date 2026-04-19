@@ -539,7 +539,8 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
 <script>
 var _sb = supabase.createClient(
   'https://jqbuckofiaopxwllghac.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo',
+  { auth: { persistSession: false, autoRefreshToken: false } }
 );
 
 var PASSWORD = 'FOODHUB_MESA_2026';
@@ -665,13 +666,12 @@ function statusBadge(status) {
   if (!status) return '<span class="badge badge-gray">-</span>';
   var s = String(status).toLowerCase();
   var cls = 'badge-gray';
-  if (s === 'ativa' || s === 'ativo' || s === 'aprovado' || s === 'aprovada' || s === 'paga' || s === 'entregue' || s === 'concluida' || s === 'concluido') cls = 'badge-green';
-  else if (s === 'pendente' || s === 'em_negociacao' || s === 'negociacao' || s === 'calculada' || s === 'em negociacao') cls = 'badge-orange';
-  else if (s === 'rejeitado' || s === 'rejeitada' || s === 'cancelada' || s === 'cancelado' || s === 'inadimplente') cls = 'badge-red';
-  else if (s === 'prospeccao' || s === 'nova' || s === 'novo' || s === 'cobrada') cls = 'badge-purple';
+  if (s === 'ativa' || s === 'ativo' || s === 'aprovado' || s === 'aprovada' || s === 'paga' || s === 'entregue' || s === 'concluida' || s === 'concluido' || s === 'fechado') cls = 'badge-green';
+  else if (s === 'pendente' || s === 'em_negociacao' || s === 'negociacao' || s === 'calculada' || s === 'em negociacao' || s === 'em_andamento') cls = 'badge-orange';
+  else if (s === 'rejeitado' || s === 'rejeitada' || s === 'cancelada' || s === 'cancelado' || s === 'inadimplente' || s === 'parado') cls = 'badge-red';
+  else if (s === 'prospeccao' || s === 'nova' || s === 'novo' || s === 'cobrada' || s === 'rascunho') cls = 'badge-purple';
   else if (s === 'aprovada_mesa' || s === 'aprovada mesa') cls = 'badge-blue';
   else if (s === 'aguardando_aprovacao' || s === 'aguardando aprovacao') cls = 'badge-orange';
-  else if (s === 'fechado') cls = 'badge-green';
   return '<span class="badge ' + cls + '">' + status + '</span>';
 }
 
@@ -726,11 +726,11 @@ async function loadPipeline() {
 
       totalPipeline += Number(potencial) || 0;
 
-      if (sl === 'em_negociacao' || sl === 'em negociacao' || sl === 'negociacao') {
+      if (sl === 'em_negociacao' || sl === 'em negociacao' || sl === 'negociacao' || sl === 'em_andamento') {
         emNegociacao += Number(potencial) || 0;
-      } else if (sl === 'pendente' || sl === 'ativa' || sl === 'ativo') {
+      } else if (sl === 'pendente' || sl === 'ativa' || sl === 'ativo' || sl === 'aguardando_aprovacao') {
         pendenciaAtiva += Number(potencial) || 0;
-      } else if (sl === 'prospeccao' || sl === 'nova' || sl === 'novo') {
+      } else if (sl === 'prospeccao' || sl === 'nova' || sl === 'novo' || sl === 'rascunho' || sl === 'parado') {
         prospeccao += Number(potencial) || 0;
       }
 
