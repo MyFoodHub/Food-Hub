@@ -524,6 +524,80 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
 <!-- TOAST -->
 <div id="toast" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--success);color:#000;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;z-index:2000;display:none;white-space:nowrap"></div>
 
+<!-- EDIT OPORTUNIDADE MODAL -->
+<div class="modal-overlay" id="edit-opp-modal">
+  <div class="modal-box" style="max-width:520px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="edit-opp-title" style="margin:0">Editar Oportunidade</h3>
+      <button class="btn btn-ghost" onclick="closeEditOpp()" style="padding:4px 8px;font-size:16px">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Deal / Produto</label>
+        <input id="edit-opp-produto" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Industria</label>
+          <select id="edit-opp-industria" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Cliente</label>
+          <select id="edit-opp-cliente" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Seller</label>
+          <select id="edit-opp-seller" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+            <option value="">Mesa</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Originador</label>
+          <select id="edit-opp-originador" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+            <option value="">Mesa</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Status</label>
+          <select id="edit-opp-status" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+            <option value="rascunho">Rascunho</option>
+            <option value="aguardando_aprovacao">Aguardando Aprovacao</option>
+            <option value="ativa">Ativa</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="fechado">Fechado</option>
+            <option value="parado">Parado</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Potencial R$/mes</label>
+          <input id="edit-opp-potencial" type="number" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Regiao</label>
+        <input id="edit-opp-regiao" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-top:4px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Observacoes</label>
+        <textarea id="edit-opp-obs" rows="3" style="width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;resize:vertical;margin-top:4px;font-family:system-ui"></textarea>
+      </div>
+      <div id="edit-opp-error" style="color:var(--danger);font-size:12px;min-height:16px"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeEditOpp()">Cancelar</button>
+      <button class="btn btn-primary" id="edit-opp-save" onclick="saveEditOpp()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- REJECT MODAL -->
 <div class="modal-overlay" id="reject-modal">
   <div class="modal-box">
@@ -731,6 +805,8 @@ async function loadPipeline() {
     var prospeccao = 0;
 
     var deals = [];
+    // Store raw data for editing
+    var _rawOportunidades = oportunidades;
 
     for (var i = 0; i < oportunidades.length; i++) {
       var d = oportunidades[i];
@@ -749,13 +825,16 @@ async function loadPipeline() {
       }
 
       deals.push({
-        id: d.id || d.codigo || i + 1,
+        id: d.id,
+        codigo: d.codigo,
         nome: d.produto_descricao || d.titulo || '-',
         fornecedor: d.fornecedor_nome || '-',
         cliente: d.cliente_nome || '-',
+        cliente_id: d.cliente_id || '',
         status: status,
         potencial: Number(potencial) || 0,
-        regiao: d.regiao || '-'
+        regiao: d.regiao || '-',
+        raw: d
       });
     }
 
@@ -800,10 +879,13 @@ async function loadPipeline() {
       '<th>#</th><th>Deal</th><th>Fornecedor</th><th>Cliente</th><th>Status</th><th>Potencial R$/mes</th><th>Regiao</th>' +
       '</tr></thead><tbody>';
 
+    // Store deals globally for edit access
+    window._pipelineDeals = deals;
+
     for (var i = 0; i < deals.length; i++) {
       var dl = deals[i];
-      html += '<tr>' +
-        '<td>' + (i + 1) + '</td>' +
+      html += '<tr onclick="openEditOpp(' + i + ')" style="cursor:pointer">' +
+        '<td>' + (dl.codigo || i + 1) + '</td>' +
         '<td style="font-weight:600;color:#fff">' + dl.nome + '</td>' +
         '<td>' + dl.fornecedor + '</td>' +
         '<td>' + dl.cliente + '</td>' +
@@ -1924,6 +2006,164 @@ async function confirmDeal() {
 
   btn.disabled = false;
   btn.textContent = 'Registrar Deal';
+}
+
+// =============================================
+// EDIT OPORTUNIDADE
+// =============================================
+var _editOppId = null;
+var _editPlayersCache = null;
+
+async function loadPlayersForEdit() {
+  if (_editPlayersCache) return _editPlayersCache;
+  var { data } = await _sb.from('players').select('id, razao_social, tipo').order('razao_social');
+  _editPlayersCache = data || [];
+  return _editPlayersCache;
+}
+
+function populateSelect(selectId, players, tipoFilter, selectedId) {
+  var sel = document.getElementById(selectId);
+  var opts = '<option value="">Selecione...</option>';
+  for (var i = 0; i < players.length; i++) {
+    var p = players[i];
+    var tipos = p.tipo || [];
+    if (tipoFilter && tipos.indexOf(tipoFilter) === -1) continue;
+    var selected = (p.id === selectedId) ? ' selected' : '';
+    opts += '<option value="' + p.id + '"' + selected + '>' + p.razao_social + '</option>';
+  }
+  sel.innerHTML = opts;
+}
+
+async function openEditOpp(index) {
+  var deal = window._pipelineDeals[index];
+  if (!deal || !deal.raw) return;
+  var raw = deal.raw;
+  _editOppId = raw.id;
+
+  document.getElementById('edit-opp-title').textContent = 'Editar: ' + (raw.codigo || 'Oportunidade');
+  document.getElementById('edit-opp-produto').value = raw.produto_descricao || '';
+  document.getElementById('edit-opp-status').value = raw.status || 'rascunho';
+  document.getElementById('edit-opp-potencial').value = raw.preco_alvo || '';
+  document.getElementById('edit-opp-regiao').value = raw.regiao || '';
+  document.getElementById('edit-opp-obs').value = raw.observacoes || '';
+  document.getElementById('edit-opp-error').textContent = '';
+
+  // Load players for selects
+  var players = await loadPlayersForEdit();
+
+  // Find linked deal for seller/originador
+  var { data: linkedDeal } = await _sb.from('deals').select('industria_id, seller_id, originador_id').eq('oportunidade_id', raw.id).limit(1).single();
+
+  populateSelect('edit-opp-industria', players, 'industria', linkedDeal ? linkedDeal.industria_id : '');
+  populateSelect('edit-opp-cliente', players, 'cliente', raw.cliente_id || '');
+  populateSelect('edit-opp-seller', players, null, linkedDeal ? linkedDeal.seller_id : '');
+  populateSelect('edit-opp-originador', players, null, linkedDeal ? linkedDeal.originador_id : '');
+
+  // Add Mesa option to seller/originador
+  var selSeller = document.getElementById('edit-opp-seller');
+  var selOrig = document.getElementById('edit-opp-originador');
+  if (selSeller.options[0].value !== '') {
+    var mesaOpt = document.createElement('option');
+    mesaOpt.value = '';
+    mesaOpt.textContent = 'Mesa';
+    selSeller.insertBefore(mesaOpt, selSeller.firstChild);
+  }
+  if (selOrig.options[0].value !== '') {
+    var mesaOpt2 = document.createElement('option');
+    mesaOpt2.value = '';
+    mesaOpt2.textContent = 'Mesa';
+    selOrig.insertBefore(mesaOpt2, selOrig.firstChild);
+  }
+
+  document.getElementById('edit-opp-modal').classList.add('open');
+}
+
+function closeEditOpp() {
+  document.getElementById('edit-opp-modal').classList.remove('open');
+  _editOppId = null;
+}
+
+async function saveEditOpp() {
+  if (!_editOppId) return;
+
+  var btn = document.getElementById('edit-opp-save');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  var errEl = document.getElementById('edit-opp-error');
+  errEl.textContent = '';
+
+  var produto = document.getElementById('edit-opp-produto').value.trim();
+  var clienteId = document.getElementById('edit-opp-cliente').value;
+  var status = document.getElementById('edit-opp-status').value;
+  var potencial = parseFloat(document.getElementById('edit-opp-potencial').value) || 0;
+  var regiao = document.getElementById('edit-opp-regiao').value.trim();
+  var obs = document.getElementById('edit-opp-obs').value.trim();
+  var industriaId = document.getElementById('edit-opp-industria').value;
+  var sellerId = document.getElementById('edit-opp-seller').value;
+  var originadorId = document.getElementById('edit-opp-originador').value;
+
+  try {
+    // 1. Update oportunidade
+    var updateData = {
+      produto_descricao: produto,
+      status: status,
+      preco_alvo: potencial,
+      regiao: regiao
+    };
+    if (clienteId) updateData.cliente_id = clienteId;
+
+    var { error: oppErr } = await _sb.from('oportunidades').update(updateData).eq('id', _editOppId);
+    if (oppErr) { errEl.textContent = 'Erro: ' + oppErr.message; btn.disabled = false; btn.textContent = 'Salvar'; return; }
+
+    // 2. Update or create deal if em_andamento or fechado
+    if (status === 'em_andamento' || status === 'fechado') {
+      var { data: existingDeal } = await _sb.from('deals').select('id').eq('oportunidade_id', _editOppId).limit(1).single();
+
+      var dealData = {
+        oportunidade_id: _editOppId,
+        cliente_id: clienteId || null,
+        industria_id: industriaId || null,
+        seller_id: sellerId || null,
+        originador_id: originadorId || null,
+        total: potencial,
+        status: status
+      };
+      if (status === 'fechado') dealData.fechado_em = new Date().toISOString();
+
+      if (existingDeal) {
+        await _sb.from('deals').update(dealData).eq('id', existingDeal.id);
+      } else {
+        dealData.codigo = 'DEA-' + String(Date.now()).slice(-6);
+        dealData.criado_em = new Date().toISOString();
+        await _sb.from('deals').insert(dealData);
+      }
+    }
+
+    // 3. Create/update vinculos if intermediarios set
+    if (originadorId && industriaId) {
+      var { data: existV } = await _sb.from('vinculos').select('id').eq('intermediario_id', originadorId).eq('player_id', industriaId).eq('papel', 'originador').limit(1).single();
+      if (!existV) {
+        await _sb.from('vinculos').insert({ player_id: industriaId, intermediario_id: originadorId, papel: 'originador', criado_em: new Date().toISOString() });
+      }
+    }
+    if (sellerId && clienteId) {
+      var { data: existV2 } = await _sb.from('vinculos').select('id').eq('intermediario_id', sellerId).eq('player_id', clienteId).eq('papel', 'seller').limit(1).single();
+      if (!existV2) {
+        await _sb.from('vinculos').insert({ player_id: clienteId, intermediario_id: sellerId, papel: 'seller', criado_em: new Date().toISOString() });
+      }
+    }
+
+    showToast('Oportunidade atualizada!');
+    closeEditOpp();
+    _editPlayersCache = null;
+    loadPipeline();
+
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Salvar';
 }
 </script>
 </body>
