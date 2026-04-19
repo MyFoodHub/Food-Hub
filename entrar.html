@@ -252,9 +252,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+  // Client para autenticação (anon key — seguro no frontend)
   var _sb = supabase.createClient(
     'https://jqbuckofiaopxwllghac.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8'
+  );
+  // Client admin para lookup de perfil (bypassa RLS)
+  var _sbAdmin = supabase.createClient(
+    'https://jqbuckofiaopxwllghac.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo',
+    { auth: { persistSession: false, autoRefreshToken: false } }
   );
 
   var form = document.getElementById('loginForm');
@@ -326,7 +333,8 @@
 
         var userEmail = authResult.data.user.email;
 
-        return _sb.from('members')
+        // Usar _sbAdmin para bypasear RLS na lookup de perfil
+        return _sbAdmin.from('members')
           .select('tipo, status')
           .eq('email', userEmail)
           .eq('status', 'ativo')
@@ -343,23 +351,15 @@
               return;
             }
 
-            // Fallback: buscar na tabela profiles antiga (compatibilidade)
-            return _sb.from('profiles')
-              .select('tipo')
+            // Fallback: buscar na tabela profiles antiga (compatibilidade com MVP)
+            return _sbAdmin.from('profiles')
+              .select('id, email')
               .eq('email', userEmail)
               .single()
               .then(function(profileResult) {
                 setLoading(false);
 
-                if (!profileResult.error && profileResult.data && profileResult.data.tipo) {
-                  var dest = redirectMap[profileResult.data.tipo];
-                  if (dest) {
-                    window.location.href = dest;
-                    return;
-                  }
-                }
-
-                // Fallback final: se tem perfil antigo sem tipo, mandar para comprador
+                // Se tem perfil antigo, mandar para comprador (default MVP)
                 if (!profileResult.error && profileResult.data) {
                   window.location.href = 'index.html';
                   return;
