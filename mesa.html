@@ -1211,7 +1211,32 @@ function renderCRMDetail(id) {
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' + statusBtnsHtml + '</div>' +
     '</div>' +
 
-    // ===== SECTION 6 — Historico =====
+    // ===== SECTION 6 — Faturamento =====
+    '<div class="dt-section">' +
+      '<h4>Faturamento</h4>' +
+      '<div id="dt-faturamento-bar" style="margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px"><span>Faturado</span><span id="dt-fat-pct">0%</span></div>' +
+        '<div style="height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div id="dt-fat-fill" style="height:100%;background:var(--success);border-radius:4px;width:0%;transition:width .4s"></div></div>' +
+      '</div>' +
+      '<div id="dt-nf-list"><p style="color:var(--text3);font-size:12px">Carregando NFs...</p></div>' +
+      '<button onclick="openNFForm(\'' + deal.id + '\',\'' + (deal.dealId || '') + '\')" style="margin-top:10px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">📤 Subir NF</button>' +
+      '<div id="dt-nf-form" style="display:none;margin-top:12px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px">Registrar Nota Fiscal</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<div><label style="font-size:10px;color:var(--text4)">Numero NF</label><input id="nf-numero" style="width:100%;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;margin-top:2px"></div>' +
+          '<div><label style="font-size:10px;color:var(--text4)">Valor NF (R$)</label><input id="nf-valor" type="number" step="0.01" style="width:100%;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;margin-top:2px"></div>' +
+          '<div><label style="font-size:10px;color:var(--text4)">Volume</label><input id="nf-volume" type="number" step="0.01" style="width:100%;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;margin-top:2px"></div>' +
+          '<div><label style="font-size:10px;color:var(--text4)">Unidade</label><input id="nf-unidade" value="kg" style="width:100%;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;margin-top:2px"></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:10px">' +
+          '<button onclick="saveNF(\'' + deal.id + '\',\'' + (deal.dealId || '') + '\')" style="padding:8px 16px;background:var(--success);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Confirmar NF</button>' +
+          '<button onclick="document.getElementById(\'dt-nf-form\').style.display=\'none\'" style="padding:8px 16px;background:var(--bg4);color:var(--text2);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer">Cancelar</button>' +
+        '</div>' +
+        '<div id="nf-comissao-preview" style="margin-top:10px;display:none;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2)"></div>' +
+      '</div>' +
+    '</div>' +
+
+    // ===== SECTION 7 — Historico =====
     '<div class="dt-section">' +
       '<h4>Historico de Acoes</h4>' +
       '<div id="dt-history"><p style="color:var(--text3);font-size:12px">Carregando...</p></div>' +
@@ -1219,6 +1244,7 @@ function renderCRMDetail(id) {
 
   // Load async data
   loadDealProdutos(deal.dealId, deal.id);
+  loadDealNFs(deal.dealId, deal.id, deal.potencial);
   loadDealHistory(deal.id);
 }
 
@@ -1523,6 +1549,165 @@ async function loadDealHistory(oppId) {
 // Keep old quickStatus for backward compatibility (select dropdown)
 async function quickStatus(newStatus, oppId) {
   quickStatusBtn(newStatus, oppId);
+}
+
+// =============================================
+// NF / FATURAMENTO
+// =============================================
+function openNFForm(oppId, dealId) {
+  document.getElementById('dt-nf-form').style.display = 'block';
+  document.getElementById('nf-numero').value = '';
+  document.getElementById('nf-valor').value = '';
+  document.getElementById('nf-volume').value = '';
+  document.getElementById('nf-unidade').value = 'kg';
+  document.getElementById('nf-comissao-preview').style.display = 'none';
+}
+
+async function loadDealNFs(dealId, oppId, dealTotal) {
+  var listEl = document.getElementById('dt-nf-list');
+  if (!listEl) return;
+
+  try {
+    var query = _sb.from('nf_uploads').select('*').order('criado_em', { ascending: false });
+    if (dealId) query = query.eq('deal_id', dealId);
+    else query = query.eq('deal_produto_id', oppId);
+
+    var { data, error } = await query;
+
+    if (error && error.message && error.message.indexOf('not found') > -1) {
+      listEl.innerHTML = '<p style="color:var(--text4);font-size:11px;font-style:italic">Tabela nf_uploads pendente. Rode migrations/007 no Supabase.</p>';
+      document.getElementById('dt-fat-pct').textContent = '0%';
+      document.getElementById('dt-fat-fill').style.width = '0%';
+      return;
+    }
+
+    var nfs = data || [];
+    var totalFaturado = 0;
+
+    if (nfs.length === 0) {
+      listEl.innerHTML = '<p style="color:var(--text3);font-size:12px">Nenhuma NF registrada</p>';
+    } else {
+      var html = '';
+      for (var i = 0; i < nfs.length; i++) {
+        var nf = nfs[i];
+        totalFaturado += Number(nf.valor_nf) || 0;
+        var stCls = nf.status === 'confirmada' ? 'badge-green' : (nf.status === 'pendente' ? 'badge-orange' : 'badge-gray');
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+          '<div style="flex:1">' +
+            '<div style="font-size:13px;font-weight:500;color:var(--text)">NF ' + (nf.nf_numero || '-') + '</div>' +
+            '<div style="font-size:11px;color:var(--text3)">R$ ' + Number(nf.valor_nf || 0).toLocaleString('pt-BR', {minimumFractionDigits:2}) + ' · ' + (nf.volume_nf || '-') + ' ' + (nf.unidade || '') + ' · ' + fmtDate(nf.criado_em) + '</div>' +
+          '</div>' +
+          '<span class="badge ' + stCls + '">' + (nf.status || 'pendente') + '</span>' +
+          (nf.status === 'pendente' ? '<button onclick="confirmarNF(\'' + nf.id + '\',\'' + (dealId || '') + '\',\'' + oppId + '\',' + dealTotal + ')" style="padding:4px 10px;background:var(--success);color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer">Confirmar</button>' : '') +
+        '</div>';
+      }
+      listEl.innerHTML = html;
+    }
+
+    // Update progress bar
+    var pct = dealTotal > 0 ? Math.min(100, Math.round((totalFaturado / dealTotal) * 100)) : 0;
+    document.getElementById('dt-fat-pct').textContent = pct + '%';
+    document.getElementById('dt-fat-fill').style.width = pct + '%';
+    var fillEl = document.getElementById('dt-fat-fill');
+    if (pct >= 100) fillEl.style.background = 'var(--success)';
+    else if (pct > 0) fillEl.style.background = '#0984e3';
+
+  } catch (err) {
+    listEl.innerHTML = '<p style="color:var(--danger);font-size:11px">Erro: ' + err.message + '</p>';
+  }
+}
+
+async function saveNF(oppId, dealId) {
+  var numero = document.getElementById('nf-numero').value.trim();
+  var valor = parseFloat(document.getElementById('nf-valor').value) || 0;
+  var volume = parseFloat(document.getElementById('nf-volume').value) || 0;
+  var unidade = document.getElementById('nf-unidade').value.trim() || 'kg';
+
+  if (!numero || !valor) {
+    showToast('Numero e valor da NF sao obrigatorios');
+    return;
+  }
+
+  // Ensure deal exists
+  var actualDealId = dealId;
+  if (!actualDealId) {
+    var deal = null;
+    for (var i = 0; i < _crmDeals.length; i++) {
+      if (_crmDeals[i].id === oppId) { deal = _crmDeals[i]; break; }
+    }
+    if (deal && deal.dealId) actualDealId = deal.dealId;
+  }
+
+  var insertData = {
+    nf_numero: numero,
+    valor_nf: valor,
+    volume_nf: volume,
+    unidade: unidade,
+    status: 'pendente',
+    criado_em: new Date().toISOString()
+  };
+  if (actualDealId) insertData.deal_id = actualDealId;
+
+  var { error } = await _sb.from('nf_uploads').insert(insertData);
+  if (error) {
+    showToast('Erro: ' + error.message);
+    return;
+  }
+
+  // Preview comissao for this NF
+  var deal = null;
+  for (var i = 0; i < _crmDeals.length; i++) {
+    if (_crmDeals[i].id === oppId) { deal = _crmDeals[i]; break; }
+  }
+
+  if (deal && deal.comissao) {
+    var com = deal.comissao;
+    var totalPct = (Number(com.mesa_pct) || 0) + (Number(com.seller_pct) || 0) + (Number(com.originador_pct) || 0);
+    if (totalPct > 0) {
+      var comNF = valor * totalPct;
+      var preview = document.getElementById('nf-comissao-preview');
+      preview.style.display = 'block';
+      preview.innerHTML = '<strong>Comissao desta NF:</strong> R$ ' + comNF.toLocaleString('pt-BR', {minimumFractionDigits:2}) +
+        ' (' + (totalPct * 100).toFixed(1) + '% de R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits:2}) + ')' +
+        '<br>Mesa: R$ ' + (valor * (Number(com.mesa_pct) || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2}) +
+        ' · Seller: R$ ' + (valor * (Number(com.seller_pct) || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2}) +
+        ' · Originador: R$ ' + (valor * (Number(com.originador_pct) || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2});
+    }
+  }
+
+  showToast('NF ' + numero + ' registrada!');
+  document.getElementById('nf-numero').value = '';
+  document.getElementById('nf-valor').value = '';
+  document.getElementById('nf-volume').value = '';
+
+  // Reload NFs
+  loadDealNFs(actualDealId, oppId, deal ? deal.potencial : 0);
+}
+
+async function confirmarNF(nfId, dealId, oppId, dealTotal) {
+  var { error } = await _sb.from('nf_uploads').update({ status: 'confirmada' }).eq('id', nfId);
+  if (error) { showToast('Erro: ' + error.message); return; }
+
+  showToast('NF confirmada!');
+
+  // Recalculate faturamento status
+  var { data: allNFs } = await _sb.from('nf_uploads').select('valor_nf, status').eq('deal_id', dealId).eq('status', 'confirmada');
+  var totalFat = 0;
+  for (var i = 0; i < (allNFs || []).length; i++) totalFat += Number(allNFs[i].valor_nf) || 0;
+
+  var pct = dealTotal > 0 ? Math.round((totalFat / dealTotal) * 100) : 0;
+  var newStatus = 'pendente';
+  if (pct >= 100) newStatus = 'faturado';
+  else if (pct > 0) newStatus = 'faturamento_parcial';
+
+  if (dealId) {
+    await _sb.from('deals').update({ status_faturamento: newStatus }).eq('id', dealId);
+    if (pct >= 100) {
+      await _sb.from('oportunidades').update({ status: 'faturado' }).eq('id', oppId);
+    }
+  }
+
+  loadDealNFs(dealId, oppId, dealTotal);
 }
 
 // =============================================
