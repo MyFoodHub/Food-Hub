@@ -569,6 +569,27 @@
     return 'Erro ao validar convite: ' + m;
   }
 
+  // Mapa de erros do RPC completar_kyc → mensagens user-friendly.
+  // Ordem importa: especifico antes de generico (KYC antes de Cadastro completo, etc.).
+  function mapErroKyc(msg) {
+    var m = (msg || '').toString();
+    if (m.indexOf('CNPJ inv') !== -1)
+      return 'CNPJ deve ter 14 dígitos. Verifique e tente novamente.';
+    if (m.indexOf('WhatsApp inv') !== -1)
+      return 'WhatsApp inválido. Use formato (XX) XXXXX-XXXX.';
+    if (m.indexOf('CNPJ já cadastrado') !== -1 || m.indexOf('CNPJ ja cadastrado') !== -1)
+      return 'Este CNPJ já está cadastrado. Entre em contato com a Mesa FoodHub.';
+    if (m.indexOf('KYC') !== -1 && m.indexOf('completo') !== -1)
+      return 'Cadastro já enviado. Aguarde aprovação da Mesa.';
+    if (m.indexOf('Cadastro já completo') !== -1 || m.indexOf('Cadastro ja completo') !== -1)
+      return 'Cadastro já existe. Use a tela de login normal.';
+    if (m.indexOf('bloqueado') !== -1)
+      return 'Cadastro bloqueado. Entre em contato com a Mesa FoodHub.';
+    if (m.indexOf('Token inv') !== -1 || m.indexOf('expirado') !== -1)
+      return 'Convite expirado. Entre em contato com a Mesa FoodHub.';
+    return 'Erro ao processar cadastro: ' + m;
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     var params = new URLSearchParams(window.location.search);
     var token = params.get('convite');
@@ -604,12 +625,32 @@
     var cnpjDigits = cnpj.replace(/\D/g, '');
     var waDigits   = whatsapp.replace(/\D/g, '');
 
-    // TODO Etapa B.3: chamar _sb.rpc('completar_kyc', { p_token, p_cnpj, p_whatsapp }).
-    console.log('[KYC stub] Dados captados (RPC completar_kyc na Etapa B.3):', {
-      token: _conviteToken, cnpj: cnpjDigits, whatsapp: waDigits
-    });
-    showKycInfo('RPC completar_kyc sera implementada na Etapa B.3. Dados captados: CNPJ=' +
-                cnpjDigits + ', WhatsApp=' + waDigits + '.');
+    // S3 Bloco B.4: chama RPC completar_kyc (D38). Sanitização/estado server-side em 011.
+    document.getElementById('kycErrorMsg').classList.remove('visible');
+    document.getElementById('kycInfoMsg').classList.remove('visible');
+    setKycLoading(true);
+
+    _sb.rpc('completar_kyc', {
+      p_token:    _conviteToken,
+      p_cnpj:     cnpjDigits,
+      p_whatsapp: waDigits
+    })
+      .then(function(result) {
+        setKycLoading(false);
+        if (result.error) {
+          showKycError(mapErroKyc(result.error.message));
+          return;
+        }
+        // Sucesso: esconde form + video, mostra mensagem destacada. Header continua visivel.
+        // Mensagem agnostica de canal (Resend so em S4) — D43.
+        document.getElementById('kycForm').style.display = 'none';
+        document.querySelector('.video-placeholder').style.display = 'none';
+        showKycInfo('Cadastro recebido! Aguarde a aprovação da Mesa FoodHub. Entraremos em contato em breve.');
+      })
+      .catch(function() {
+        setKycLoading(false);
+        showKycError('Erro de conexao. Tente novamente em alguns segundos.');
+      });
   });
 </script>
 </body>
