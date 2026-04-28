@@ -264,6 +264,48 @@
   @media (min-width: 1200px) {
     .login-wrapper { max-width: 440px; }
   }
+
+  /* === KYC mode (modo convite, D38/D43) ============================ */
+  .kyc-header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .kyc-razao { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 4px; }
+  .kyc-tipo { font-size: 13px; color: #00C8FF; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; }
+
+  .video-placeholder {
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #0c1322 0%, #060a14 100%);
+    border: 1px solid rgba(0, 200, 255, 0.12);
+    border-radius: 10px;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .video-icon {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(0, 200, 255, 0.1);
+    border: 1px solid rgba(0, 200, 255, 0.25);
+    display: flex; align-items: center; justify-content: center;
+    color: #00C8FF; font-size: 18px;
+  }
+  .video-text { color: #6b7a99; font-size: 13px; font-style: italic; }
+
+  .info-msg {
+    margin-top: 16px; padding: 12px 14px;
+    background: rgba(0, 200, 255, 0.06);
+    border: 1px solid rgba(0, 200, 255, 0.15);
+    border-radius: 8px;
+    color: #00C8FF; font-size: 13px; line-height: 1.5;
+    display: none;
+  }
+  .info-msg.visible { display: block; }
 </style>
 </head>
 <body>
@@ -275,7 +317,7 @@
   <div class="subtitle">Mesa Nacional de Oportunidades</div>
   <div class="tagline">Acesso exclusivo. Apenas convidados.</div>
 
-  <div class="card">
+  <div class="card" id="loginCard">
     <form id="loginForm" autocomplete="on">
       <div class="form-group">
         <label for="email">Email</label>
@@ -300,21 +342,50 @@
 
     <a class="forgot-link" id="forgotLink">Esqueceu a senha?</a>
   </div>
+
+  <!-- card KYC: mostrado apenas com ?convite=TOKEN na URL (D38/D43) -->
+  <div class="card" id="kycCard" style="display:none;">
+    <div class="kyc-header">
+      <div class="kyc-razao" id="kycRazao"></div>
+      <div class="kyc-tipo" id="kycTipo"></div>
+    </div>
+
+    <!-- VIDEO_SAMANTA_AQUI -->
+    <div class="video-placeholder">
+      <div class="video-icon">&#9658;</div>
+      <div class="video-text">Apresenta&ccedil;&atilde;o em breve</div>
+    </div>
+
+    <form id="kycForm">
+      <div class="form-group">
+        <label for="cnpj">CNPJ</label>
+        <input type="text" id="cnpj" name="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" autocomplete="off" required>
+      </div>
+      <div class="form-group">
+        <label for="whatsapp">WhatsApp</label>
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="(11) 99999-9999" inputmode="tel" autocomplete="off" required>
+      </div>
+      <button type="submit" class="btn-entrar" id="btnConfirmar">
+        <span class="btn-text">Confirmar</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="loading-phrase" id="kycLoadingPhrase">Validando...</div>
+    <div class="error-msg" id="kycErrorMsg"></div>
+    <div class="info-msg" id="kycInfoMsg"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  // Client para autenticacao (anon key)
+  // Client unico para autenticacao + RPC (legacy anon JWT — publishable quebra Realtime).
+  // P0-fix S3 Bloco B: removido _sbAdmin com service_role hardcoded.
+  // Chave ja rotacionada em 26/abr/2026 (registrado em SEGURANCA_E_MITIGACAO.md).
+  // Lookup de player pos-login passa pela RLS de players via auth.uid().
   var _sb = supabase.createClient(
     'https://jqbuckofiaopxwllghac.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8'
-  );
-
-  // Client admin para lookup de player (bypassa RLS)
-  var _sbAdmin = supabase.createClient(
-    'https://jqbuckofiaopxwllghac.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo',
-    { auth: { persistSession: false, autoRefreshToken: false } }
   );
 
   var form = document.getElementById('loginForm');
@@ -364,23 +435,14 @@
     }
   }
 
+  // Resolve destino apos login. D35: tipo eh text[] em players com valores
+  // 'mesa', 'comprador', 'fornecedor' (sem 'industria'/'cliente' — bug legado).
+  // 'seller'/'originador' sao papeis posicionais em deals, nao em players.tipo.
   function resolveRedirect(tipo) {
-    // tipo is an array (players table) — check includes
-    if (Array.isArray(tipo)) {
-      if (tipo.indexOf('mesa') !== -1) return 'mesa.html';
-      if (tipo.indexOf('industria') !== -1) return 'vitrine.html';
-      if (tipo.indexOf('cliente') !== -1) return 'demandas.html';
-      if (tipo.indexOf('seller') !== -1 || tipo.indexOf('originador') !== -1) return 'carteira.html';
-      // Unknown tipo array — default
-      return 'demandas.html';
-    }
-    // tipo is a string (legacy members table)
-    if (typeof tipo === 'string') {
-      if (tipo === 'comprador') return 'demandas.html';
-      if (tipo === 'fornecedor') return 'vitrine.html';
-      if (tipo === 'mesa') return 'mesa.html';
-      return 'demandas.html';
-    }
+    if (!Array.isArray(tipo)) return 'demandas.html';
+    if (tipo.indexOf('mesa') !== -1)       return 'mesa.html';
+    if (tipo.indexOf('fornecedor') !== -1) return 'vitrine.html';
+    if (tipo.indexOf('comprador') !== -1)  return 'demandas.html';
     return 'demandas.html';
   }
 
@@ -403,61 +465,21 @@
           return;
         }
 
-        var userEmail = authResult.data.user.email;
-
-        // Step 1: Lookup in players table
-        return _sbAdmin.from('players')
-          .select('id, tipo, status, contato_nome, razao_social')
-          .eq('email', userEmail)
+        // Lookup do player via auth_user_id (RLS canonica: auth.uid() = auth_user_id).
+        // Cleanup S3 Bloco B: removido fallback chain members/profiles (legado MVP, dead code).
+        return _sb.from('players')
+          .select('id, tipo, status, contato_nome, razao_social, email')
+          .eq('auth_user_id', authResult.data.user.id)
           .single()
           .then(function(playerResult) {
-            if (!playerResult.error && playerResult.data) {
-              var player = playerResult.data;
-              player.email = userEmail;
-              sessionStorage.setItem('player', JSON.stringify(player));
-
-              var dest = resolveRedirect(player.tipo);
-              setLoading(false);
-              window.location.href = dest;
+            setLoading(false);
+            if (playerResult.error || !playerResult.data) {
+              showError('Acesso exclusivo. Apenas convidados. Entre em contato com a mesa FoodHub.');
               return;
             }
-
-            // Step 2: Fallback to members table (legacy)
-            return _sbAdmin.from('members')
-              .select('tipo, status, nome, email')
-              .eq('email', userEmail)
-              .single()
-              .then(function(memberResult) {
-                if (!memberResult.error && memberResult.data) {
-                  var member = memberResult.data;
-                  sessionStorage.setItem('player', JSON.stringify(member));
-
-                  var dest = resolveRedirect(member.tipo);
-                  setLoading(false);
-                  window.location.href = dest;
-                  return;
-                }
-
-                // Step 3: Fallback to profiles table (MVP compat)
-                return _sbAdmin.from('profiles')
-                  .select('id, email')
-                  .eq('email', userEmail)
-                  .single()
-                  .then(function(profileResult) {
-                    if (!profileResult.error && profileResult.data) {
-                      var profile = profileResult.data;
-                      sessionStorage.setItem('player', JSON.stringify(profile));
-
-                      setLoading(false);
-                      window.location.href = 'demandas.html';
-                      return;
-                    }
-
-                    // No record found anywhere
-                    setLoading(false);
-                    showError('Acesso exclusivo. Apenas convidados. Entre em contato com a mesa FoodHub.');
-                  });
-              });
+            var player = playerResult.data;
+            sessionStorage.setItem('player', JSON.stringify(player));
+            window.location.href = resolveRedirect(player.tipo);
           });
       })
       .catch(function() {
@@ -490,6 +512,104 @@
         forgotLink.style.pointerEvents = '';
         forgotLink.style.opacity = '';
       });
+  });
+
+  // ─── Modo convite (D38/D43) ──────────────────────────────────
+  // Detecta ?convite=TOKEN na URL. Se houver, esconde login e
+  // valida via RPC validar_convite_token (criada em 010, Etapa B.1).
+  // Submit do KYC eh stub — RPC completar_kyc vem na Etapa B.3.
+  var _conviteToken = null;
+
+  function tipoLabel(tipoArr) {
+    if (!Array.isArray(tipoArr) || tipoArr.length === 0) return '';
+    var labels = { mesa: 'Mesa', comprador: 'Comprador', fornecedor: 'Fornecedor' };
+    return tipoArr.map(function(t) { return labels[t] || t; }).join(' + ');
+  }
+
+  function showKycError(msg) {
+    var el = document.getElementById('kycErrorMsg');
+    el.textContent = msg;
+    el.classList.add('visible');
+    document.getElementById('kycInfoMsg').classList.remove('visible');
+    document.getElementById('kycLoadingPhrase').classList.remove('visible');
+  }
+
+  function showKycInfo(msg) {
+    var el = document.getElementById('kycInfoMsg');
+    el.textContent = msg;
+    el.classList.add('visible');
+    document.getElementById('kycErrorMsg').classList.remove('visible');
+  }
+
+  function setKycLoading(state) {
+    var btn = document.getElementById('btnConfirmar');
+    var phrase = document.getElementById('kycLoadingPhrase');
+    if (state) { btn.classList.add('loading'); btn.disabled = true; phrase.classList.add('visible'); }
+    else       { btn.classList.remove('loading'); btn.disabled = false; phrase.classList.remove('visible'); }
+  }
+
+  // Validacao pt-BR: CNPJ 14 digitos, WhatsApp 10/11 (+55 opcional).
+  function validarCnpj(s) {
+    return ((s || '').replace(/\D/g, '')).length === 14;
+  }
+  function validarWhatsapp(s) {
+    var d = (s || '').replace(/\D/g, '');
+    if (d.length === 12 || d.length === 13) return d.charAt(0) === '5' && d.charAt(1) === '5';
+    return d.length === 10 || d.length === 11;
+  }
+
+  function mapErroConvite(msg) {
+    var m = (msg || '').toString();
+    if (m.indexOf('expirado') !== -1 || m.indexOf('inv') !== -1)
+      return 'Convite invalido ou expirado. Entre em contato com a Mesa FoodHub.';
+    if (m.indexOf('bloqueado') !== -1)
+      return 'Cadastro bloqueado. Entre em contato com a Mesa FoodHub.';
+    if (m.indexOf('completo') !== -1)
+      return 'Cadastro ja completo. Use a tela de login normal.';
+    return 'Erro ao validar convite: ' + m;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var params = new URLSearchParams(window.location.search);
+    var token = params.get('convite');
+    if (!token) return; // sem token: modo login normal
+
+    _conviteToken = token;
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('kycCard').style.display = 'block';
+    setKycLoading(true);
+
+    _sb.rpc('validar_convite_token', { p_token: token })
+      .then(function(result) {
+        setKycLoading(false);
+        if (result.error) { showKycError(mapErroConvite(result.error.message)); return; }
+        var p = result.data;
+        document.getElementById('kycRazao').textContent = p.razao_social || '';
+        document.getElementById('kycTipo').textContent = tipoLabel(p.tipo);
+      })
+      .catch(function() {
+        setKycLoading(false);
+        showKycError('Erro de conexao. Tente novamente.');
+      });
+  });
+
+  document.getElementById('kycForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var cnpj = document.getElementById('cnpj').value;
+    var whatsapp = document.getElementById('whatsapp').value;
+
+    if (!validarCnpj(cnpj))      { showKycError('CNPJ invalido. Digite os 14 digitos.'); return; }
+    if (!validarWhatsapp(whatsapp)) { showKycError('WhatsApp invalido. Use o formato (XX) XXXXX-XXXX.'); return; }
+
+    var cnpjDigits = cnpj.replace(/\D/g, '');
+    var waDigits   = whatsapp.replace(/\D/g, '');
+
+    // TODO Etapa B.3: chamar _sb.rpc('completar_kyc', { p_token, p_cnpj, p_whatsapp }).
+    console.log('[KYC stub] Dados captados (RPC completar_kyc na Etapa B.3):', {
+      token: _conviteToken, cnpj: cnpjDigits, whatsapp: waDigits
+    });
+    showKycInfo('RPC completar_kyc sera implementada na Etapa B.3. Dados captados: CNPJ=' +
+                cnpjDigits + ', WhatsApp=' + waDigits + '.');
   });
 </script>
 </body>
