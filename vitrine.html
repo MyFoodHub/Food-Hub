@@ -562,11 +562,38 @@ async function loadOportunidades() {
   var container = document.getElementById('oport-list');
   container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4CB;</div>Buscando os melhores negocios para voce...</div>';
 
+  // Bloco E V1: filtro convites + status aprovada (Bloco D escreve 'aprovada', nao 'ativa')
+  // Queries 1+2 paralelas: convites recebidos + propostas ja enviadas pela industria
+  var convitesAndProps = await Promise.all([
+    _sb.from('oportunidade_convites').select('oportunidade_id').eq('industria_id', _player.id),
+    _sb.from('propostas_v3').select('oportunidade_id').eq('industria_id', _player.id)
+  ]);
+  var conviteRes = convitesAndProps[0];
+  var propRes = convitesAndProps[1];
+
+  if (conviteRes.error) {
+    container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar convites: ' + conviteRes.error.message + '</div>';
+    return;
+  }
+
+  var oppIdsConvidados = (conviteRes.data || []).map(function(c) { return c.oportunidade_id; });
+  var oppIdsJaPropostos = (propRes.data || []).map(function(p) { return p.oportunidade_id; });
+  var oppIdsDisponiveis = oppIdsConvidados.filter(function(id) {
+    return oppIdsJaPropostos.indexOf(id) === -1;
+  });
+
+  if (oppIdsDisponiveis.length === 0) {
+    container.innerHTML = '<div class="state-msg"><div class="state-icon">&#x1F4CB;</div>Nenhuma oportunidade nova para voce no momento.</div>';
+    return;
+  }
+
+  // Query 3: oportunidades disponiveis com status aprovada (Bloco D)
   var { data, error } = await _sb
     .from('oportunidades')
     .select('*')
-    .eq('status', 'ativa')
-    .order('created_at', { ascending: false });
+    .in('id', oppIdsDisponiveis)
+    .eq('status', 'aprovada')
+    .order('criado_em', { ascending: false });
 
   if (error) {
     container.innerHTML = '<div class="state-msg" style="color:var(--rd)">Erro ao carregar oportunidades: ' + error.message + '</div>';

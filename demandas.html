@@ -1013,6 +1013,48 @@ async function submitNovaDemanda(e) {
 // ═══════════════════════════════════════
 // SECTION: PROPOSTAS
 // ═══════════════════════════════════════
+// Bloco E V1: score 60/15/10/15 client-side. V1.5 = trigger DB.
+function calcScoreV1(propostas) {
+  if (!propostas || !propostas.length) return propostas || [];
+
+  function prazoDias(p) {
+    if (!p) return 30;
+    var s = String(p).toLowerCase();
+    if (s.indexOf('48h') !== -1 || s.indexOf('urgente') !== -1) return 2;
+    if (s.indexOf('5 dias') !== -1) return 5;
+    if (s.indexOf('10 dias') !== -1) return 10;
+    var m = s.match(/(\d+)\s*dias?/);
+    if (m) return parseInt(m[1], 10);
+    return 30; // fallback (Data especifica + outros)
+  }
+
+  for (var i = 0; i < propostas.length; i++) {
+    propostas[i]._prazoDias = prazoDias(propostas[i].prazo);
+  }
+
+  var precos = propostas.map(function(p) { return Number(p.preco) || 0; });
+  var maxPreco = Math.max.apply(null, precos);
+  var minPreco = Math.min.apply(null, precos);
+  var precoSpan = (maxPreco - minPreco) || 1;
+
+  var prazos = propostas.map(function(p) { return p._prazoDias; });
+  var maxPrazo = Math.max.apply(null, prazos);
+  var minPrazo = Math.min.apply(null, prazos);
+  var prazoSpan = (maxPrazo - minPrazo) || 1;
+
+  for (var i = 0; i < propostas.length; i++) {
+    var p = propostas[i];
+    var preco = Number(p.preco) || 0;
+    var sP = ((maxPreco - preco) / precoSpan) * 60;     // 60% preco
+    var sPr = ((maxPrazo - p._prazoDias) / prazoSpan) * 15; // 15% prazo
+    // 10% pagamento (hardcoded V1) + 15% qualidade (hardcoded V1, industria homologada)
+    p._scoreTotal = Math.round(sP + sPr + 10 + 15);
+  }
+
+  propostas.sort(function(a, b) { return b._scoreTotal - a._scoreTotal; });
+  return propostas;
+}
+
 async function loadPropostas() {
   var container = document.getElementById('propostasList');
   container.innerHTML = '<div class="empty-state"><div class="loading-phrase">Sua mesa est\u00E1 sendo preparada...</div></div>';
@@ -1030,6 +1072,9 @@ async function loadPropostas() {
       return;
     }
 
+    // Bloco E V1: aplica score 60/15/10/15 + sort por score DESC
+    calcScoreV1(res.data);
+
     var html = '';
     for (var i = 0; i < res.data.length; i++) {
       var pr = res.data[i];
@@ -1041,6 +1086,7 @@ async function loadPropostas() {
       html += '<div class="prop-header">';
       html += '<div><span class="prop-industry">' + indName + '</span><div style="font-size:10px;color:var(--t4);margin-top:2px">' + opCode + ' &mdash; ' + opName.substring(0, 40) + '</div></div>';
       html += statusBadge(pr.status);
+      html += '<span style="display:inline-block;background:rgba(0,200,255,.12);color:#00C8FF;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;margin-left:6px">Score: ' + (pr._scoreTotal || 0) + '/100</span>';
       html += '</div>';
 
       html += '<div class="prop-details">';
