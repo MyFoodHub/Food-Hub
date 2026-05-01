@@ -319,6 +319,7 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 </div>
 
 <!-- ═══ MODAL: NOVA DEMANDA ═══ -->
+<!-- Bloco C V1: form 12 campos. Mesa-spec consolidada. RLS protege INSERT. -->
 <div class="overlay" id="modalNovaDemanda">
   <div class="modal">
     <div class="modal-header">
@@ -326,73 +327,108 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <button class="mx" onclick="closeNewDemandModal()">&times;</button>
     </div>
     <form id="formNovaDemanda" onsubmit="submitNovaDemanda(event)">
+
+      <!-- ── Produto ── -->
+      <div style="font-size:11px;font-weight:600;color:#00C8FF;text-transform:uppercase;letter-spacing:0.06em;margin:6px 0 8px">Produto</div>
       <div class="form-group">
-        <label>O que voc&ecirc; precisa comprar?</label>
-        <textarea class="form-input" id="ndDescricao" placeholder="Descreva o produto que precisa. Ex: Frango inteiro congelado, arroz tipo 1, queijo muçarela fatiado..." required></textarea>
+        <label>Produto</label>
+        <textarea class="form-input" id="ndDescricao" placeholder="Mussarela fatiada 500g" required></textarea>
       </div>
+      <div class="form-group">
+        <label>Embalagem</label>
+        <input type="text" class="form-input" id="ndEmbalagem" placeholder="Caixa 12kg, saco 25kg" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Conserva&ccedil;&atilde;o</label>
+          <select class="form-input" id="ndConservacao" required>
+            <option value="">Selecione</option>
+            <option value="congelado">Congelado</option>
+            <option value="resfriado">Resfriado</option>
+            <option value="ambiente">Ambiente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select class="form-input" id="ndCategoria" required>
+            <option value="">Selecione</option>
+            <option value="Prote&iacute;nas">Prote&iacute;nas</option>
+            <option value="Embutidos">Embutidos</option>
+            <option value="Queijos">Queijos</option>
+            <option value="Insumos">Insumos</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── Quantidade ── -->
+      <div style="font-size:11px;font-weight:600;color:#00C8FF;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 8px">Quantidade</div>
       <div class="form-row">
         <div class="form-group">
           <label>Volume</label>
-          <input type="number" class="form-input" id="ndVolume" placeholder="Ex: 5000" min="1" required>
+          <input type="number" class="form-input" id="ndVolume" placeholder="500" min="1" required>
         </div>
         <div class="form-group">
           <label>Unidade</label>
-          <select class="form-input" id="ndUnidade">
+          <select class="form-input" id="ndUnidade" required>
             <option value="kg">kg</option>
-            <option value="ton">tonelada</option>
-            <option value="un">unidade</option>
-            <option value="cx">caixa</option>
-            <option value="lt">litro</option>
-            <option value="sc">saca</option>
+            <option value="ton">ton</option>
+            <option value="caixa">caixa</option>
+            <option value="fardo">fardo</option>
+            <option value="saco">saco</option>
+            <option value="unidade">unidade</option>
           </select>
         </div>
+      </div>
+
+      <!-- ── Logística ── -->
+      <div style="font-size:11px;font-weight:600;color:#00C8FF;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 8px">Log&iacute;stica</div>
+      <div class="form-group">
+        <label>Cidade de entrega</label>
+        <input type="text" class="form-input" id="ndCidade" placeholder="S&atilde;o Paulo - SP" required>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Regi&atilde;o de entrega</label>
-          <select class="form-input" id="ndRegiao">
-            <option value="Brasil">Brasil (qualquer)</option>
-            <option value="Sul">Sul</option>
-            <option value="Sudeste">Sudeste</option>
-            <option value="Centro-Oeste">Centro-Oeste</option>
-            <option value="Nordeste">Nordeste</option>
-            <option value="Norte">Norte</option>
+          <label>Frete</label>
+          <select class="form-input" id="ndFrete" required>
+            <option value="">Selecione</option>
+            <option value="CIF incluso">CIF incluso</option>
+            <option value="FOB cliente">FOB cliente</option>
+            <option value="CIF cliente">CIF cliente</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Prefer&ecirc;ncia de frete</label>
-          <select class="form-input" id="ndFrete">
-            <option value="CIF">CIF (entregue)</option>
-            <option value="FOB">FOB (retira)</option>
-            <option value="A combinar">A combinar</option>
+          <label>Prazo de embarque</label>
+          <select class="form-input" id="ndPrazo" required>
+            <option value="">Selecione</option>
+            <option value="Urgente 48h">Urgente 48h</option>
+            <option value="At&eacute; 5 dias">At&eacute; 5 dias</option>
+            <option value="At&eacute; 10 dias">At&eacute; 10 dias</option>
+            <option value="Data espec&iacute;fica">Data espec&iacute;fica</option>
           </select>
         </div>
       </div>
-      <div style="margin-top:16px">
-        <div style="font-size:13px;font-weight:600;color:#8a95ad;margin-bottom:10px">O que voce prioriza nessa compra?</div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7a99;margin-bottom:4px">
-              <span>Preco</span><span id="peso-preco-val">50%</span>
-            </div>
-            <input type="range" id="peso-preco" min="0" max="100" value="50" oninput="updatePesos()" style="width:100%;accent-color:#00C8FF">
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7a99;margin-bottom:4px">
-              <span>Prazo de embarque</span><span id="peso-prazo-val">30%</span>
-            </div>
-            <input type="range" id="peso-prazo" min="0" max="100" value="30" oninput="updatePesos()" style="width:100%;accent-color:#00C8FF">
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7a99;margin-bottom:4px">
-              <span>Prazo de pagamento</span><span id="peso-pagamento-val">20%</span>
-            </div>
-            <input type="range" id="peso-pagamento" min="0" max="100" value="20" oninput="updatePesos()" style="width:100%;accent-color:#00C8FF">
-          </div>
-          <div style="text-align:center;font-size:11px;color:#3d4a63" id="peso-total">Total: 100%</div>
+
+      <!-- ── Comercial ── -->
+      <div style="font-size:11px;font-weight:600;color:#00C8FF;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 8px">Comercial</div>
+      <div class="form-group">
+        <label>Condi&ccedil;&atilde;o de pagamento</label>
+        <input type="text" class="form-input" id="ndPagamento" placeholder="30 dias boleto / PIX &agrave; vista" required>
+      </div>
+
+      <!-- ── Opcionais ── -->
+      <div style="font-size:11px;font-weight:600;color:#3d4a63;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 8px">Opcionais</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Pre&ccedil;o alvo (R$)</label>
+          <input type="number" class="form-input" id="ndPrecoAlvo" placeholder="12.50" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>Observa&ccedil;&otilde;es</label>
+          <textarea class="form-input" id="ndObs" placeholder="Detalhes adicionais"></textarea>
         </div>
       </div>
-      <button type="submit" class="btn" id="btnSubmitDemanda" style="width:100%;margin-top:6px">Publicar Demanda</button>
+
+      <button type="submit" class="btn" id="btnSubmitDemanda" style="width:100%;margin-top:18px">Publicar Demanda</button>
     </form>
   </div>
 </div>
@@ -893,13 +929,9 @@ function openNewDemandModal() {
 function closeNewDemandModal() {
   document.getElementById('modalNovaDemanda').classList.remove('open');
   document.getElementById('formNovaDemanda').reset();
-  // Reset priority slider labels after form reset
-  document.getElementById('peso-preco-val').textContent = '50%';
-  document.getElementById('peso-prazo-val').textContent = '30%';
-  document.getElementById('peso-pagamento-val').textContent = '20%';
-  document.getElementById('peso-total').textContent = 'Total: 100%';
 }
 
+// Bloco C V1: form 12 campos. Mesa-spec consolidada. RLS protege INSERT.
 async function submitNovaDemanda(e) {
   e.preventDefault();
   var btn = document.getElementById('btnSubmitDemanda');
@@ -907,41 +939,71 @@ async function submitNovaDemanda(e) {
   btn.textContent = 'Publicando...';
 
   try {
-    var descricao = document.getElementById('ndDescricao').value.trim();
-    var volume = document.getElementById('ndVolume').value;
-    var unidade = document.getElementById('ndUnidade').value;
-    var regiao = document.getElementById('ndRegiao').value;
-    var frete = document.getElementById('ndFrete').value;
-    var codigo = generateCodigo();
+    // Coleta dos 12 campos do form
+    var produto     = document.getElementById('ndDescricao').value.trim();
+    var embalagem   = document.getElementById('ndEmbalagem').value.trim();
+    var conservacao = document.getElementById('ndConservacao').value;
+    var categoria   = document.getElementById('ndCategoria').value;
+    var volume      = document.getElementById('ndVolume').value;
+    var unidade     = document.getElementById('ndUnidade').value;
+    var cidade      = document.getElementById('ndCidade').value.trim();
+    var frete       = document.getElementById('ndFrete').value;
+    var prazo       = document.getElementById('ndPrazo').value;
+    var pagamento   = document.getElementById('ndPagamento').value.trim();
+    var precoAlvo   = document.getElementById('ndPrecoAlvo').value;
+    var observacoes = document.getElementById('ndObs').value.trim();
 
-    var pesos = getNormalizedPesos();
-
-    var insertData = {
-      cliente_id: player.id,
-      produto_descricao: descricao,
-      volume: Number(volume),
-      unidade: unidade,
-      regiao: regiao,
-      frete: frete,
-      codigo: codigo,
-      status: 'aguardando_aprovacao'
+    // Validacao defensiva dos 10 obrigatorios (alem do HTML5 required)
+    var obrigatorios = {
+      'Produto':                produto,
+      'Embalagem':              embalagem,
+      'Conservação':            conservacao,
+      'Categoria':              categoria,
+      'Volume':                 volume,
+      'Unidade':                unidade,
+      'Cidade de entrega':      cidade,
+      'Frete':                  frete,
+      'Prazo de embarque':      prazo,
+      'Condição de pagamento':  pagamento
     };
+    var faltando = [];
+    for (var k in obrigatorios) {
+      if (!obrigatorios[k]) faltando.push(k);
+    }
+    if (faltando.length > 0) {
+      alert('Preencha os campos obrigatórios:\n• ' + faltando.join('\n• '));
+      return;
+    }
+
+    // Payload de insert. Campos auto-preenchidos pelo DB ficam de fora:
+    //   - codigo: null V1, V1.5 trigger gera
+    //   - regiao: null V1, V1.5 parser cidade -> regiao
+    //   - status, status_cliente, modo_distribuicao, criado_em: defaults DB
+    var insertData = {
+      cliente_id:         player.id,
+      produto_descricao:  produto,
+      embalagem:          embalagem,
+      conservacao:        conservacao,
+      categoria:          categoria,
+      volume:             Number(volume),
+      unidade:            unidade,
+      cidade_entrega:     cidade,
+      frete:              frete,
+      prazo_expedicao:    prazo,
+      condicao_pagamento: pagamento
+    };
+    if (precoAlvo)   insertData.preco_alvo  = Number(precoAlvo);
+    if (observacoes) insertData.observacoes = observacoes;
 
     var res = await _sb.from('oportunidades').insert(insertData).select('id');
     if (res.error) throw res.error;
 
-    // Store priorities in sessionStorage keyed by oportunidade ID
-    if (res.data && res.data.length > 0) {
-      var newId = res.data[0].id;
-      sessionStorage.setItem('prioridades_' + newId, JSON.stringify(pesos));
-    }
-
     closeNewDemandModal();
-    showToast('Demanda ' + codigo + ' publicada com sucesso!', 'success');
+    showToast('Demanda criada', 'success');
     loadDemandas();
   } catch (err) {
     console.error('submitNovaDemanda error:', err);
-    showToast('Erro ao publicar demanda: ' + (err.message || ''), 'error');
+    alert('Erro ao criar demanda: ' + (err.message || err));
   } finally {
     btn.disabled = false;
     btn.textContent = 'Publicar Demanda';
