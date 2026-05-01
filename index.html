@@ -330,7 +330,8 @@ body{background:#050810;color:#ECF0FF;font-family:sans-serif;font-size:14px}
 <script>
 // ── SUPABASE CLIENT ──
 var SUPABASE_URL = 'https://jqbuckofiaopxwllghac.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8';
+// P1-emergency S3: legacy anon morta. Swap publishable. Realtime TODO V1.5.
+var SUPABASE_ANON_KEY = 'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi';
 var _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var _currentUser = null;
 var EMAILS_APROVADOS = ['humbertoabilio.fh@gmail.com', 'samanta.marcal@gmail.com'];
@@ -338,8 +339,8 @@ var EMAILS_APROVADOS = ['humbertoabilio.fh@gmail.com', 'samanta.marcal@gmail.com
 async function checkApproval(){
   if(!_currentUser) return false;
   if(EMAILS_APROVADOS.indexOf(_currentUser.email)>=0) return true;
-  var { data: prof } = await _sb.from('profiles').select('aprovado').eq('id',_currentUser.id).single();
-  return prof && prof.aprovado === true;
+  var { data: prof } = await _sb.from('members').select('status').eq('id',_currentUser.id).single();
+  return prof && prof.status === 'ativo';
 }
 
 // ── AUTH FUNCTIONS ──
@@ -429,7 +430,7 @@ async function doLogout(){
 
 async function loadUserProfile() {
   if (!_currentUser) return;
-  var { data } = await _sb.from('profiles').select('*').eq('id', _currentUser.id).single();
+  var { data } = await _sb.from('members').select('*').eq('id', _currentUser.id).single();
   if (data) {
     var nome = data.nome || _currentUser.email.split('@')[0];
     var iniciais = nome.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
@@ -3616,18 +3617,18 @@ function atuPostRender(){}
 
 async function loadDashboardKPIs(){
   if(!_currentUser) return;
-  var { data: dems } = await _sb.from('demandas').select('id',{count:'exact'}).eq('user_id',_currentUser.id).eq('status','ativa');
+  var { data: dems } = await _sb.from('demandas_v2').select('id',{count:'exact'}).eq('comprador_id',_currentUser.id).eq('status','ativa');
   var demCount = dems ? dems.length : 0;
-  var { count: fornCount } = await _sb.from('fornecedores').select('id',{count:'exact',head:true}).in('status_homologacao',['homologado','qualificado']);
-  var { data: aceitas } = await _sb.from('propostas').select('preco_ofertado,volume_ofertado,demanda_id').eq('status','aceita');
+  var { count: fornCount } = await _sb.from('members').select('id',{count:'exact',head:true}).eq('tipo','fornecedor').in('status',['homologado','qualificado']);
+  var { data: aceitas } = await _sb.from('propostas_v2').select('preco_ofertado,volume_disponivel,demanda_id').eq('status','aceita');
   var volTotal=0; var savingTotal=0;
   if(aceitas&&aceitas.length){
     var demIds2=aceitas.map(function(a){return a.demanda_id;});
-    var { data: dems2 } = await _sb.from('demandas').select('id,preco_alvo').in('id',demIds2);
+    var { data: dems2 } = await _sb.from('demandas_v2').select('id,preco_alvo').in('id',demIds2);
     var alvoMap={};
     if(dems2) dems2.forEach(function(d){alvoMap[d.id]=d.preco_alvo;});
     aceitas.forEach(function(a){
-      var vol=Number(a.volume_ofertado)||0;
+      var vol=Number(a.volume_disponivel)||0;
       var preco=Number(a.preco_ofertado)||0;
       volTotal+=preco*vol;
       var alvo=alvoMap[a.demanda_id];
@@ -3645,14 +3646,14 @@ async function loadDashboardKPIs(){
   // Demandas recentes reais
   var drEl=document.getElementById('dash-demandas-recentes');
   if(drEl&&_currentUser){
-    var { data: recentes } = await _sb.from('demandas').select('id, produto_nome, volume, unidade_volume, local_entrega, status, propostas(id)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false}).limit(5);
+    var { data: recentes } = await _sb.from('demandas_v2').select('id, produto_nome, volume, unidade, local_entrega, status, propostas_v2(id)').eq('comprador_id',_currentUser.id).order('criado_em',{ascending:false}).limit(5);
     if(recentes&&recentes.length){
       var rh='';
       recentes.forEach(function(d){
-        var propCount=(d.propostas&&d.propostas.length)||0;
+        var propCount=(d.propostas_v2&&d.propostas_v2.length)||0;
         var dotColor=d.status==='ativa'?'var(--gn)':'var(--t3)';
         var badge=propCount>0?'<span class="badge bg">'+propCount+' proposta'+(propCount>1?'s':'')+'</span>':'<span class="badge ba">aguardando</span>';
-        var vol=d.volume?d.volume+' '+(d.unidade_volume||'kg'):'';
+        var vol=d.volume?d.volume+' '+(d.unidade||'kg'):'';
         rh+='<div class="card click" style="display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer" onclick="abrirDemanda(\''+d.id+'\')">';
         rh+='<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>';
         rh+='<div style="flex:1"><span style="font-weight:600;font-size:13px">'+(d.produto_nome||'Demanda')+'</span>';
@@ -3668,10 +3669,10 @@ async function loadDashboardKPIs(){
 
 async function atualizarBadgeNotif(){
   if(!_currentUser) return;
-  var { data: dems } = await _sb.from('demandas').select('id').eq('user_id',_currentUser.id);
+  var { data: dems } = await _sb.from('demandas_v2').select('id').eq('comprador_id',_currentUser.id);
   if(!dems||!dems.length) return;
   var demIds=dems.map(function(d){return d.id;});
-  var { data: props } = await _sb.from('propostas').select('id').eq('status','recebida').in('demanda_id',demIds);
+  var { data: props } = await _sb.from('propostas_v2').select('id').eq('status','recebida').in('demanda_id',demIds);
   var count=props?props.length:0;
   document.querySelectorAll('[onclick*="sNotif"] .badge, [onclick*="sNotif"] span[style*="background"]').forEach(function(el){
     if(count>0){el.textContent=count;el.style.display='';}
@@ -3728,7 +3729,7 @@ function initRealtime(){
             box.innerHTML+='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">'+(p.new.conteudo||'')+'</div><div class="msg-t">agora</div></div></div>';
             box.scrollTop=box.scrollHeight;
             playFoodHubSound();
-            _sb.from('mensagens').update({lida:true}).eq('id',p.new.id).then(function(){});
+            _sb.from('mensagens_v2').update({lida:true}).eq('id',p.new.id).then(function(){});
           }
         } else {
           var preview=p.new.conteudo||'';
@@ -3774,10 +3775,10 @@ function startPolling(){
     var since=_lastPollCheck;
     _lastPollCheck=new Date().toISOString();
     // Check new propostas for my demandas
-    var { data: myDems }=await _sb.from('demandas').select('id').eq('user_id',_currentUser.id);
+    var { data: myDems }=await _sb.from('demandas_v2').select('id').eq('comprador_id',_currentUser.id);
     if(myDems&&myDems.length){
       var demIds=myDems.map(function(d){return d.id;});
-      var { data: newProps }=await _sb.from('propostas').select('id,preco_ofertado').in('demanda_id',demIds).gt('criado_em',since);
+      var { data: newProps }=await _sb.from('propostas_v2').select('id,preco_ofertado').in('demanda_id',demIds).gt('criado_em',since);
       if(newProps&&newProps.length){
         newProps.forEach(function(p){
           buyerNotify('📨 Nova proposta! R$'+Number(p.preco_ofertado).toFixed(2));
@@ -3788,10 +3789,10 @@ function startPolling(){
       }
     }
     // Check new mensagens in my negociacoes
-    var { data: myNegs }=await _sb.from('negociacoes').select('id').eq('user_id',_currentUser.id);
+    var { data: myNegs }=await _sb.from('negociacoes_v2').select('id').eq('comprador_id',_currentUser.id);
     if(myNegs&&myNegs.length){
       var negIds=myNegs.map(function(n){return n.id;});
-      var { data: newMsgs }=await _sb.from('mensagens').select('id,conteudo,sender,negociacao_id,criado_em').in('negociacao_id',negIds).neq('sender','comprador').gt('criado_em',since);
+      var { data: newMsgs }=await _sb.from('mensagens_v2').select('id,conteudo,sender,negociacao_id,criado_em').in('negociacao_id',negIds).neq('sender','comprador').gt('criado_em',since);
       if(newMsgs&&newMsgs.length){
         newMsgs.forEach(function(m){
           if(_seenMsgIds[m.id]) return;
@@ -3804,7 +3805,7 @@ function startPolling(){
               box.innerHTML+='<div class="msg them"><div style="width:22px;height:22px;border-radius:50%;background:var(--g2);color:var(--gn);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+ab+'</div><div><div class="bubble">'+m.conteudo+'</div><div class="msg-t">'+hora+'</div></div></div>';
               box.scrollTop=box.scrollHeight;
               playFoodHubSound();
-              _sb.from('mensagens').update({lida:true}).eq('id',m.id).then(function(){});
+              _sb.from('mensagens_v2').update({lida:true}).eq('id',m.id).then(function(){});
             }
           } else {
             var preview=m.conteudo||'';
@@ -3816,7 +3817,7 @@ function startPolling(){
     }
     // Check negociacao status changes (fornecedor fechou?)
     if(myNegs&&myNegs.length){
-      var { data: negStatus }=await _sb.from('negociacoes').select('id,status').in('id',negIds).eq('status','aceita').gt('atualizado_em',since);
+      var { data: negStatus }=await _sb.from('negociacoes_v2').select('id,status').in('id',negIds).eq('status','aceita').gt('atualizado_em',since);
       if(negStatus&&negStatus.length){
         negStatus.forEach(function(n){
           if(_negData&&_negData.negociacaoId===n.id){
@@ -4340,20 +4341,20 @@ async function launchScan(){
   var precoNum=parseFloat((precoRaw||'').replace(/[^\d.,]/g,'').replace(',','.'))||null;
   console.log('[FoodHub] Salvando demanda... user_id:', _currentUser.id, 'produto:', item1);
   var insertData={
-    user_id: _currentUser.id,
+    comprador_id: _currentUser.id,
     produto_nome: item1||'Demanda',
     especificacao: espec||null,
     volume: volNum,
-    unidade_volume: c.volumeUn||'kg',
+    unidade: c.volumeUn||'kg',
     local_entrega: local||null,
     preco_alvo: precoNum,
     prazo: c.prazo||null,
     condicao_pagamento: c.pag||null,
-    frete_preferencia: c.frete||null,
+    frete: c.frete||null,
     status: 'ativa'
   };
   console.log('[FoodHub] INSERT data:', JSON.stringify(insertData));
-  var { data: insertResult, error } = await _sb.from('demandas').insert(insertData).select();
+  var { data: insertResult, error } = await _sb.from('demandas_v2').insert(insertData).select();
   if(error){
     console.log('[FoodHub] ERRO INSERT demanda:', JSON.stringify(error));
     alert('Erro ao salvar demanda: '+error.message+'\n\nCódigo: '+error.code+'\nDetalhes: '+(error.details||''));
@@ -4376,17 +4377,17 @@ async function negRender(){
   if(!lista)return;
   if(!_currentUser){lista.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Faça login.</div>';return;}
   lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando...</div>';
-  var { data, error }=await _sb.from('demandas').select('*, propostas(id,preco_ofertado,volume_ofertado,status,fornecedor_id,fornecedores(nome))').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  var { data, error }=await _sb.from('demandas_v2').select('*, propostas_v2(id,preco_ofertado,volume_disponivel,status,fornecedor_id)').eq('comprador_id',_currentUser.id).order('criado_em',{ascending:false});
   if(error){lista.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar.</div>';return;}
   var demIds=(data||[]).map(function(d){return d.id;});
   var negMap={};
   if(demIds.length){
-    var { data: negs }=await _sb.from('negociacoes').select('demanda_id,status').in('demanda_id',demIds);
+    var { data: negs }=await _sb.from('negociacoes_v2').select('demanda_id,status').in('demanda_id',demIds);
     if(negs) negs.forEach(function(n){negMap[n.demanda_id]=n.status;});
   }
   _crmData=[];
   (data||[]).forEach(function(d){
-    var props=d.propostas||[];
+    var props=d.propostas_v2||[];
     var neg=negMap[d.id]||null;
     var bestProp=null;var minPreco=Infinity;
     props.forEach(function(p){if(Number(p.preco_ofertado)<minPreco){minPreco=Number(p.preco_ofertado);bestProp=p;}});
@@ -4396,7 +4397,7 @@ async function negRender(){
     else if(neg==='em_andamento'||neg==='aceita') st='negociando';
     else if(props.length>0) st='propostas';
     var saving=0;
-    if(d.preco_alvo&&bestProp) saving=(Number(d.preco_alvo)-minPreco)*(Number(bestProp.volume_ofertado)||Number(d.volume)||0);
+    if(d.preco_alvo&&bestProp) saving=(Number(d.preco_alvo)-minPreco)*(Number(bestProp.volume_disponivel)||Number(d.volume)||0);
     _crmData.push({d:d,st:st,props:props,bestProp:bestProp,minPreco:minPreco<Infinity?minPreco:null,saving:saving>0?saving:0});
   });
   renderCRM();
@@ -4417,8 +4418,8 @@ function renderCRM(){
     var d=r.d;var bp=r.bestProp;
     var produto=(d.produto_nome||'Demanda');
     var espec=d.especificacao?'<br><span style="font-size:10px;color:var(--t3)">'+d.especificacao.split('|')[0].trim()+'</span>':'';
-    var fornNome=bp&&bp.fornecedores?bp.fornecedores.nome:'<span style="color:var(--t3)">Aguardando</span>';
-    var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade_volume||'kg'):'—';
+    var fornNome=bp&&bp.fornecedor_id?bp.fornecedor_id:'<span style="color:var(--t3)">Aguardando</span>';
+    var vol=d.volume?Number(d.volume).toLocaleString('pt-BR')+' '+(d.unidade||'kg'):'—';
     var alvo=d.preco_alvo?'R$'+Number(d.preco_alvo).toFixed(2):'—';
     var melhor=r.minPreco?'R$'+r.minPreco.toFixed(2):'—';
     var melhorColor=d.preco_alvo&&r.minPreco?(r.minPreco<=Number(d.preco_alvo)?'var(--gn)':'var(--rd)'):'var(--t1)';
@@ -4495,14 +4496,14 @@ function calcScoreProposta(p, dem){
   }
   // 2. PRAZO (25%)
   var sP=60;
-  if(p.prazo_entrega_dias!=null){
-    var d=p.prazo_entrega_dias;
+  if(p.prazo_expedicao_dias!=null){
+    var d=p.prazo_expedicao_dias;
     sP=d<=2?100:d<=5?85:d<=10?70:d<=15?55:40;
   }
   // 3. VOLUME (20%)
   var sV=60;
-  if(p.volume_ofertado&&dem&&dem.volume){
-    var ratio=Number(p.volume_ofertado)/Number(dem.volume);
+  if(p.volume_disponivel&&dem&&dem.volume){
+    var ratio=Number(p.volume_disponivel)/Number(dem.volume);
     sV=ratio>=1?100:ratio>=0.8?80:ratio>=0.5?60:40;
   }
   // 4. PAGAMENTO (10%)
@@ -4517,9 +4518,9 @@ function calcScoreProposta(p, dem){
   // FINAL
   var total=Math.round(sPreco*0.35+sP*0.25+sV*0.20+sPag*0.10+sForn*0.10);
   // Frete incompatibility cap
-  if(dem&&dem.frete_preferencia){
-    var fp=dem.frete_preferencia;
-    var fc=(p.condicao_frete||p.nota_fornecedor||'').toLowerCase();
+  if(dem&&dem.frete){
+    var fp=dem.frete;
+    var fc=(p.condicao_frete||p.observacoes||'').toLowerCase();
     if(fp==='CIF obrigatório'&&fc.indexOf('fob')>=0) total=Math.min(total,40);
     if(fp==='FOB obrigatório'&&fc.indexOf('cif')>=0) total=Math.min(total,40);
   }
@@ -4527,11 +4528,11 @@ function calcScoreProposta(p, dem){
 }
 async function loadPropostas(){
   if(!_currentUser)return;
-  var { data: demandas } = await _sb.from('demandas').select('id, preco_alvo, volume').eq('user_id',_currentUser.id).eq('status','ativa');
+  var { data: demandas } = await _sb.from('demandas_v2').select('id, preco_alvo, volume').eq('comprador_id',_currentUser.id).eq('status','ativa');
   if(!demandas||demandas.length===0){PROPS=[];return;}
   var demIds=demandas.map(function(d){return d.id;});
   var demMap={};demandas.forEach(function(d){demMap[d.id]=d;});
-  var { data, error } = await _sb.from('propostas').select('*, fornecedores(nome, sif, cidade, estado, score_foodhub)').in('demanda_id',demIds);
+  var { data, error } = await _sb.from('propostas_v2').select('*').in('demanda_id',demIds);
   if(error||!data){PROPS=[];return;}
   // Calculate scores
   data.forEach(function(p){
@@ -4543,19 +4544,19 @@ async function loadPropostas(){
   // Save scores back to Supabase (fire and forget)
   data.forEach(function(p){
     if(p._score!==p.score_total){
-      _sb.from('propostas').update({score_total:p._score,score_detalhes:{preco:p._scores.preco,prazo:p._scores.prazo,volume:p._scores.volume,pagamento:p._scores.pagamento,fornecedor:p._scores.fornecedor}}).eq('id',p.id).then(function(){});
+      _sb.from('propostas_v2').update({score_total:p._score,score_detalhes:{preco:p._scores.preco,prazo:p._scores.prazo,volume:p._scores.volume,pagamento:p._scores.pagamento,fornecedor:p._scores.fornecedor}}).eq('id',p.id).then(function(){});
     }
   });
   PROPS=data.map(function(p,i){
-    var f=p.fornecedores||{};
-    var sifTxt=(f.sif||'')+(f.cidade?' · '+f.cidade:'')+(f.estado?' – '+f.estado:'');
+    var f={nome:p.fornecedor_id||'Fornecedor'};
+    var sifTxt='';
     var abaixo=demMap[p.demanda_id]&&demMap[p.demanda_id].preco_alvo&&Number(p.preco_ofertado)<=Number(demMap[p.demanda_id].preco_alvo);
     return {
       rank:i+1,sup:f.nome||'Fornecedor',sif:sifTxt,tipo:abaixo?'Exata':'Aprox.',tCls:abaixo?'bg':'ba',
       price:'R$'+Number(p.preco_ofertado).toFixed(2)+(p.unidade_preco||'/kg'),
-      prazo:(p.prazo_entrega_dias||'–')+' dias',pag:p.condicao_pagamento||'–',
-      vol:p.volume_ofertado?Number(p.volume_ofertado).toLocaleString('pt-BR')+' kg':'–',
-      score:p._score,note:p.nota_fornecedor||'',scores:[p._scores.preco,p._scores.prazo,p._scores.volume,p._scores.pagamento,p._scores.fornecedor],hit:abaixo||false
+      prazo:(p.prazo_expedicao_dias||'–')+' dias',pag:p.condicao_pagamento||'–',
+      vol:p.volume_disponivel?Number(p.volume_disponivel).toLocaleString('pt-BR')+' kg':'–',
+      score:p._score,note:p.observacoes||'',scores:[p._scores.preco,p._scores.prazo,p._scores.volume,p._scores.pagamento,p._scores.fornecedor],hit:abaixo||false
     };
   });
 }
@@ -4602,11 +4603,11 @@ async function iniciarNegociacao(propostaId, demandaId, fornecedorId, nome, prec
   if(!_currentUser){alert('Faça login.');return;}
   _negData = {propostaId:propostaId,demandaId:demandaId,fornecedorId:fornecedorId,nome:nome,preco:preco,unidade:unidade,vol:vol,score:score,negociacaoId:null};
   console.log('[FoodHub] Iniciando negociação: proposta='+propostaId+' demanda='+demandaId+' fornecedor='+fornecedorId);
-  var { data: neg, error } = await _sb.from('negociacoes').insert({
+  var { data: neg, error } = await _sb.from('negociacoes_v2').insert({
     proposta_id: propostaId,
     demanda_id: demandaId,
     fornecedor_id: fornecedorId,
-    user_id: _currentUser.id,
+    comprador_id: _currentUser.id,
     status: 'em_andamento',
     preco_atual: preco
   }).select('id').single();
@@ -4630,7 +4631,7 @@ async function buildNeg(){
   // Fetch demanda data for context
   var meta='';var saving='';var prazoTxt='';var pagTxt='';var freteTxt='';var totalTxt='';
   if(p.demandaId){
-    var { data: dem }=await _sb.from('demandas').select('preco_alvo,volume,condicao_pagamento,frete_preferencia,especificacao').eq('id',p.demandaId).single();
+    var { data: dem }=await _sb.from('demandas_v2').select('preco_alvo,volume,condicao_pagamento,frete,especificacao').eq('id',p.demandaId).single();
     if(dem){
       var precoNum=Number(p.preco)||0;
       var alvo=dem.preco_alvo?Number(dem.preco_alvo):0;
@@ -4640,7 +4641,7 @@ async function buildNeg(){
       totalTxt='R$'+(total/1000).toFixed(1)+'k';
       if(alvo&&precoNum) saving='R$'+((alvo-precoNum)*volNum/1000).toFixed(1)+'k';
       pagTxt=dem.condicao_pagamento||'';
-      freteTxt=dem.frete_preferencia||'';
+      freteTxt=dem.frete||'';
       if(dem.especificacao){
         var parts=dem.especificacao.split('|');
         parts.forEach(function(pt){if(pt.trim().indexOf('Prazo')===0) prazoTxt=pt.trim().replace('Prazo: ','');});
@@ -4679,7 +4680,7 @@ async function buildNeg(){
   }
   // Check if frozen
   if(p.negociacaoId){
-    var { data: nSt }=await _sb.from('negociacoes').select('status').eq('id',p.negociacaoId).single();
+    var { data: nSt }=await _sb.from('negociacoes_v2').select('status').eq('id',p.negociacaoId).single();
     if(nSt&&(nSt.status==='aceita'||nSt.status==='fechada')){
       var inp2=document.getElementById('chat-inp');if(inp2){inp2.disabled=true;inp2.placeholder='Negócio encerrado';}
       var acts=document.getElementById('neg-actions');if(acts)acts.style.display='none';
@@ -4700,9 +4701,9 @@ async function enviarContra(){
   if(box) box.innerHTML+='<div class="msg me"><div class="avatar" style="width:22px;height:22px;font-size:9px">'+userInit+'</div><div><div class="bubble">'+txt+'</div><div class="msg-t">agora</div></div></div>';
   if(box) box.scrollTop=box.scrollHeight;
   // Save message
-  await _sb.from('mensagens').insert({negociacao_id:_negData.negociacaoId,sender:'comprador',conteudo:txt,tipo:'contra_proposta',lida:false});
+  await _sb.from('mensagens_v2').insert({negociacao_id:_negData.negociacaoId,sender:'comprador',conteudo:txt,tipo:'contra_proposta',lida:false});
   // Update preco_atual
-  await _sb.from('negociacoes').update({preco_atual:preco}).eq('id',_negData.negociacaoId);
+  await _sb.from('negociacoes_v2').update({preco_atual:preco}).eq('id',_negData.negociacaoId);
   document.getElementById('neg-contra').style.display='none';
   if(val) val.value='';
 }
@@ -4732,33 +4733,33 @@ async function _fecharNegocioExec(){
   var saving=0;
   var demData=null;
   if(_negData.demandaId){
-    var { data: dem }=await _sb.from('demandas').select('preco_alvo,volume,produto_nome,especificacao,condicao_pagamento,frete_preferencia,local_entrega,prazo').eq('id',_negData.demandaId).single();
+    var { data: dem }=await _sb.from('demandas_v2').select('preco_alvo,volume,produto_nome,especificacao,condicao_pagamento,frete,local_entrega,prazo').eq('id',_negData.demandaId).single();
     demData=dem;
     if(dem&&dem.preco_alvo) saving=(Number(dem.preco_alvo)-precoFinal)*volume;
   }
   var comissao=total*0.01;
   var ref='PD-2026-'+String(Math.floor(Math.random()*90000)+10000);
   // Save pedido
-  await _sb.from('pedidos').insert({
+  await _sb.from('pedidos_v2').insert({
     codigo:ref,
-    user_id:_currentUser.id,
+    comprador_id:_currentUser.id,
     fornecedor_id:_negData.fornecedorId||null,
     demanda_id:_negData.demandaId||null,
     proposta_id:_negData.propostaId||null,
     produto_nome:demData&&demData.produto_nome||'',
     volume:volume,
     unidade:'kg',
-    preco_unitario:precoFinal,
-    preco_total:total,
+    preco_final:precoFinal,
+    total:total,
     condicao_pagamento:demData&&demData.condicao_pagamento||'',
-    frete:demData&&demData.frete_preferencia||'cif_incluso',
+    frete:demData&&demData.frete||'cif_incluso',
     status:'confirmado'
   }).then(function(){});
   // Update negociacao + proposta
-  await _sb.from('negociacoes').update({status:'aceita'}).eq('id',_negData.negociacaoId);
-  if(_negData.propostaId) await _sb.from('propostas').update({status:'aceita'}).eq('id',_negData.propostaId);
+  await _sb.from('negociacoes_v2').update({status:'aceita'}).eq('id',_negData.negociacaoId);
+  if(_negData.propostaId) await _sb.from('propostas_v2').update({status:'aceita'}).eq('id',_negData.propostaId);
   // Auto-message in chat
-  await _sb.from('mensagens').insert({negociacao_id:_negData.negociacaoId,sender:'comprador',conteudo:'✅ Negócio fechado! Pedido '+ref+' confirmado. Total: R$'+(total/1000).toFixed(1)+'k',tipo:'sistema',lida:false}).then(function(){});
+  await _sb.from('mensagens_v2').insert({negociacao_id:_negData.negociacaoId,sender:'comprador',conteudo:'✅ Negócio fechado! Pedido '+ref+' confirmado. Total: R$'+(total/1000).toFixed(1)+'k',tipo:'sistema',lida:false}).then(function(){});
   // Celebration screen
   playFoodHubSound();setTimeout(playFoodHubSound,300);setTimeout(playFoodHubSound,600);
   var box=document.getElementById('chat-box');
@@ -4774,7 +4775,7 @@ async function _fecharNegocioExec(){
       +'<div style="font-size:14px;color:var(--t1);margin-bottom:4px">'+(demData&&demData.produto_nome||'')+' — '+(_negData.nome||'')+'</div>'
       +'<div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--gn);margin:12px 0">R$'+(total/1000).toFixed(1)+'k</div>'
       +(saving>0?'<div style="font-size:14px;color:var(--gn);margin-bottom:4px">💚 Saving: R$'+(saving/1000).toFixed(1)+'k</div>':'')
-      +'<div style="font-size:12px;color:var(--t2);margin-bottom:16px">'+(demData&&demData.condicao_pagamento||'')+(demData&&demData.frete_preferencia?' · '+demData.frete_preferencia:'')+'</div>'
+      +'<div style="font-size:12px;color:var(--t2);margin-bottom:16px">'+(demData&&demData.condicao_pagamento||'')+(demData&&demData.frete?' · '+demData.frete:'')+'</div>'
       +'<div style="display:flex;flex-direction:column;gap:8px;max-width:240px;margin:0 auto">'
       +'<button class="btn btn-g" onclick="gerarPdfPedido(\''+ref+'\','+precoFinal+','+volume+','+total+','+saving+','+comissao+')" style="padding:11px;font-size:13px">📄 Baixar PDF do pedido</button>'
       +'<button class="btn-ghost" onclick="go(\'sNegocios\')" style="padding:9px;font-size:12px">← Voltar para a mesa</button>'
@@ -4809,11 +4810,11 @@ async function loadMensagens(negociacaoId, nomeForn){
   var box=document.getElementById('chat-box');
   if(!box) return;
   box.innerHTML='<div style="text-align:center;padding:10px;color:var(--t3);font-size:11px">Carregando mensagens...</div>';
-  var { data, error } = await _sb.from('mensagens').select('*').eq('negociacao_id',negociacaoId).order('criado_em',{ascending:true});
+  var { data, error } = await _sb.from('mensagens_v2').select('*').eq('negociacao_id',negociacaoId).order('criado_em',{ascending:true});
   if(error){console.log('Erro mensagens:', JSON.stringify(error));box.innerHTML='<div style="text-align:center;padding:10px;color:var(--rd);font-size:11px">Erro ao carregar mensagens.</div>';return;}
   _seenMsgIds={};
   // Mark other side's messages as read
-  _sb.from('mensagens').update({lida:true}).eq('negociacao_id',negociacaoId).neq('sender','comprador').eq('lida',false).then(function(){});
+  _sb.from('mensagens_v2').update({lida:true}).eq('negociacao_id',negociacaoId).neq('sender','comprador').eq('lida',false).then(function(){});
   var ab=(nomeForn||'FH').substring(0,2).toUpperCase();
   var userInit=(_currentUser&&_currentUser.email?_currentUser.email.substring(0,2).toUpperCase():'EU');
   if(!data||data.length===0){
@@ -4836,7 +4837,7 @@ async function loadMensagens(negociacaoId, nomeForn){
 }
 async function aceitarProposta(propostaId){
   if(!confirm('Confirma aceitar esta proposta?')) return;
-  var { error } = await _sb.from('propostas').update({status:'aceita'}).eq('id',propostaId);
+  var { error } = await _sb.from('propostas_v2').update({status:'aceita'}).eq('id',propostaId);
   if(error){console.log('Erro aceitar:', JSON.stringify(error));alert('Erro ao aceitar: '+error.message);return;}
   alert('Proposta aceita com sucesso!');
   loadDetalhesDemanda();
@@ -4855,7 +4856,7 @@ async function sendMsg(){
     // Show warning to user
     box.innerHTML+='<div style="text-align:center;font-size:10px;color:var(--rd);padding:4px">⚠️ Mensagem não enviada ao fornecedor (sem negociação ativa)</div>';
   } else {
-    var { data: msgResult, error } = await _sb.from('mensagens').insert({
+    var { data: msgResult, error } = await _sb.from('mensagens_v2').insert({
       negociacao_id: _negData.negociacaoId,
       sender: 'comprador',
       conteudo: txt,
@@ -4876,10 +4877,10 @@ async function loadInbox(){
   var el=document.getElementById('inbox-lista');
   if(!el||!_currentUser)return;
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando mensagens...</div>';
-  var { data: negs }=await _sb.from('negociacoes').select('id,demanda_id,fornecedor_id,status,preco_atual,criado_em,demandas(produto_nome,volume,unidade_volume,preco_alvo),fornecedores(nome)').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  var { data: negs }=await _sb.from('negociacoes_v2').select('id,demanda_id,fornecedor_id,status,preco_atual,criado_em,demandas_v2(produto_nome,volume,unidade,preco_alvo)').eq('comprador_id',_currentUser.id).order('criado_em',{ascending:false});
   if(!negs||!negs.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhuma negociação ativa.</div>';return;}
   var negIds=negs.map(function(n){return n.id;});
-  var { data: msgs }=await _sb.from('mensagens').select('negociacao_id,conteudo,sender,criado_em,lida').in('negociacao_id',negIds).order('criado_em',{ascending:false});
+  var { data: msgs }=await _sb.from('mensagens_v2').select('negociacao_id,conteudo,sender,criado_em,lida').in('negociacao_id',negIds).order('criado_em',{ascending:false});
   var lastMsgMap={};var unreadMap={};
   if(msgs) msgs.forEach(function(m){
     if(!lastMsgMap[m.negociacao_id]) lastMsgMap[m.negociacao_id]=m;
@@ -4894,12 +4895,12 @@ async function loadInbox(){
   });
   var h='';
   negs.forEach(function(n){
-    var dem=n.demandas||{};var forn=n.fornecedores||{};
+    var dem=n.demandas_v2||{};var forn={nome:n.fornecedor_id||'Fornecedor'};
     var lastMsg=lastMsgMap[n.id];var unread=unreadMap[n.id]||0;
     var preview=lastMsg?(lastMsg.sender==='comprador'?'Você: ':'')+lastMsg.conteudo:'Nenhuma mensagem';
     if(preview.length>60) preview=preview.substring(0,57)+'...';
     var hora=lastMsg&&lastMsg.criado_em?new Date(lastMsg.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-    var vol=dem.volume?Number(dem.volume).toLocaleString('pt-BR')+' '+(dem.unidade_volume||'kg'):'';
+    var vol=dem.volume?Number(dem.volume).toLocaleString('pt-BR')+' '+(dem.unidade||'kg'):'';
     var meta=dem.preco_alvo?'R$'+Number(dem.preco_alvo).toFixed(2):'';
     var stBadge=n.status==='aceita'?'<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(0,224,154,.15);color:var(--gn);font-weight:700">Fechado</span>':'<span style="font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(0,200,255,.1);color:var(--ac);font-weight:700">Negociando</span>';
     h+='<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--b1);cursor:pointer" onclick="_negData={negociacaoId:\''+n.id+'\',demandaId:\''+n.demanda_id+'\',fornecedorId:\''+n.fornecedor_id+'\',nome:\''+(forn.nome||'').replace(/'/g,"\\'")+'\',preco:'+(n.preco_atual||0)+',unidade:\'/kg\',vol:\''+(dem.volume||'')+'\',score:0};go(\'sNeg\')">';
@@ -4982,23 +4983,23 @@ async function negociarOferta(idx){
   var fornId=o.fornecedor_id||'';
   var precoNum=o.preco?Number(o.preco):0;
   // Create demanda from oferta
-  var { data: dem, error: demErr }=await _sb.from('demandas').insert({
-    user_id:_currentUser.id,produto_nome:o.nome||'',
+  var { data: dem, error: demErr }=await _sb.from('demandas_v2').insert({
+    comprador_id:_currentUser.id,produto_nome:o.nome||'',
     especificacao:o.descricao||null,volume:o.quantidade||null,
-    unidade_volume:'kg',status:'ativa'
+    unidade:'kg',status:'ativa'
   }).select('id').single();
   if(demErr){alert('Erro: '+demErr.message);return;}
   // Create proposta from oferta
-  var { data: prop, error: propErr }=await _sb.from('propostas').insert({
+  var { data: prop, error: propErr }=await _sb.from('propostas_v2').insert({
     demanda_id:dem.id,fornecedor_id:fornId,
     preco_ofertado:precoNum,unidade_preco:o.unidade_preco||'/kg',
-    volume_ofertado:o.quantidade||null,status:'recebida'
+    volume_disponivel:o.quantidade||null,status:'recebida'
   }).select('id').single();
   if(propErr){alert('Erro: '+propErr.message);return;}
   // Create negociacao
-  var { data: neg, error: negErr }=await _sb.from('negociacoes').insert({
+  var { data: neg, error: negErr }=await _sb.from('negociacoes_v2').insert({
     proposta_id:prop.id,demanda_id:dem.id,fornecedor_id:fornId,
-    user_id:_currentUser.id,status:'em_andamento',preco_atual:precoNum
+    comprador_id:_currentUser.id,status:'em_andamento',preco_atual:precoNum
   }).select('id').single();
   if(negErr){alert('Erro: '+negErr.message);return;}
   _negData={negociacaoId:neg.id,demandaId:dem.id,propostaId:prop.id,fornecedorId:fornId,nome:forn,preco:precoNum,unidade:o.unidade_preco||'/kg',vol:o.quantidade||'',score:0};
@@ -5020,7 +5021,7 @@ async function buildSupList(){
   var listEl=document.getElementById('sup-list');
   if(!listEl)return;
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando fornecedores...</div>';
-  var { data, error } = await _sb.from('fornecedores').select('id, nome, cidade, estado, categoria, score_foodhub, sif');
+  var { data, error } = await _sb.from('members').select('id, nome, cidade, estado, categoria, score_foodhub, sif').eq('tipo','fornecedor');
   if(error||!data){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar fornecedores</div>';return;}
   if(data.length===0){listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3);font-size:12px">Nenhum fornecedor cadastrado ainda. Clique em <span style="color:var(--ac);cursor:pointer" onclick="go(\'sCadFornecedor\')">+ Cadastrar</span> para adicionar.</div>';return;}
   var catIcons={'Proteínas':'🍗','Laticínios':'🧀','Foodservice':'🍟','Commodities':'🌾'};
@@ -5071,7 +5072,7 @@ async function loadDemandas(){
   if(!_currentUser){listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Faça login para ver suas demandas.</div>';return;}
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando demandas...</div>';
   console.log('[FoodHub] loadDemandas user_id:', _currentUser.id);
-  var { data, error } = await _sb.from('demandas').select('*').eq('user_id',_currentUser.id).order('criado_em',{ascending:false});
+  var { data, error } = await _sb.from('demandas_v2').select('*').eq('comprador_id',_currentUser.id).order('criado_em',{ascending:false});
   console.log('[FoodHub] loadDemandas result:', data?data.length+' rows':'null', error?JSON.stringify(error):'ok');
   if(error){console.log('Erro demandas:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar demandas: '+(error.message||'')+'</div>';return;}
   if(!data||data.length===0){
@@ -5092,7 +5093,7 @@ async function loadDemandas(){
       '<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';'+(isAtiva?'box-shadow:0 0 5px var(--gn);':'')+'flex-shrink:0"></div>'+
       '<div style="flex:1">'+
         '<div style="font-weight:600;font-size:13px;margin-bottom:1px">'+(d.produto_nome||'')+'</div>'+
-        '<div style="font-size:11px;color:var(--t2)">'+(d.volume||'')+' '+(d.unidade_volume||'')+(prazo?' · Entrega: '+prazo:'')+(d.especificacao?' · '+d.especificacao:'')+'</div>'+
+        '<div style="font-size:11px;color:var(--t2)">'+(d.volume||'')+' '+(d.unidade||'')+(prazo?' · Entrega: '+prazo:'')+(d.especificacao?' · '+d.especificacao:'')+'</div>'+
       '</div>'+
       '<span class="badge '+badgeClass+'">'+statusLabel+'</span>'+
     '</div>';
@@ -5112,7 +5113,7 @@ async function loadDetalhesDemanda(){
   var listEl=document.getElementById('detalhe-dem-propostas');
   var countEl=document.getElementById('detalhe-dem-count');
   // Load demanda info
-  var { data: dem } = await _sb.from('demandas').select('*').eq('id',_demandaAtual).single();
+  var { data: dem } = await _sb.from('demandas_v2').select('*').eq('id',_demandaAtual).single();
   if(dem && hdrEl){
     var prazo=dem.prazo_especifico?new Date(dem.prazo_especifico).toLocaleDateString('pt-BR'):'';
     var statusColor=dem.status==='ativa'?'var(--gn)':'var(--t3)';
@@ -5123,19 +5124,19 @@ async function loadDetalhesDemanda(){
         '<span class="badge '+(dem.status==='ativa'?'bg':'ba')+'">'+dem.status+'</span>'+
       '</div>'+
       '<div style="display:flex;gap:12px;flex-wrap:wrap">'+
-        (dem.volume?'<div style="font-size:12px;color:var(--t2)"><strong>Volume:</strong> '+dem.volume+' '+(dem.unidade_volume||'')+'</div>':'')+
+        (dem.volume?'<div style="font-size:12px;color:var(--t2)"><strong>Volume:</strong> '+dem.volume+' '+(dem.unidade||'')+'</div>':'')+
         (prazo?'<div style="font-size:12px;color:var(--t2)"><strong>Prazo:</strong> '+prazo+'</div>':'')+
         (dem.especificacao?'<div style="font-size:12px;color:var(--t2)"><strong>Obs:</strong> '+dem.especificacao+'</div>':'')+
         (dem.preco_alvo?'<div style="font-size:12px;color:var(--ac)"><strong>Alvo:</strong> R$'+Number(dem.preco_alvo).toFixed(2)+'</div>':'')+
         (dem.local_entrega?'<div style="font-size:12px;color:var(--t2)"><strong>Local:</strong> '+dem.local_entrega+'</div>':'')+
-        (dem.frete_preferencia?'<div style="font-size:12px;color:var(--am)"><strong>Frete:</strong> '+dem.frete_preferencia+'</div>':'')+
+        (dem.frete?'<div style="font-size:12px;color:var(--am)"><strong>Frete:</strong> '+dem.frete+'</div>':'')+
       '</div>'+
     '</div>';
   }
   // Load propostas
   if(!listEl) return;
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Carregando propostas...</div>';
-  var { data: props, error } = await _sb.from('propostas').select('*, fornecedores(nome, cidade, estado, score_foodhub, sif)').eq('demanda_id',_demandaAtual);
+  var { data: props, error } = await _sb.from('propostas_v2').select('*').eq('demanda_id',_demandaAtual);
   if(error){console.log('Erro propostas detalhe:', JSON.stringify(error));listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--rd);font-size:12px">Erro ao carregar propostas.</div>';return;}
   if(countEl) countEl.textContent=(props?props.length:0)+' proposta'+(props&&props.length!==1?'s':'');
   if(!props||props.length===0){
@@ -5151,23 +5152,23 @@ async function loadDetalhesDemanda(){
   // Save scores (fire and forget)
   props.forEach(function(p){
     if(p._score!==p.score_total){
-      _sb.from('propostas').update({score_total:p._score,score_detalhes:{preco:p._scores.preco,prazo:p._scores.prazo,volume:p._scores.volume,pagamento:p._scores.pagamento,fornecedor:p._scores.fornecedor}}).eq('id',p.id).then(function(){});
+      _sb.from('propostas_v2').update({score_total:p._score,score_detalhes:{preco:p._scores.preco,prazo:p._scores.prazo,volume:p._scores.volume,pagamento:p._scores.pagamento,fornecedor:p._scores.fornecedor}}).eq('id',p.id).then(function(){});
     }
   });
   var html='<div style="display:flex;flex-direction:column;gap:6px">';
   props.forEach(function(p,i){
-    var f=p.fornecedores||{};
+    var f={nome:p.fornecedor_id||'Fornecedor'};
     var sc=p._score;
     var scColor=sc>=85?'var(--gn)':sc>=70?'var(--am)':'var(--rd)';
-    var loc=(f.cidade||'')+(f.cidade&&f.estado?' – ':'')+(f.estado||'');
+    var loc='';
     var badges='';
     if(i===0) badges+=' <span class="badge bg" style="font-size:9px">🥇 Melhor oferta</span>';
     if(i===minPrecoIdx&&i!==0) badges+=' <span class="badge bb" style="font-size:9px">💰 Menor preço</span>';
     var freteOk=true;
-    if(dem&&dem.frete_preferencia){
-      var fp=dem.frete_preferencia;
+    if(dem&&dem.frete){
+      var fp=dem.frete;
       if(fp==='CIF obrigatório'||fp==='FOB obrigatório'){
-        var pNota=(p.nota_fornecedor||'').toLowerCase();
+        var pNota=(p.observacoes||'').toLowerCase();
         if(fp==='CIF obrigatório'&&pNota.indexOf('fob')>=0) freteOk=false;
         if(fp==='FOB obrigatório'&&pNota.indexOf('cif')>=0) freteOk=false;
       }
@@ -5196,13 +5197,13 @@ async function loadDetalhesDemanda(){
       '</div>'+
       barHTML+
       '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--t2);margin-bottom:8px">'+
-        (p.volume_ofertado?'<span>📦 '+Number(p.volume_ofertado).toLocaleString('pt-BR')+' '+(dem&&dem.unidade_volume||'kg')+'</span>':'')+
-        (p.prazo_entrega_dias?'<span>🚚 '+p.prazo_entrega_dias+' dias</span>':'')+
+        (p.volume_disponivel?'<span>📦 '+Number(p.volume_disponivel).toLocaleString('pt-BR')+' '+(dem&&dem.unidade||'kg')+'</span>':'')+
+        (p.prazo_expedicao_dias?'<span>🚚 '+p.prazo_expedicao_dias+' dias</span>':'')+
         (p.condicao_pagamento?'<span>💳 '+p.condicao_pagamento+'</span>':'')+
       '</div>'+
-      (p.nota_fornecedor?'<div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-style:italic">"'+p.nota_fornecedor+'"</div>':'')+
+      (p.observacoes?'<div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-style:italic">"'+p.observacoes+'"</div>':'')+
       '<div style="display:flex;gap:6px;justify-content:flex-end">'+
-        '<button class="btn-ghost sm" onclick="event.stopPropagation();iniciarNegociacao(\''+p.id+'\',\''+p.demanda_id+'\',\''+(p.fornecedor_id||'')+'\',\''+(f.nome||'').replace(/'/g,"\\'")+'\','+Number(p.preco_ofertado).toFixed(2)+',\''+(p.unidade_preco||'/kg')+'\',\''+(p.volume_ofertado||'')+'\',\''+(f.score_foodhub||0)+'\')" style="font-size:11px">Negociar</button>'+
+        '<button class="btn-ghost sm" onclick="event.stopPropagation();iniciarNegociacao(\''+p.id+'\',\''+p.demanda_id+'\',\''+(p.fornecedor_id||'')+'\',\''+(f.nome||'').replace(/'/g,"\\'")+'\','+Number(p.preco_ofertado).toFixed(2)+',\''+(p.unidade_preco||'/kg')+'\',\''+(p.volume_disponivel||'')+'\',\''+(f.score_foodhub||0)+'\')" style="font-size:11px">Negociar</button>'+
         '<button class="btn sm btn-g" onclick="event.stopPropagation();aceitarProposta(\''+p.id+'\')" style="font-size:11px">Aceitar</button>'+
       '</div>'+
     '</div>';
@@ -5217,11 +5218,11 @@ async function loadCadPropostaSelects(){
   var selFor=document.getElementById('prop-fornecedor');
   if(selDem){
     selDem.innerHTML='<option value="">Carregando...</option>';
-    var { data: dems, error: errDem } = await _sb.from('demandas').select('id, produto_nome, volume, unidade_volume').eq('status','ativa');
+    var { data: dems, error: errDem } = await _sb.from('demandas_v2').select('id, produto_nome, volume, unidade').eq('status','ativa');
     if(errDem)console.log('Erro demandas select:', JSON.stringify(errDem));
     if(dems&&dems.length){
       var h='<option value="">Selecione a demanda</option>';
-      dems.forEach(function(d){h+='<option value="'+d.id+'">'+(d.produto_nome||'Demanda')+' · '+(d.volume||'')+' '+(d.unidade_volume||'')+'</option>';});
+      dems.forEach(function(d){h+='<option value="'+d.id+'">'+(d.produto_nome||'Demanda')+' · '+(d.volume||'')+' '+(d.unidade||'')+'</option>';});
       selDem.innerHTML=h;
     } else {
       selDem.innerHTML='<option value="">Nenhuma demanda ativa</option>';
@@ -5229,7 +5230,7 @@ async function loadCadPropostaSelects(){
   }
   if(selFor){
     selFor.innerHTML='<option value="">Carregando...</option>';
-    var { data: forns, error: errFor } = await _sb.from('fornecedores').select('id, nome, cidade, estado');
+    var { data: forns, error: errFor } = await _sb.from('members').select('id, nome, cidade, estado').eq('tipo','fornecedor');
     if(errFor)console.log('Erro fornecedores select:', JSON.stringify(errFor));
     if(forns&&forns.length){
       var h2='<option value="">Selecione o fornecedor</option>';
@@ -5253,15 +5254,15 @@ async function salvarProposta(){
   if(!demId){showPropMsg('Selecione a demanda.','err');return;}
   if(!fornId){showPropMsg('Selecione o fornecedor.','err');return;}
   if(!preco||preco<=0){showPropMsg('Informe o preço unitário.','err');return;}
-  var { error } = await _sb.from('propostas').insert({
+  var { error } = await _sb.from('propostas_v2').insert({
     demanda_id: demId,
     fornecedor_id: fornId,
     preco_ofertado: preco,
     unidade_preco: unidade,
-    volume_ofertado: volume,
-    prazo_entrega_dias: prazo,
+    volume_disponivel: volume,
+    prazo_expedicao_dias: prazo,
     condicao_pagamento: pagamento,
-    nota_fornecedor: obs,
+    observacoes: obs,
     status: 'recebida'
   });
   if(error){showPropMsg('Erro ao salvar: '+error.message,'err');return;}
@@ -5289,7 +5290,7 @@ async function loadCategoriasCad(){
   var el=document.getElementById('cad-categoria');
   if(!el)return;
   el.innerHTML='<div style="font-size:11px;color:var(--t3)">Carregando...</div>';
-  var { data, error } = await _sb.from('categorias').select('id, slug, nome, emoji, grupo').eq('ativa',true).order('nome');
+  var { data, error } = await _sb.from('categorias_referencia').select('id, slug, nome, emoji, grupo').eq('ativa',true).order('nome');
   if(error||!data){el.innerHTML='<div style="font-size:11px;color:var(--rd)">Erro ao carregar</div>';return;}
   function _catLabel(c){var e=c.emoji;return(e&&typeof e==='string'&&e.trim()!==''&&e!=='undefined')?e+' '+c.nome:c.nome;}
   var grupos={},semGrupo=[];
@@ -5338,7 +5339,8 @@ async function salvarFornecedor(){
   if(!estado){showCadMsg('Selecione o estado.','err');return;}
   if(!categorias.length){showCadMsg('Selecione ao menos uma categoria.','err');return;}
   if(score<0)score=0;if(score>100)score=100;
-  var { error } = await _sb.from('fornecedores').insert({
+  var { error } = await _sb.from('members').insert({
+    tipo: 'fornecedor',
     nome: nome,
     cnpj: cnpj||null,
     sif: sif||null,
@@ -5665,18 +5667,18 @@ var REL_PERIODS = {
 
 async function loadSavingsReais(){
   if(!_currentUser) return;
-  var { data: dems } = await _sb.from('demandas').select('id, preco_alvo, produto_nome').eq('user_id',_currentUser.id);
+  var { data: dems } = await _sb.from('demandas_v2').select('id, preco_alvo, produto_nome').eq('comprador_id',_currentUser.id);
   if(!dems||!dems.length) return;
   var demIds=dems.map(function(d){return d.id;});
   var demMap={};dems.forEach(function(d){demMap[d.id]=d;});
-  var { data: aceitas } = await _sb.from('propostas').select('demanda_id, preco_ofertado, volume_ofertado, fornecedores(nome)').eq('status','aceita').in('demanda_id',demIds);
+  var { data: aceitas } = await _sb.from('propostas_v2').select('demanda_id, preco_ofertado, volume_disponivel, fornecedor_id').eq('status','aceita').in('demanda_id',demIds);
   if(!aceitas||!aceitas.length) return;
   // Saving vs preço-alvo
   var savingAlvo=0;var negCount=aceitas.length;
   aceitas.forEach(function(p){
     var dem=demMap[p.demanda_id];
-    if(dem&&dem.preco_alvo&&p.volume_ofertado){
-      var diff=(Number(dem.preco_alvo)-Number(p.preco_ofertado))*Number(p.volume_ofertado);
+    if(dem&&dem.preco_alvo&&p.volume_disponivel){
+      var diff=(Number(dem.preco_alvo)-Number(p.preco_ofertado))*Number(p.volume_disponivel);
       if(diff>0) savingAlvo+=diff;
     }
   });
@@ -5685,7 +5687,7 @@ async function loadSavingsReais(){
   var elN=document.getElementById('rel-saving-negocios');
   if(elN) elN.textContent=negCount;
   // Saving vs mercado
-  var { data: todas } = await _sb.from('propostas').select('demanda_id, preco_ofertado').in('demanda_id',demIds);
+  var { data: todas } = await _sb.from('propostas_v2').select('demanda_id, preco_ofertado').in('demanda_id',demIds);
   var avgMap={};var cntMap={};
   if(todas) todas.forEach(function(p){
     if(!avgMap[p.demanda_id]){avgMap[p.demanda_id]=0;cntMap[p.demanda_id]=0;}
@@ -5695,14 +5697,14 @@ async function loadSavingsReais(){
   var savingMerc=0;
   aceitas.forEach(function(p){
     var avg=avgMap[p.demanda_id];
-    if(avg&&p.volume_ofertado){
-      var diff=(avg-Number(p.preco_ofertado))*Number(p.volume_ofertado);
+    if(avg&&p.volume_disponivel){
+      var diff=(avg-Number(p.preco_ofertado))*Number(p.volume_disponivel);
       if(diff>0) savingMerc+=diff;
     }
   });
   var elPct=document.getElementById('rel-saving-pct');
   if(elPct&&savingMerc>0){
-    var totalVol=0;aceitas.forEach(function(p){totalVol+=Number(p.preco_ofertado)*(Number(p.volume_ofertado)||1);});
+    var totalVol=0;aceitas.forEach(function(p){totalVol+=Number(p.preco_ofertado)*(Number(p.volume_disponivel)||1);});
     var pct=totalVol>0?((savingMerc/totalVol)*100).toFixed(1):'0';
     elPct.textContent=pct+'% abaixo do mercado';
   }

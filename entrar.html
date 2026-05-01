@@ -383,9 +383,10 @@
   // P0-fix S3 Bloco B: removido _sbAdmin com service_role hardcoded.
   // Chave ja rotacionada em 26/abr/2026 (registrado em SEGURANCA_E_MITIGACAO.md).
   // Lookup de player pos-login passa pela RLS de players via auth.uid().
+  // P1-emergency S3: legacy anon morta. Swap publishable. Realtime TODO V1.5.
   var _sb = supabase.createClient(
     'https://jqbuckofiaopxwllghac.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8'
+    'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi'
   );
 
   var form = document.getElementById('loginForm');

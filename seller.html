@@ -293,9 +293,10 @@ body{background:#050810;color:#e0e0e0;font-family:'DM Sans',system-ui,sans-serif
 
 <script>
 // P1-fix S3: substituido service_role hardcoded por legacy anon (RLS protege).
+// P1-emergency S3: legacy anon morta. Swap publishable. Realtime TODO V1.5.
 var _sb = supabase.createClient(
   'https://jqbuckofiaopxwllghac.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8'
+  'sb_publishable_LFZQkiPcCv1NbBLu6jUPXg_N5qY8zmi'
 );
 
 var _seller = null;   // member row
