@@ -416,9 +416,10 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 // ═══════════════════════════════════════
 // SUPABASE CLIENT
 // ═══════════════════════════════════════
+// P1-fix S3: substituido service_role hardcoded por legacy anon (RLS protege).
 var _sb = supabase.createClient(
   'https://jqbuckofiaopxwllghac.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8'
 );
 
 // ═══════════════════════════════════════

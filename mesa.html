@@ -692,12 +692,13 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
   }
 })();
 
+// P1-fix S3: substituido service_role hardcoded por legacy anon (RLS protege).
 var _sb = supabase.createClient(
   'https://jqbuckofiaopxwllghac.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8',
   {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    global: { headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA4NDg4NCwiZXhwIjoyMDkwNjYwODg0fQ.i6XmVRqWE-SgLKSPQMtE5FgkebqhhSdh8WLSxpUTzQo' } }
+    global: { headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxYnVja29maWFvcHh3bGxnaGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODQ4ODQsImV4cCI6MjA5MDY2MDg4NH0.gkzM5WmcV32HBWsCCvojypCeO4yhB09FtLDYiFMogo8' } }
   }
 );
 
