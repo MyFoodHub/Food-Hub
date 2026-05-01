@@ -1117,33 +1117,27 @@ async function negociarProposta(propostaId, oportunidadeId, industriaId) {
   if (!confirm('Iniciar negocia\u00E7\u00E3o com esta ind\u00FAstria?')) return;
 
   try {
-    // Update proposal status
-    await _sb.from('propostas_v3').update({ status: 'aceita' }).eq('id', propostaId);
+    // Bloco F V1: Intent + Mesa Concierge cria deal manual (RLS deals_insert_mesa bloqueia cliente)
+    // 1. Marca proposta aceita: status em_negociacao + hit=true (analytics V1.5)
+    await _sb.from('propostas_v3').update({ status: 'em_negociacao', hit: true }).eq('id', propostaId);
 
-    // Get proposal details for deal
-    var propRes = await _sb.from('propostas_v3').select('*').eq('id', propostaId).single();
-    var prop = propRes.data || {};
+    // 2. Outras propostas pendentes da mesma oportunidade viram 'preterida'
+    await _sb.from('propostas_v3')
+      .update({ status: 'preterida' })
+      .eq('oportunidade_id', oportunidadeId)
+      .neq('id', propostaId)
+      .eq('status', 'enviada');
 
-    // Create deal
-    var dealCode = 'DEAL-' + Math.floor(1000 + Math.random() * 9000);
-    var dealData = {
-      codigo: dealCode,
-      cliente_id: player.id,
-      industria_id: industriaId || null,
-      oportunidade_id: oportunidadeId || null,
-      proposta_id: propostaId,
-      status: 'em_andamento',
-      valor_total: prop.preco ? (Number(prop.preco) * (Number(prop.volume) || 1)) : null
-    };
+    // 3. Oportunidade entra em negociacao (Mesa cria deal offline depois)
+    await _sb.from('oportunidades').update({ status: 'em_negociacao' }).eq('id', oportunidadeId);
 
-    var dealRes = await _sb.from('deals').insert(dealData);
-    if (dealRes.error) throw dealRes.error;
+    var dealCode = 'em-negociacao'; // placeholder p/ toast legacy (Mesa atribui codigo real ao criar deal)
 
     showToast('Deal ' + dealCode + ' criado! Negocia\u00E7\u00E3o iniciada.', 'success');
-    switchTab('deals');
+    loadPropostas();
   } catch (err) {
     console.error('negociarProposta error:', err);
-    showToast('Erro ao criar deal: ' + (err.message || ''), 'error');
+    showToast('Erro ao aceitar proposta: ' + (err.message || ''), 'error');
   }
 }
 
