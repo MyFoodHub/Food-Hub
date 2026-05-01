@@ -2468,8 +2468,7 @@ async function confirmInvite() {
       tipo: [tipo],
       status: 'pendente',
       convite_token: crypto.randomUUID(),
-      criado_em: new Date().toISOString(),
-      atualizado_em: new Date().toISOString()
+      criado_em: new Date().toISOString()
     };
     if (whatsapp) playerData.whatsapp = whatsapp;
 
