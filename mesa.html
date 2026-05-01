@@ -2467,6 +2467,7 @@ async function confirmInvite() {
       email: email,
       tipo: [tipo],
       status: 'pendente',
+      convite_token: crypto.randomUUID(),
       criado_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString()
     };
@@ -2496,16 +2497,10 @@ async function confirmInvite() {
       } catch (e) { /* vinculo creation is best-effort */ }
     }
 
-    // 3. Send invite email via Supabase Auth
-    var { error: inviteErr } = await _sb.auth.admin.inviteUserByEmail(email, {
-      redirectTo: 'https://brazilfoodhub.com/entrar.html'
-    });
-
-    if (inviteErr) {
-      showToast('Player criado, mas erro no envio do email: ' + inviteErr.message);
-    } else {
-      showToast('Convite enviado para ' + razaoSocial + '!');
-    }
+    // 3. Mesa Concierge V1: gera link manual (auth.admin requer service_role, front usa publishable)
+    var conviteLink = window.location.origin + '/entrar.html?convite=' + playerData.convite_token;
+    prompt('Link de convite para ' + razaoSocial + ' (copie e envie via WhatsApp):', conviteLink);
+    showToast('Player criado. Link de convite gerado - copie e envie via WhatsApp.');
 
     closeInviteModal();
     loadMembros();
@@ -2520,15 +2515,21 @@ async function confirmInvite() {
 
 async function resendInvite(email, nome) {
   try {
-    var { error } = await _sb.auth.admin.inviteUserByEmail(email, {
-      redirectTo: 'https://brazilfoodhub.com/entrar.html'
-    });
-
-    if (error) {
-      showToast('Erro ao reenviar: ' + error.message);
-    } else {
-      showToast('Convite reenviado para ' + nome + '!');
+    // Mesa Concierge V1: busca/gera convite_token e exibe link manual
+    var playerRes = await _sb.from('players').select('id, convite_token').eq('email', email).maybeSingle();
+    if (playerRes.error || !playerRes.data) {
+      showToast('Erro ao buscar player: ' + (playerRes.error ? playerRes.error.message : 'nao encontrado'));
+      return;
     }
+    var token = playerRes.data.convite_token;
+    if (!token) {
+      // Gera token novo se player nao tem (caso legacy pre-Fix1)
+      token = crypto.randomUUID();
+      await _sb.from('players').update({ convite_token: token }).eq('id', playerRes.data.id);
+    }
+    var conviteLink = window.location.origin + '/entrar.html?convite=' + token;
+    prompt('Reenviar link de convite para ' + nome + ':', conviteLink);
+    showToast('Link de convite copiado - reenvie via WhatsApp.');
   } catch (err) {
     showToast('Erro: ' + err.message);
   }
