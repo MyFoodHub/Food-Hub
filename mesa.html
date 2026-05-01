@@ -389,6 +389,8 @@ table.tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,2
           <button class="refresh-btn" onclick="loadAprovacoes()">&#x21bb; Atualizar</button>
         </div>
         <div id="aprovacoes-content"></div>
+        <!-- Bloco D V1: Demandas Pendentes (le direto de oportunidades) -->
+        <div id="demandas-pendentes-content" style="margin-top:24px"></div>
       </div>
 
       <!-- 3. FINANCEIRO -->
@@ -754,6 +756,7 @@ function initApp() {
   setInterval(updateClock, 1000);
   loadPipeline();
   loadAprovacoesBadge();
+  loadDemandasPendentes();
 }
 
 function updateClock() {
@@ -3062,6 +3065,112 @@ async function saveEditOpp() {
 
   btn.disabled = false;
   btn.textContent = 'Salvar';
+}
+
+// =============================================
+// BLOCO D V1: nova fila demandas, broadcast convites para industrias homologadas
+// Le direto de oportunidades.status='aguardando_aprovacao'.
+// V1.5: integra com aprovacoes_v2 unified approval system.
+// =============================================
+async function loadDemandasPendentes() {
+  var el = document.getElementById('demandas-pendentes-content');
+  if (!el) return;
+
+  try {
+    var res = await _sb.from('oportunidades')
+      .select('id, codigo, produto_descricao, volume, unidade, cidade_entrega, frete, prazo_expedicao, condicao_pagamento, preco_alvo, observacoes, cliente_id, criado_em')
+      .eq('status', 'aguardando_aprovacao')
+      .order('criado_em', { ascending: false });
+
+    if (res.error) {
+      el.innerHTML = '<div style="padding:16px;color:var(--danger);font-size:12px">Erro: ' + res.error.message + '</div>';
+      return;
+    }
+
+    var demandas = res.data || [];
+    if (demandas.length === 0) {
+      el.innerHTML = '<div class="section-card"><h3>Demandas Pendentes</h3><p style="color:var(--text3);font-size:12px;padding:8px 0">Nenhuma demanda pendente.</p></div>';
+      return;
+    }
+
+    // Batch-fetch razao_social dos clientes
+    var clienteIds = demandas.map(function(d) { return d.cliente_id; }).filter(Boolean);
+    var clienteMap = {};
+    if (clienteIds.length > 0) {
+      var cRes = await _sb.from('players').select('id, razao_social').in('id', clienteIds);
+      if (cRes.data) {
+        for (var ci = 0; ci < cRes.data.length; ci++) {
+          clienteMap[cRes.data[ci].id] = cRes.data[ci].razao_social;
+        }
+      }
+    }
+
+    var html = '<div class="section-card"><h3>Demandas Pendentes (' + demandas.length + ')</h3>';
+    for (var i = 0; i < demandas.length; i++) {
+      var d = demandas[i];
+      var cliente = clienteMap[d.cliente_id] || 'cliente';
+      var precoStr = d.preco_alvo ? formatBRL(d.preco_alvo) : 'A combinar';
+      var titulo = d.codigo || d.produto_descricao || ('#' + String(d.id).substring(0, 8));
+
+      html += '<div class="approval-card-v2" id="aprov-demanda-' + d.id + '">' +
+        '<div class="acv2-header">' +
+          '<div>' +
+            '<div class="acv2-title">' + titulo + '</div>' +
+            '<div class="acv2-subtitle">Demanda &middot; ' + cliente + ' &middot; ' + fmtDateTime(d.criado_em) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="acv2-body">' +
+          '<div class="acv2-field"><span class="acv2-field-label">Produto</span><span>' + (d.produto_descricao || '-') + '</span></div>' +
+          '<div class="acv2-field"><span class="acv2-field-label">Volume</span><span>' + (d.volume || '-') + ' ' + (d.unidade || '') + '</span></div>' +
+          '<div class="acv2-field"><span class="acv2-field-label">Cidade</span><span>' + (d.cidade_entrega || '-') + '</span></div>' +
+          '<div class="acv2-field"><span class="acv2-field-label">Frete</span><span>' + (d.frete || '-') + '</span></div>' +
+          '<div class="acv2-field"><span class="acv2-field-label">Prazo</span><span>' + (d.prazo_expedicao || '-') + '</span></div>' +
+          '<div class="acv2-field"><span class="acv2-field-label">Pagamento</span><span>' + (d.condicao_pagamento || '-') + '</span></div>' +
+          '<div class="acv2-field"><span class="acv2-field-label">Preco alvo</span><span>' + precoStr + '</span></div>' +
+          (d.observacoes ? '<div class="acv2-field"><span class="acv2-field-label">Obs</span><span>' + d.observacoes + '</span></div>' : '') +
+        '</div>' +
+        '<div class="acv2-actions">' +
+          '<button class="btn btn-success" onclick="aprovarDemanda(\'' + d.id + '\')">&#x2705; Aprovar</button>' +
+        '</div>' +
+      '</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  } catch (err) {
+    el.innerHTML = '<div style="padding:16px;color:var(--danger);font-size:12px">Erro: ' + err.message + '</div>';
+  }
+}
+
+async function aprovarDemanda(oppId) {
+  if (!confirm('Aprovar demanda e enviar convites para industrias homologadas?')) return;
+  try {
+    // 1. UPDATE oportunidade
+    var updRes = await _sb.from('oportunidades').update({
+      status: 'aprovada',
+      status_cliente: 'aprovado'
+    }).eq('id', oppId);
+    if (updRes.error) { alert('Erro ao aprovar: ' + updRes.error.message); return; }
+
+    // 2. Industrias homologadas (broadcast V1). CRITICO: filtro 'ativo' true, NAO 'status'.
+    var indRes = await _sb.from('players').select('id').contains('tipo', ['industria']).eq('ativo', true);
+    if (indRes.error) { alert('Erro ao listar industrias: ' + indRes.error.message); return; }
+
+    var industrias = indRes.data || [];
+    if (industrias.length === 0) {
+      alert('Demanda aprovada, mas nenhuma industria homologada para convite.');
+    } else {
+      var convites = industrias.map(function(ind) {
+        return { oportunidade_id: oppId, industria_id: ind.id };
+      });
+      var convRes = await _sb.from('oportunidade_convites').insert(convites);
+      if (convRes.error) { alert('Erro ao criar convites: ' + convRes.error.message); return; }
+    }
+
+    showToast('Demanda aprovada. ' + industrias.length + ' convites enviados.');
+    loadDemandasPendentes();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
 }
 </script>
 </body>
