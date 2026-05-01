@@ -1,7 +1,16 @@
 # Credenciais e env
 .env
 .env.local
+.env.*.local
 supabase/functions/.env.local
+
+# Scripts locais com credenciais (prefixados com _)
+supabase/migrations/_*.js
+supabase/migrations/_*.ts
+scripts/_*
+
+# Migrations abandonadas (historico, nao executar)
+supabase/migrations/_abandoned/
 
 # Supabase local
 .supabase/
